@@ -3,1144 +3,818 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ผลไม้ By เจ๊เนาว์ - ระบบจัดการหน้าร้าน (Cloud Drive + Anti-Bot)</title>
+    <title>PO1 NEWSCAST - ELECTION SYSTEM</title>
     
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
-        body { font-family: 'Prompt', sans-serif; background-color: #f0fdf4; color: #374151; }
+        :root { 
+            --bg-dark: #050505; 
+            --glass: rgba(15, 23, 42, 0.9); 
+            --glass-border: rgba(255,255,255,0.1);
+            --neon-blue: #3b82f6; 
+            --neon-gold: #fbbf24; 
+        }
+        
+        body { 
+            font-family: 'Anuphan', sans-serif; 
+            background-color: var(--bg-dark); 
+            color: white; 
+            overflow: hidden; 
+        }
+        
+        .font-tech { font-family: 'Chakra Petch', sans-serif; }
+        
+        /* Glassmorphism Utilities */
+        .glass-panel { 
+            background: var(--glass); 
+            border: 1px solid var(--glass-border); 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6); 
+            backdrop-filter: blur(12px);
+        }
+        
+        /* Lower Third / News Bar Style */
+        .news-bar-bg {
+            background: linear-gradient(90deg, #0f172a 0%, #020617 100%);
+            border-top: 3px solid var(--neon-gold);
+            box-shadow: 0 -10px 50px rgba(0,0,0,0.8);
+        }
+
+        /* Animations */
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .scanline::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+            animation: scanline 4s linear infinite;
+            pointer-events: none;
+        }
+
+        /* Ticker Animation */
+        .ticker-wrap { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
+        .ticker-track { display: inline-block; white-space: nowrap; padding-left: 100%; animation: ticker 35s linear infinite; }
+        @keyframes ticker { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-100%, 0, 0); } }
+
+        /* Transparent Mode (OBS) */
+        body.transparent .bg-main { background: transparent !important; }
+        body.transparent .obs-hide { display: none !important; }
+        body.transparent .scene-bg { display: none !important; }
+
+        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
-        
-        .custom-input:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); transition: all 0.2s; }
-        
-        .payment-option { border: 2px solid #e5e7eb; transition: all 0.2s; background: white; }
-        .payment-option:hover { border-color: #a7f3d0; transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .payment-option.active { background-color: #ecfdf5; border-color: #059669; color: #047857; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2); }
-
-        .bank-chip { border: 1px solid #e5e7eb; transition: all 0.2s; cursor: pointer; }
-        .bank-chip:hover { background-color: #f0fdf4; border-color: #10b981; }
-        .bank-chip.selected { background-color: #d1fae5; border-color: #059669; color: #065f46; font-weight: bold; }
-        
-        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-        /* A5 Receipt Layout */
-        #receipt-render-area { width: 148mm; min-height: 210mm; background: white; padding: 6mm 8mm; box-sizing: border-box; font-size: 9pt; line-height: 1.3; color: #1f2937; position: relative; font-family: 'Prompt', sans-serif; }
-        .rec-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 2px solid #059669; }
-        .rec-header-left { text-align: left; width: 50%; }
-        .rec-title-th { font-size: 16pt; font-weight: bold; color: #059669; line-height: 1; }
-        .rec-title-en { font-size: 10pt; font-weight: bold; color: #059669; margin-top: -2px; }
-        .rec-meta { font-size: 8.5pt; color: #555; margin-top: 5px; line-height: 1.4; }
-        .rec-header-right { text-align: right; width: 50%; }
-        .rec-shop-name { font-size: 14pt; font-weight: bold; color: #1f2937; margin-bottom: 2px; }
-        .rec-shop-info { font-size: 8.5pt; color: #4b5563; line-height: 1.4; }
-        .rec-customer-row { margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed #e5e7eb; font-size: 9pt; display: flex; justify-content: space-between; font-weight: 500; }
-        .rec-items-table { width: 100%; font-size: 9pt; border-collapse: collapse; margin-bottom: 8px; }
-        .rec-items-table th { border-bottom: 1px solid #374151; text-align: left; padding: 3px 2px; font-weight: 600; color: #374151; }
-        .rec-items-table td { padding: 3px 2px; border-bottom: 1px dotted #e5e7eb; vertical-align: top; }
-        .rec-total-box { display: flex; justify-content: flex-end; margin-bottom: 10px; }
-        .rec-total-table { width: 60%; font-size: 9pt; }
-        .rec-total-table td { text-align: right; padding: 1px 0; }
-        .rec-net-price { font-size: 14pt; font-weight: bold; color: #059669; border-top: 1px solid #374151; border-bottom: 2px solid #374151; padding: 4px 0; margin-top: 4px; }
-        .rec-debt-box { text-align: left; margin-top: 5px; padding: 6px 0; border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc; font-size: 9pt; width: 100%; }
-        .rec-debt-row { display: flex; justify-content: flex-start; gap: 15px; margin-bottom: 2px; }
-        .rec-debt-label { width: 130px; color: #555; }
-        .rec-debt-val { font-weight: 600; }
-        .rec-footer-msg { margin-top: 20px; text-align: center; font-size: 8pt; color: #9ca3af; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
     </style>
 </head>
-<body class="h-screen flex flex-col">
+<body>
 
-    <nav class="bg-[#059669] text-white px-6 py-3 shadow-md fixed w-full top-0 z-50">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white text-emerald-600 rounded-full flex items-center justify-center font-bold text-xl shadow-lg"><i class="fa-solid fa-leaf"></i></div>
-                <div>
-                    <h1 class="text-lg font-bold tracking-wide leading-none">ผลไม้ By เจ๊เนาว์</h1>
-                    <p class="text-xs text-emerald-100 font-light">ระบบจัดการหน้าร้าน</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <div id="offline-indicator" class="hidden flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-full shadow cursor-pointer transition" onclick="queueManager.sync()">
-                    <i class="fa-solid fa-cloud-arrow-up animate-bounce"></i>
-                    <span class="text-xs font-bold">รอส่ง <span id="offline-count">0</span> รายการ</span>
+<div id="app" class="w-full h-full relative"></div>
+
+<script>
+    // ==========================================
+    // 1. CONFIGURATION & STATE MANAGEMENT
+    // ==========================================
+    const STORAGE_KEY = 'PO1_NEWSCAST_DB_V2';
+    const LIMITS = { zone: 400, list: 100 };
+
+    const DEFAULT_DATA = {
+        parties: [
+            { id: 'p1', name: 'พรรคประชาชน', color: '#FF9100', zone: 120, list: 30 },
+            { id: 'p2', name: 'เพื่อไทย', color: '#E60000', zone: 100, list: 25 },
+            { id: 'p3', name: 'ภูมิใจไทย', color: '#0033CC', zone: 50, list: 10 },
+            { id: 'p4', name: 'รวมไทยสร้างชาติ', color: '#2C3E50', zone: 20, list: 5 },
+            { id: 'p5', name: 'ประชาธิปัตย์', color: '#00AEF0', zone: 10, list: 2 },
+            { id: 'p6', name: 'ชาติไทยพัฒนา', color: '#eab308', zone: 5, list: 1 }
+        ],
+        scene: 'newsbar', 
+        ticker: '🔴 เกาะติดผลการเลือกตั้ง 2569 : รายงานสดผลคะแนนอย่างไม่เป็นทางการตลอดทั้งคืน... | ผู้มาใช้สิทธิเกิน 75% | กกต. คาดรู้ผลภายใน 4 ทุ่ม',
+        bg: 'dark'
+    };
+
+    function loadState() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+        } catch (e) {
+            console.error("State Load Error", e);
+            return JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+    }
+
+    function saveState(s) { 
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); 
+    }
+
+    function resetState() {
+        if(confirm('รีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น?')) {
+            saveState(DEFAULT_DATA);
+            location.reload();
+        }
+    }
+
+    let state = loadState();
+    let chartInstance = null;
+
+    // ==========================================
+    // 2. ROUTER & NAVIGATION
+    // ==========================================
+    const app = document.getElementById('app');
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+
+    // FIX: Safe Navigation Function
+    window.changeMode = function(newMode) {
+        try {
+            // Using window.location.search directly is safer in sandboxed environments
+            // than constructing new URL objects relative to unknown bases
+            const currentParams = new URLSearchParams(window.location.search);
+            currentParams.set('mode', newMode);
+            window.location.search = currentParams.toString();
+        } catch (e) {
+            console.error("Navigation Error:", e);
+            // Fallback: reload with query string
+            window.location.href = '?mode=' + newMode;
+        }
+    };
+
+    if (!mode) renderMenu();
+    else if (mode === 'control') initControl();
+    else if (mode === 'onair') initOnAir();
+
+    // ==========================================
+    // 3. MAIN MENU
+    // ==========================================
+    function renderMenu() {
+        app.innerHTML = `
+            <div class="h-screen w-screen flex items-center justify-center bg-black bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-900 via-[#0a0a0a] to-black">
+                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-20"></div>
+                
+                <div class="glass-panel p-16 rounded-3xl text-center max-w-4xl w-full border-t-4 border-yellow-500 shadow-[0_0_100px_rgba(234,179,8,0.1)] relative z-10">
+                    <div class="inline-block mb-6 px-4 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-xs font-bold tracking-widest uppercase">
+                        Election Broadcast System v2.0
+                    </div>
+                    <h1 class="text-8xl font-tech font-bold text-white mb-2 tracking-tight">PO1 <span class="text-yellow-500">NEWS</span></h1>
+                    <p class="text-slate-400 mb-16 text-lg tracking-[0.3em] font-light">REAL-TIME GRAPHICS ENGINE</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
+                        <button onclick="changeMode('control')" class="group h-48 bg-slate-900/50 border border-slate-700 rounded-2xl hover:bg-yellow-600 hover:border-yellow-400 hover:text-black transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden">
+                            <div class="absolute inset-0 bg-yellow-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+                            <i class="fa-solid fa-sliders text-6xl mb-6 group-hover:scale-110 transition-transform relative z-10"></i>
+                            <span class="font-bold text-xl tracking-widest relative z-10">CONTROL ROOM</span>
+                            <span class="text-xs mt-2 text-slate-500 group-hover:text-black/70 relative z-10">Manage Data & Scenes</span>
+                        </button>
+                        
+                        <button onclick="changeMode('onair')" class="group h-48 bg-slate-900/50 border border-slate-700 rounded-2xl hover:bg-blue-600 hover:border-blue-400 hover:text-white transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden">
+                            <div class="absolute inset-0 bg-blue-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+                            <i class="fa-solid fa-tv text-6xl mb-6 group-hover:scale-110 transition-transform relative z-10"></i>
+                            <span class="font-bold text-xl tracking-widest relative z-10">ON-AIR SCREEN</span>
+                            <span class="text-xs mt-2 text-slate-500 group-hover:text-white/70 relative z-10">Open in New Window (OBS)</span>
+                        </button>
+                    </div>
                 </div>
                 
-                <div class="text-sm bg-emerald-800/40 backdrop-blur-sm px-4 py-1.5 rounded-full border border-emerald-400/30 flex items-center gap-2 shadow-inner">
-                    <i class="fa-regular fa-clock text-emerald-200"></i> <span id="current-datetime"></span>
+                <div class="absolute bottom-8 text-slate-600 text-xs font-mono">
+                    DESIGNED FOR BROADCAST • 1080p / 4K COMPATIBLE
                 </div>
-            </div>
-        </div>
-    </nav>
+            </div>`;
+    }
 
-    <div class="container mx-auto p-4 md:p-6 mt-16 mb-10 flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-2 space-y-5">
-            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                <div class="grid grid-cols-2 gap-5 mb-4">
-                    <div>
-                        <label class="text-xs font-bold text-slate-400 mb-1 block uppercase">เลขที่ใบเสร็จ</label>
-                        <div class="relative">
-                            <i class="fa-solid fa-hashtag absolute left-3 top-3 text-slate-300"></i>
-                            <input type="text" id="inv-no" class="custom-input w-full pl-9 p-2.5 border rounded-xl bg-slate-50 text-slate-600 font-mono text-sm" readonly>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-slate-400 mb-1 block uppercase">วันที่</label>
-                        <input type="date" id="inv-date" class="custom-input w-full p-2.5 border rounded-xl text-sm text-slate-600">
-                    </div>
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-emerald-600 mb-1 block uppercase">ชื่อลูกค้า *</label>
-                    <div class="flex gap-2">
-                        <div class="relative flex-1">
-                            <i class="fa-solid fa-user absolute left-3 top-3 text-slate-300"></i>
-                            <input type="text" id="cust-name" placeholder="ค้นหาหรือระบุชื่อลูกค้า..." class="custom-input w-full pl-9 p-2.5 border rounded-xl font-medium text-slate-700">
-                        </div>
-                        <button onclick="app.checkDebt()" class="bg-slate-100 px-5 rounded-xl hover:bg-slate-200 text-slate-600 font-bold text-sm transition flex items-center gap-2"><i class="fa-solid fa-magnifying-glass"></i> เช็คหนี้</button>
-                    </div>
-                </div>
-            </div>
+    // ==========================================
+    // 4. CONTROL ROOM (BACKEND)
+    // ==========================================
+    function initControl() {
+        document.title = "Control Room - PO1 News";
+        
+        function renderUI() {
+            const totalZone = state.parties.reduce((s, p) => s + p.zone, 0);
+            const totalList = state.parties.reduce((s, p) => s + p.list, 0);
+            const totalSeats = totalZone + totalList;
 
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col min-h-[450px] overflow-hidden">
-                <div class="p-4 bg-slate-50/80 border-b flex justify-between items-center">
-                    <h3 class="font-bold text-slate-700 text-base flex items-center gap-2"><i class="fa-solid fa-basket-shopping text-emerald-500"></i> รายการสินค้า</h3>
-                    <button onclick="app.addRow()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 text-xs font-medium shadow-sm transition flex items-center gap-2"><i class="fa-solid fa-plus"></i> เพิ่มรายการ</button>
-                </div>
-                <div class="flex-1 overflow-auto p-2">
-                    <table class="w-full text-sm">
-                        <thead class="text-slate-500 font-semibold bg-white sticky top-0 text-xs uppercase">
-                            <tr>
-                                <th class="p-3 text-left w-[35%]">สินค้า</th>
-                                <th class="p-3 text-right w-[15%]">ราคา</th>
-                                <th class="p-3 text-center w-[15%]">จำนวน</th>
-                                <th class="p-3 text-center w-[15%]">
-                                    <div class="relative cursor-pointer group w-full mx-auto" title="คลิกเพื่อปรับมัดจำทั้งหมด">
-                                        <span class="text-xs font-bold text-slate-500 group-hover:text-emerald-600 transition-colors">มัดจำ <i class="fa-solid fa-caret-down text-[10px] ml-1 opacity-30 group-hover:opacity-100 transition-opacity"></i></span>
-                                        <select id="bulk-deposit-select" onchange="app.setAllDeposit(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                                            <option value="">-- ปรับทั้งหมด --</option>
-                                            <option value="0">ไม่มัดจำ</option>
-                                            <option value="100">100</option>
-                                            <option value="200">200</option>
-                                        </select>
+            const scenes = [
+                {id:'newsbar', icon:'fa-minus', label:'News Bar (L3)', desc:'แถบล่าง (เหมาะสำหรับซ้อนภาพ)'},
+                {id:'dashboard', icon:'fa-chart-simple', label:'Dashboard', desc:'ตารางคะแนนรวม (Full Screen)'},
+                {id:'battle', icon:'fa-hand-fist', label:'Battle Gauge', desc:'วัดพลังรัฐบาล vs ฝ่ายค้าน'},
+                {id:'parliament', icon:'fa-users-rectangle', label:'Parliament', desc:'ผังที่นั่งสภา 500 คน'},
+                {id:'chart', icon:'fa-chart-pie', label:'Donut Chart', desc:'สัดส่วนเก้าอี้'},
+                {id:'winner', icon:'fa-trophy', label:'Winner', desc:'ประกาศผู้ชนะ (มีพลุ)'}
+            ];
+
+            app.innerHTML = `
+                <div class="flex h-screen bg-[#050505] text-white font-sans text-sm overflow-hidden">
+                    <!-- LEFT: SIDEBAR -->
+                    <div class="w-80 bg-[#0f172a] border-r border-slate-800 flex flex-col z-20 shadow-2xl">
+                        <div class="p-5 border-b border-slate-800 bg-[#020617]">
+                            <h2 class="font-bold text-lg text-white tracking-wide flex items-center gap-3">
+                                <span class="relative flex h-3 w-3">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                </span>
+                                LIVE CONTROL
+                            </h2>
+                            <div class="text-[10px] text-slate-500 mt-1">Status: Active | Auto-Save: ON</div>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase px-2 mb-1 tracking-wider">Scene Selection</div>
+                            ${scenes.map(s => `
+                                <button onclick="setScene('${s.id}')" class="w-full text-left p-3 rounded-lg border transition-all duration-200 group relative overflow-hidden ${state.scene===s.id ? 'bg-blue-600 border-blue-400 text-white shadow-lg' : 'bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200'}">
+                                    <div class="font-bold text-sm flex items-center gap-3 relative z-10">
+                                        <div class="w-8 h-8 rounded flex items-center justify-center bg-black/20">
+                                            <i class="fa-solid ${s.icon}"></i>
+                                        </div>
+                                        <div>
+                                            <div>${s.label}</div>
+                                            <div class="text-[10px] opacity-70 font-normal">${s.desc}</div>
+                                        </div>
                                     </div>
-                                </th>
-                                <th class="p-3 text-right w-[15%]">รวม</th>
-                                <th class="w-[5%]"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="cart-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="space-y-5">
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="ui.openModal('product-modal')" class="p-3 bg-white border border-slate-200 rounded-xl hover:bg-blue-50 text-blue-600 text-xs font-bold flex flex-col items-center gap-1 transition shadow-sm group">
-                    <div class="bg-blue-100 p-2 rounded-lg group-hover:bg-white transition"><i class="fa-solid fa-boxes-stacked text-lg"></i></div> สต็อกสินค้า
-                </button>
-                <button onclick="app.loadReport(); ui.openModal('report-modal')" class="p-3 bg-white border border-slate-200 rounded-xl hover:bg-purple-50 text-purple-600 text-xs font-bold flex flex-col items-center gap-1 transition shadow-sm group">
-                    <div class="bg-purple-100 p-2 rounded-lg group-hover:bg-white transition"><i class="fa-solid fa-chart-pie text-lg"></i></div> รายงานขาย
-                </button>
-                <button onclick="ui.openModal('debt-modal')" class="col-span-2 p-3 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 text-amber-700 text-sm font-bold flex items-center justify-center gap-3 transition shadow-sm group">
-                    <div class="bg-white p-2 rounded-lg text-amber-500 group-hover:scale-110 transition"><i class="fa-solid fa-hand-holding-dollar text-xl"></i></div> รับชำระหนี้ค้าง
-                </button>
-            </div>
-
-            <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 relative overflow-hidden">
-                <div class="absolute top-0 right-0 p-4 opacity-5"><i class="fa-solid fa-cash-register text-8xl"></i></div>
-                <div class="space-y-2 mb-6 text-sm relative z-10">
-                    <div class="flex justify-between text-slate-500"><span>รวมเงินสินค้า:</span><span class="font-medium text-lg text-slate-700" id="sum-subtotal">0.00</span></div>
-                    <div class="flex justify-between text-blue-500"><span>ค่ามัดจำรวม:</span><span class="font-medium text-lg" id="sum-deposit">0.00</span></div>
-                    <div class="flex justify-between items-center text-red-500">
-                        <span>ส่วนลด:</span>
-                        <div class="flex items-center gap-1"><span>-</span><input type="number" id="inp-discount" class="w-20 text-right border-b border-red-200 text-red-500 outline-none bg-transparent font-medium" placeholder="0"></div>
-                    </div>
-                    <div class="pt-4 border-t border-dashed border-slate-200 flex justify-between items-end mt-2">
-                        <span class="font-bold text-slate-800 text-lg">ยอดสุทธิ</span>
-                        <span class="text-4xl font-bold text-emerald-600 tracking-tight" id="sum-total">0.00</span>
-                    </div>
-                </div>
-                <p class="text-xs font-bold text-slate-400 uppercase mb-3 relative z-10">ชำระโดย</p>
-                <div class="grid grid-cols-2 gap-3 mb-3 relative z-10">
-                    <div class="payment-option active p-3 rounded-xl cursor-pointer select-none flex flex-col items-center justify-center gap-1" onclick="app.setPayment('เงินสด', this)"><i class="fa-solid fa-money-bill-wave text-emerald-500 text-xl"></i><span class="text-xs font-bold">เงินสด</span></div>
-                    <div class="payment-option p-3 rounded-xl cursor-pointer select-none flex flex-col items-center justify-center gap-1" onclick="app.setPayment('โอน (QR Code)', this)"><i class="fa-solid fa-qrcode text-blue-500 text-xl"></i><span class="text-xs font-bold">โอนเงิน</span></div>
-                    <div class="payment-option p-3 rounded-xl cursor-pointer select-none flex flex-col items-center justify-center gap-1" onclick="app.setPayment('รอชำระ', this)"><i class="fa-solid fa-clock-rotate-left text-amber-500 text-xl"></i><span class="text-xs font-bold">รอชำระ</span></div>
-                    <div class="payment-option p-3 rounded-xl cursor-pointer select-none flex flex-col items-center justify-center gap-1" onclick="app.setPayment('อื่นๆ', this)"><i class="fa-solid fa-ellipsis text-gray-400 text-xl"></i><span class="text-xs font-bold">อื่นๆ</span></div>
-                </div>
-                
-                <div id="bank-selector-area" class="hidden mb-4 bg-slate-50 p-3 rounded-xl border border-blue-100 relative z-10">
-                    <div class="flex justify-between items-center mb-2">
-                        <p class="text-xs font-bold text-blue-500 uppercase">เลือกบัญชีรับเงิน</p>
-                        <button onclick="ui.openModal('bank-modal')" class="text-[10px] bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200 font-bold"><i class="fa-solid fa-gear"></i> จัดการ</button>
-                    </div>
-                    <div id="bank-list-chips" class="flex flex-wrap gap-2">
-                        <div class="text-xs text-slate-400 italic w-full text-center py-2">ยังไม่มีบัญชี (กดจัดการเพื่อเพิ่ม)</div>
-                    </div>
-                </div>
-
-                <button onclick="app.processCheckout()" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold text-lg hover:bg-slate-800 shadow-xl flex justify-center items-center gap-3 transition transform active:scale-[0.98] relative z-10"><i class="fa-solid fa-print"></i> บันทึก & พิมพ์ A5</button>
-            </div>
-        </div>
-    </div>
-
-    <div style="position:fixed; left:-9999px; top:0;">
-        <div id="receipt-render-area">
-            <div class="rec-header-row">
-                <div class="rec-header-left">
-                    <div class="rec-title-th">ใบเสร็จรับเงิน</div>
-                    <div class="rec-title-en">RECEIPT</div>
-                    <div class="rec-meta"><b>เลขที่:</b> <span id="r-inv"></span><br><b>วันที่:</b> <span id="r-date"></span> <span id="r-time"></span></div>
-                </div>
-                <div class="rec-header-right">
-                    <div class="rec-shop-name">ผลไม้ By เจ๊เนาว์</div>
-                    <div class="rec-shop-info">ตลาดเมืองใหม่ จ.เชียงใหม่<br>โทร. 081-114-7477</div>
-                </div>
-            </div>
-            <div class="rec-customer-row"><div><b>ลูกค้า:</b> <span id="r-name"></span></div><div><b>ชำระโดย:</b> <span id="r-pay"></span></div></div>
-            <table class="rec-items-table">
-                <thead><tr><th style="width: 55%;">รายการ</th><th style="width: 15%; text-align: right;">ราคา</th><th style="width: 15%; text-align: center;">จำนวน</th><th style="width: 15%; text-align: right;">รวม</th></tr></thead>
-                <tbody id="r-body"></tbody>
-            </table>
-            <div class="rec-total-box">
-                <table class="rec-total-table">
-                    <tr><td>รวมเงินสินค้า:</td><td width="35%" id="r-sub"></td></tr>
-                    <tr><td style="color: blue;">บวก ค่ามัดจำ:</td><td style="color: blue;" id="r-dep"></td></tr>
-                    <tr><td style="color: red;">หัก ส่วนลด:</td><td style="color: red;" id="r-disc"></td></tr>
-                    <tr><td colspan="2"><div class="rec-net-price"><span id="r-total"></span></div></td></tr>
-                </table>
-            </div>
-            <div id="r-debt-section" class="rec-debt-box hidden">
-                <div class="rec-debt-row"><span class="rec-debt-label">ยอดคงค้างเก่ายกมา:</span><span class="rec-debt-val" id="r-debt-old"></span></div>
-                <div class="rec-debt-row" style="color: #dc2626;"><span class="rec-debt-label">ยอดคงค้างสุทธิ:</span><span class="rec-debt-val" id="r-debt-new"></span></div>
-            </div>
-            <div class="rec-footer-msg">ขอบคุณที่อุดหนุนครับ / Thank you<br>Powered by NX-solution</div>
-        </div>
-    </div>
-
-    <div id="debt-modal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100">
-            <h3 class="font-bold text-xl text-amber-600 mb-5 border-b pb-3 flex items-center gap-2"><i class="fa-solid fa-wallet"></i> รับชำระหนี้ค้าง</h3>
-            <div class="space-y-4">
-                <div class="flex gap-2">
-                    <input id="debt-pay-name" class="custom-input flex-1 p-3 border rounded-xl" placeholder="ชื่อลูกค้า...">
-                    <button onclick="app.checkDebtInModal()" class="bg-slate-100 px-4 rounded-xl text-slate-600 font-bold text-sm hover:bg-slate-200">เช็ค</button>
-                </div>
-                <div id="debt-display-area" class="hidden bg-red-50 p-4 rounded-xl text-center border border-red-100">
-                    <p class="text-xs text-red-500 uppercase tracking-wide">ยอดหนี้ปัจจุบัน</p>
-                    <p class="text-3xl font-bold text-red-600 mt-1" id="modal-debt-val">0.00</p>
-                    
-                    <!-- NEW: Breakdown List -->
-                    <div id="debt-breakdown" class="mt-3 text-left border-t border-red-200 pt-2 hidden max-h-32 overflow-y-auto">
-                        <!-- Items will be injected here -->
-                    </div>
-                </div>
-                <input id="debt-pay-amt" type="number" class="custom-input w-full p-3 border rounded-xl text-right text-xl font-bold text-emerald-600" placeholder="0.00">
-                <div class="flex gap-3 pt-3">
-                    <button onclick="app.cancelDebtModal()" class="flex-1 py-3 bg-slate-100 rounded-xl text-slate-600 font-medium">ยกเลิก</button>
-                    <button onclick="app.submitDebtPayment()" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg hover:bg-amber-600">บันทึก</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="product-modal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 class="font-bold text-lg text-blue-600 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-box"></i> จัดการสินค้า</h3>
-            <div class="flex gap-2 mb-4">
-                <input id="new-prod-name" class="custom-input flex-1 p-2 border rounded-lg text-sm" placeholder="ชื่อสินค้า">
-                <input id="new-prod-price" type="number" class="custom-input w-24 p-2 border rounded-lg text-sm" placeholder="ราคา">
-                <button onclick="app.addProduct()" class="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 shadow"><i class="fa-solid fa-plus"></i></button>
-            </div>
-            <div class="max-h-64 overflow-y-auto border rounded-lg">
-                <table class="w-full text-sm"><tbody id="prod-list" class="divide-y text-slate-700"></tbody></table>
-            </div>
-            <button onclick="ui.closeModal('product-modal')" class="mt-5 w-full py-2 bg-slate-100 rounded-lg text-slate-600 text-sm font-medium">ปิดหน้าต่าง</button>
-        </div>
-    </div>
-    
-    <div id="bank-modal" class="hidden fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-            <h3 class="font-bold text-lg text-blue-600 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> จัดการบัญชีธนาคาร</h3>
-            <div class="space-y-3 mb-4 bg-slate-50 p-3 rounded-lg border">
-                <input id="new-bank-name" class="custom-input w-full p-2 border rounded-lg text-sm" placeholder="ชื่อธนาคาร (เช่น กสิกร, ไทยพาณิชย์)">
-                <button onclick="app.addBank()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 shadow font-bold text-sm"><i class="fa-solid fa-plus"></i> เพิ่มบัญชี</button>
-            </div>
-            <div class="max-h-64 overflow-y-auto border rounded-lg">
-                <table class="w-full text-sm">
-                    <thead class="bg-slate-100 text-slate-500 font-semibold"><tr><th class="p-2 text-left">ชื่อธนาคาร</th><th class="w-10"></th></tr></thead>
-                    <tbody id="bank-list-manage" class="divide-y text-slate-700"></tbody>
-                </table>
-            </div>
-            <button onclick="ui.closeModal('bank-modal')" class="mt-5 w-full py-2 bg-slate-100 rounded-lg text-slate-600 text-sm font-medium">ปิดหน้าต่าง</button>
-        </div>
-    </div>
-
-    <div id="report-modal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col shadow-2xl">
-            <div class="p-5 border-b flex justify-between items-center bg-slate-50 rounded-t-2xl">
-                <h3 class="font-bold text-xl text-purple-700 flex items-center gap-2"><i class="fa-solid fa-chart-pie"></i> รายงานยอดขาย</h3>
-                <button onclick="ui.closeModal('report-modal')" class="text-slate-400 hover:text-red-500 text-2xl"><i class="fa-solid fa-times"></i></button>
-            </div>
-            <div class="p-6 overflow-y-auto flex-1 bg-slate-50/50">
-                <!-- Advanced Filters -->
-                <div class="bg-white p-4 rounded-xl border border-slate-200 mb-5 shadow-sm space-y-3">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-                        <div class="col-span-1 md:col-span-2">
-                             <label class="text-xs font-bold text-slate-400 block mb-1">ค้นหา (ชื่อ/เลขบิล)</label>
-                             <input type="text" id="rpt-search" placeholder="พิมพ์เพื่อค้นหา..." class="p-2 border rounded-lg w-full text-sm" onkeyup="app.renderReportTable()">
+                                    ${state.scene===s.id ? '<div class="absolute right-3 top-3 w-2 h-2 bg-white rounded-full shadow-[0_0_10px_white] animate-pulse"></div>' : ''}
+                                </button>
+                            `).join('')}
                         </div>
-                         <div>
-                             <label class="text-xs font-bold text-slate-400 block mb-1">บัญชีรับเงิน</label>
-                             <select id="rpt-bank-filter" class="p-2 border rounded-lg w-full text-sm" onchange="app.renderReportTable()">
-                                 <!-- Options will be populated dynamically -->
-                             </select>
-                        </div>
-                    </div>
-                     <div class="flex items-center gap-2">
-                        <div class="flex-1">
-                             <label class="text-xs font-bold text-slate-400 block mb-1">ตั้งแต่วันที่</label>
-                             <input type="date" id="rpt-start-date" class="p-2 border rounded-lg w-full text-sm" onchange="app.renderReportTable()">
-                        </div>
-                        <div class="text-slate-400 self-end pb-2">-</div>
-                        <div class="flex-1">
-                             <label class="text-xs font-bold text-slate-400 block mb-1">ถึงวันที่</label>
-                             <input type="date" id="rpt-end-date" class="p-2 border rounded-lg w-full text-sm" onchange="app.renderReportTable()">
-                        </div>
-                        <div class="self-end">
-                            <button onclick="app.clearReportFilters()" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm hover:bg-slate-200 font-bold">ล้าง</button>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Summary Cards -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-white p-4 rounded-xl border border-indigo-100 shadow-sm">
-                        <p class="text-[10px] text-indigo-500 font-bold uppercase">ยอดขายเดือนนี้</p>
-                        <p class="text-xl font-bold text-indigo-700 mt-1" id="rpt-month">0</p>
-                    </div>
-                     <div class="bg-white p-4 rounded-xl border border-blue-100 shadow-sm">
-                        <p class="text-[10px] text-blue-500 font-bold uppercase">ยอดขายสัปดาห์นี้</p>
-                        <p class="text-xl font-bold text-blue-700 mt-1" id="rpt-week">0</p>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm">
-                        <p class="text-[10px] text-emerald-500 font-bold uppercase">ยอดขายวันนี้</p>
-                        <p class="text-xl font-bold text-emerald-700 mt-1" id="rpt-today">0</p>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl border border-amber-100 shadow-sm ring-2 ring-amber-50">
-                        <p class="text-[10px] text-amber-500 font-bold uppercase">ยอดรวมจากการค้นหา (Filtered)</p>
-                        <p class="text-xl font-bold text-amber-600 mt-1" id="rpt-filter-total">0</p>
-                    </div>
-                </div>
-                
-                <div id="rpt-container" class="space-y-6"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="edit-modal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-80">
-            <h3 class="font-bold text-lg mb-4">แก้ไขยอดชำระ</h3>
-            <input type="hidden" id="edit-inv-id">
-            <input type="number" id="edit-amt" class="w-full p-2 border rounded text-right font-bold text-lg mb-4">
-            <div class="flex gap-2">
-                <button onclick="ui.closeModal('edit-modal')" class="flex-1 bg-gray-100 py-2 rounded">ยกเลิก</button>
-                <button onclick="app.confirmEdit()" class="flex-1 bg-blue-600 text-white py-2 rounded font-bold">บันทึก</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="loader" class="hidden fixed inset-0 bg-white/90 z-[100] flex flex-col items-center justify-center">
-        <div class="w-14 h-14 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin"></div>
-        <p class="mt-3 text-emerald-700 font-bold animate-pulse">กำลังบันทึกข้อมูล...</p>
-    </div>
-
-    <script>
-        // *** ใส่ URL ของคุณที่นี่ ***
-        const API_URL = 'https://script.google.com/macros/s/AKfycbw8JQEp7nV0LS-jy6BFeqq6A3fiw4Imqws6cbih6Vaq1bj66B5XYpnMhCLmfpECvz53/exec'; 
-
-        // [NEW] รหัสลับ (ต้องตรงกับใน Google Apps Script)
-        const MY_SECRET = "My_Super_Secret_Password_999"; 
-
-        // --- OFFLINE MANAGER (Queue System) ---
-        const queueManager = {
-            key: 'pos_offline_queue',
-            getQueue() { return JSON.parse(localStorage.getItem(this.key)) || []; },
-            addToQueue(data) {
-                const q = this.getQueue();
-                q.push(data);
-                // Tip: localStorage มีจำกัด (ประมาณ 5MB) ถ้าเก็บไฟล์ PDF เยอะๆ อาจเต็มได้
-                // แต่สำหรับ Offline Mode ชั่วคราวถือว่าใช้งานได้
-                try {
-                    localStorage.setItem(this.key, JSON.stringify(q));
-                    this.updateIndicator();
-                } catch(e) {
-                    Swal.fire('หน่วยความจำเต็ม', 'ไม่สามารถบันทึก Offline เพิ่มได้ กรุณาต่อเน็ต', 'error');
-                }
-            },
-            async sync() {
-                const q = this.getQueue();
-                if (q.length === 0) return;
-                
-                document.getElementById('loader').classList.remove('hidden');
-                document.getElementById('loader').querySelector('p').innerText = "กำลังซิงค์ข้อมูล...";
-                
-                let successCount = 0;
-                const newQ = [];
-
-                for (const item of q) {
-                    try {
-                        // เพิ่ม secret ตอน sync ด้วย
-                        item.secret = MY_SECRET;
-
-                        const res = await fetch(API_URL, {
-                            method: 'POST',
-                            headers: { "Content-Type": "text/plain;charset=utf-8" },
-                            body: JSON.stringify(item)
-                        });
-                        const json = await res.json();
-                        if (json.status === 'success') successCount++;
-                        else newQ.push(item); // Keep failed item
-                    } catch (e) {
-                        newQ.push(item); // Keep failed item
-                    }
-                }
-
-                localStorage.setItem(this.key, JSON.stringify(newQ));
-                this.updateIndicator();
-                document.getElementById('loader').classList.add('hidden');
-                
-                if (successCount > 0) Swal.fire({icon: 'success', title: `ซิงค์สำเร็จ ${successCount} รายการ`});
-                else Swal.fire({icon: 'error', title: 'ซิงค์ไม่สำเร็จ', text: 'กรุณาตรวจสอบอินเทอร์เน็ต'});
-            },
-            updateIndicator() {
-                const count = this.getQueue().length;
-                const el = document.getElementById('offline-indicator');
-                const countEl = document.getElementById('offline-count');
-                if (count > 0) {
-                    el.classList.remove('hidden');
-                    countEl.innerText = count;
-                } else {
-                    el.classList.add('hidden');
-                }
-            }
-        };
-
-        const api = {
-            async post(payload, background = false) {
-                // background=true คือการส่งแบบเงียบๆ ไม่ต้องโชว์ Loading (ใช้ตอนส่ง PDF)
-                if (!background) {
-                    document.getElementById('loader').classList.remove('hidden');
-                    document.getElementById('loader').querySelector('p').innerText = "กำลังดำเนินการ...";
-                }
-
-                // [NEW] แนบรหัสลับไปกับข้อมูลทุกครั้ง
-                payload.secret = MY_SECRET; 
-                
-                try {
-                    const res = await fetch(API_URL, {
-                        method: 'POST',
-                        headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
-                    
-                    if (!background) document.getElementById('loader').classList.add('hidden');
-                    
-                    // เพิ่มเช็ค Error จาก Server (เช่น รหัสผิด)
-                    if (data.status === 'error') {
-                        throw new Error(data.message);
-                    }
-
-                    return data;
-                } catch (e) {
-                    if (!background) document.getElementById('loader').classList.add('hidden');
-                    console.warn("API Error / Offline", e);
-                    
-                    // ถ้า Server บอกว่า Access Denied (รหัสผิด) ให้แจ้งเตือนทันที ไม่ต้องเข้าคิว
-                    if (e.message && e.message.includes('Access Denied')) {
-                         Swal.fire('ข้อผิดพลาด', 'รหัสความปลอดภัยไม่ถูกต้อง (API Secret Key)', 'error');
-                         throw e; // หยุดทำงาน
-                    }
-
-                    // หากเป็นคำสั่ง Save หรือ Upload PDF ให้เข้าคิว
-                    if (payload.action === 'save_transaction' || payload.action === 'upload_pdf') {
-                        queueManager.addToQueue(payload);
-                        return { status: 'success', offline: true };
-                    } else {
-                        throw e;
-                    }
-                }
-            }
-        };
-
-        const app = {
-            data: {
-                cart: [],
-                products: JSON.parse(localStorage.getItem('pos_products')) || [{id:1, name:'ทุเรียนหมอนทอง', price:150}],
-                banks: JSON.parse(localStorage.getItem('pos_banks')) || [],
-                reportData: [],
-                payMethod: 'เงินสด',
-                selectedBank: null,
-                invNo: ''
-            },
-            init() {
-                this.resetForm();
-                this.renderProdList();
-                this.renderBankList(); // Manage Modal List
-                this.updateTime();
-                setInterval(() => this.updateTime(), 60000);
-                document.getElementById('inp-discount').addEventListener('input', () => this.renderCart());
-                queueManager.updateIndicator();
-            },
-            clearDebtForm() {
-                document.getElementById('debt-pay-name').value = '';
-                document.getElementById('debt-pay-amt').value = '';
-                document.getElementById('modal-debt-val').innerText = '0.00';
-                document.getElementById('debt-display-area').classList.add('hidden');
-                document.getElementById('debt-breakdown').innerHTML = '';
-                document.getElementById('debt-breakdown').classList.add('hidden');
-            },
-            resetForm() {
-                this.data.cart = [];
-                this.data.payMethod = 'เงินสด';
-                this.data.selectedBank = null;
-                this.genInv();
-                document.getElementById('inv-date').valueAsDate = new Date();
-                document.getElementById('cust-name').value = '';
-                document.getElementById('inp-discount').value = '';
-                
-                // Clear Debt Form Data as well
-                this.clearDebtForm();
-                
-                const bulkSelect = document.getElementById('bulk-deposit-select');
-                if(bulkSelect) bulkSelect.value = '';
-
-                this.addRow(); // *** Add initial row ***
-                this.setPayment('เงินสด', document.querySelector('.payment-option:first-child'));
-            },
-            cancelDebtModal() {
-                ui.closeModal('debt-modal');
-                this.clearDebtForm();
-            },
-            updateTime() {
-                const now = new Date();
-                document.getElementById('current-datetime').innerText = now.toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit'});
-            },
-            genInv() {
-                const r = Math.floor(1000 + Math.random() * 9000);
-                const d = new Date().toISOString().slice(2,10).replace(/-/g,'');
-                this.data.invNo = `INV-${d}-${r}`;
-                document.getElementById('inv-no').value = this.data.invNo;
-            },
-            renderProdList() {
-                document.getElementById('prod-list').innerHTML = this.data.products.map(p => 
-                    `<tr><td class="p-3 font-medium">${p.name}</td><td class="text-right p-3 text-slate-500">${p.price||'-'}</td>
-                    <td class="text-center text-red-400 hover:text-red-600 cursor-pointer p-3" onclick="app.delProd(${p.id})"><i class="fa-solid fa-trash"></i></td></tr>`
-                ).join('');
-            },
-            addProduct() {
-                const n = document.getElementById('new-prod-name').value;
-                const p = document.getElementById('new-prod-price').value; 
-                if(n) { 
-                    this.data.products.push({id:Date.now(), name:n, price:p});
-                    localStorage.setItem('pos_products', JSON.stringify(this.data.products));
-                    this.renderProdList(); this.renderCart();
-                    document.getElementById('new-prod-name').value=''; 
-                    document.getElementById('new-prod-price').value='';
-                }
-            },
-            delProd(id) {
-                this.data.products = this.data.products.filter(p=>p.id!==id);
-                localStorage.setItem('pos_products', JSON.stringify(this.data.products));
-                this.renderProdList(); this.renderCart();
-            },
-            // --- Bank Management ---
-            renderBankList() {
-                // Render List in Modal
-                document.getElementById('bank-list-manage').innerHTML = this.data.banks.map(b => 
-                    `<tr><td class="p-2 font-medium">${b.name}</td>
-                    <td class="text-center text-red-400 hover:text-red-600 cursor-pointer p-2" onclick="app.delBank(${b.id})"><i class="fa-solid fa-trash"></i></td></tr>`
-                ).join('');
-                
-                // Render Chips in Checkout
-                const chipsContainer = document.getElementById('bank-list-chips');
-                if(this.data.banks.length === 0) {
-                    chipsContainer.innerHTML = `<div class="text-xs text-slate-400 italic w-full text-center py-2">ยังไม่มีบัญชี (กดจัดการเพื่อเพิ่ม)</div>`;
-                } else {
-                    chipsContainer.innerHTML = this.data.banks.map(b => 
-                        `<div class="bank-chip px-3 py-1.5 rounded-lg text-xs font-medium ${this.data.selectedBank === b.name ? 'selected' : 'bg-white text-slate-600'}" 
-                        onclick="app.selectBank('${b.name}', this)">
-                        <i class="fa-solid fa-building-columns mr-1"></i> ${b.name}
-                        </div>`
-                    ).join('');
-                }
-            },
-            addBank() {
-                const n = document.getElementById('new-bank-name').value.trim();
-                if(n) {
-                    this.data.banks.push({id:Date.now(), name:n});
-                    localStorage.setItem('pos_banks', JSON.stringify(this.data.banks));
-                    document.getElementById('new-bank-name').value = '';
-                    this.renderBankList();
-                }
-            },
-            delBank(id) {
-                this.data.banks = this.data.banks.filter(b=>b.id!==id);
-                localStorage.setItem('pos_banks', JSON.stringify(this.data.banks));
-                if(this.data.selectedBank && !this.data.banks.find(b=>b.name === this.data.selectedBank)) {
-                    this.data.selectedBank = null;
-                }
-                this.renderBankList();
-            },
-            selectBank(name, el) {
-                this.data.selectedBank = name;
-                document.querySelectorAll('.bank-chip').forEach(c => c.classList.remove('selected', 'bg-emerald-100', 'border-emerald-500', 'text-emerald-700'));
-                el.classList.add('selected');
-            },
-            // -----------------------
-            addRow() {
-                // Logic to copy previous item
-                let newItem = {id:Date.now(), prodId:'', price:0, qty:'', deposit:0, name:''};
-                
-                if (this.data.cart.length > 0) {
-                    const lastItem = this.data.cart[this.data.cart.length - 1];
-                    if (lastItem.prodId) {
-                        newItem.prodId = lastItem.prodId;
-                        newItem.name = lastItem.name;
-                        newItem.price = lastItem.price;
-                        newItem.deposit = lastItem.deposit; // Copy deposit as well for convenience
-                    }
-                }
-
-                this.data.cart.push(newItem);
-                this.renderCart();
-            },
-            updateRow(id, key, val) {
-                const item = this.data.cart.find(x=>x.id===id);
-                if(!item) return;
-                if(key==='prodId') {
-                    const p = this.data.products.find(x=>x.id==val);
-                    item.prodId = val; item.name = p?p.name:''; item.price = p?p.price:0;
-                } else {
-                    item[key] = parseFloat(val)||0;
-                }
-                this.renderCart();
-            },
-            delRow(id) {
-                this.data.cart = this.data.cart.filter(x=>x.id!==id);
-                this.renderCart();
-            },
-            setAllDeposit(val) {
-                if(val === "") return;
-                const v = parseFloat(val);
-                this.data.cart.forEach(item => item.deposit = v);
-                this.renderCart();
-                document.getElementById('bulk-deposit-select').value = ""; // Reset to allow re-selection
-            },
-            renderCart() {
-                const tbody = document.getElementById('cart-body');
-                tbody.innerHTML = '';
-                let sub=0, depTotal=0;
-                
-                this.data.cart.forEach(item => {
-                    const q = item.qty===''?0:item.qty;
-                    const lineTotal = (item.price * q) + item.deposit; 
-                    sub += (item.price * q);
-                    depTotal += item.deposit;
-
-                    const opts = `<option value="">--เลือก--</option>` + this.data.products.map(p=>`<option value="${p.id}" ${p.id==item.prodId?'selected':''}>${p.name}</option>`).join('');
-                    const depOpts = [0, 100, 200].map(v => `<option value="${v}" ${v==item.deposit?'selected':''}>${v===0?'ไม่มัดจำ':v}</option>`).join('');
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="p-1"><select class="custom-input w-full p-2 border rounded-lg bg-white text-sm" onchange="app.updateRow(${item.id},'prodId',this.value)">${opts}</select></td>
-                        <td class="p-1"><input type="number" class="custom-input w-full p-2 border rounded-lg text-right text-sm" value="${item.price}" onchange="app.updateRow(${item.id},'price',this.value)"></td>
-                        <td class="p-1"><input type="number" class="custom-input w-full p-2 border rounded-lg text-center text-sm" placeholder="0" value="${item.qty}" onchange="app.updateRow(${item.id},'qty',this.value)"></td>
-                        <td class="p-1"><select class="custom-input w-full p-2 border rounded-lg text-center bg-white text-sm" onchange="app.updateRow(${item.id},'deposit',this.value)">${depOpts}</select></td>
-                        <td class="p-1 text-right font-bold text-emerald-600 text-sm">${lineTotal.toLocaleString()}</td>
-                        <td class="p-1 text-center text-red-400 cursor-pointer" onclick="app.delRow(${item.id})"><i class="fa-solid fa-trash"></i></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
-                const disc = parseFloat(document.getElementById('inp-discount').value)||0;
-                const total = sub + depTotal - disc;
-
-                document.getElementById('sum-subtotal').innerText = sub.toLocaleString('th-TH',{minimumFractionDigits:2});
-                document.getElementById('sum-deposit').innerText = depTotal.toLocaleString('th-TH',{minimumFractionDigits:2});
-                document.getElementById('sum-total').innerText = total.toLocaleString('th-TH',{minimumFractionDigits:2});
-            },
-            setPayment(m, el) {
-                this.data.payMethod = m;
-                document.querySelectorAll('.payment-option').forEach(x=>x.classList.remove('active'));
-                if(el) el.classList.add('active');
-                
-                // Toggle Bank Selector
-                const bankArea = document.getElementById('bank-selector-area');
-                if(m === 'โอน (QR Code)') {
-                    bankArea.classList.remove('hidden');
-                    this.renderBankList(); // Refresh chips
-                } else {
-                    bankArea.classList.add('hidden');
-                    this.data.selectedBank = null;
-                }
-            },
-            async checkDebt() {
-                const name = document.getElementById('cust-name').value.trim();
-                if(!name) return Swal.fire('แจ้งเตือน', 'กรุณาระบุชื่อลูกค้า', 'warning');
-                try {
-                    const res = await api.post({ action: 'get_debt', name: name });
-                    if(res.status==='success') Swal.fire(`หนี้คงค้าง: ${res.debt.toLocaleString()} บาท`, name, 'info');
-                } catch(e) { Swal.fire('Offline', 'ไม่สามารถเช็คหนี้ได้ขณะออฟไลน์', 'warning'); }
-            },
-            async checkDebtInModal() {
-                const name = document.getElementById('debt-pay-name').value.trim();
-                if(!name) return;
-                
-                // Reset display
-                document.getElementById('modal-debt-val').innerText = "...";
-                document.getElementById('debt-display-area').classList.remove('hidden');
-                const breakdownDiv = document.getElementById('debt-breakdown');
-                breakdownDiv.innerHTML = '';
-                breakdownDiv.classList.add('hidden');
-
-                try {
-                    // Fetch all report to calculate detailed debt
-                    const res = await api.post({ action: 'get_report' });
-                    
-                    if(res.status === 'success') {
-                        const transactions = res.data;
-                        
-                        // Filter for this customer
-                        const custTx = transactions.filter(t => t.customerName === name);
-                        
-                        // 1. Sort Old -> New
-                        custTx.sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
-                        
-                        // 2. Calculate Total Debt vs Total Paid
-                        let pool = custTx.filter(x => x.note === 'ชำระหนี้ค้าง').reduce((s,x) => s + x.totalAmount, 0);
-                        let totalDebt = 0;
-                        const outstandingBills = [];
-
-                        custTx.forEach(x => {
-                            if(x.note !== 'ชำระหนี้ค้าง' && (x.paymentMethod === 'รอชำระ' || x.paymentMethod === 'ชำระแล้ว (C)')) {
-                                if(pool >= x.totalAmount) {
-                                    pool -= x.totalAmount;
-                                } else {
-                                    const remaining = x.totalAmount - pool;
-                                    pool = 0;
-                                    outstandingBills.push({ ...x, remaining });
-                                    totalDebt += remaining;
-                                }
-                            }
-                        });
-
-                        // Display Total
-                        document.getElementById('modal-debt-val').innerText = totalDebt.toLocaleString();
-
-                        // Display Breakdown
-                        if(outstandingBills.length > 0) {
-                            breakdownDiv.classList.remove('hidden');
-                            const listHtml = outstandingBills.map(b => `
-                                <div class="flex justify-between border-b border-red-100 pb-1 text-slate-600 text-xs">
-                                    <span>${b.date} (${b.invoiceId})</span>
-                                    <span class="font-bold text-red-500">${b.remaining.toLocaleString()}</span>
+                        <div class="p-4 border-t border-slate-800 bg-[#0f172a]">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase mb-2">Ticker Control</div>
+                            <div class="flex gap-2 mb-4">
+                                <input id="ticker-input" class="flex-1 bg-black/50 border border-slate-700 rounded px-3 py-2 text-xs text-white focus:border-blue-500 outline-none transition" value="${state.ticker}" placeholder="Running Text...">
+                                <button onclick="pushTicker()" class="bg-blue-600 px-3 rounded font-bold text-xs hover:bg-blue-500 text-white transition"><i class="fa-solid fa-paper-plane"></i></button>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <div class="text-[10px] text-slate-400 font-bold uppercase mb-1">Background</div>
+                                    <select onchange="setBg(this.value)" class="w-full bg-black/50 border border-slate-700 rounded p-2 text-xs text-white outline-none">
+                                        <option value="dark" ${state.bg==='dark'?'selected':''}>Dark Studio</option>
+                                        <option value="transparent" ${state.bg==='transparent'?'selected':''}>Transparent (OBS)</option>
+                                    </select>
                                 </div>
-                            `).join('');
-                            breakdownDiv.innerHTML = `<p class="font-bold text-slate-500 text-[10px] mb-1 uppercase">รายการค้างชำระ:</p>${listHtml}`;
-                        }
-                    }
-                } catch(e) {
-                    document.getElementById('modal-debt-val').innerText = "0.00";
-                    console.error(e);
-                }
-            },
-            async submitDebtPayment() {
-                const name = document.getElementById('debt-pay-name').value.trim();
-                const amt = parseFloat(document.getElementById('debt-pay-amt').value);
-                if(!name || !amt) return Swal.fire('ข้อมูลไม่ครบ', '', 'warning');
-                
-                const res = await api.post({
-                    action: 'save_transaction',
-                    invoiceId: 'PAY-'+Date.now(),
-                    date: new Date().toISOString().slice(0,10),
-                    time: new Date().toLocaleTimeString('th-TH'),
-                    customerName: name,
-                    items: 'ชำระหนี้ค้าง',
-                    totalAmount: amt,
-                    paymentMethod: 'โอน/เงินสด',
-                    note: 'ชำระหนี้ค้าง'
-                });
-                
-                if(res.status==='success') {
-                    ui.closeModal('debt-modal');
-                    const msg = res.offline ? 'บันทึกออฟไลน์แล้ว' : 'บันทึกสำเร็จ';
-                    Swal.fire({icon:'success', title: msg, showConfirmButton:false, timer:1500});
-                    this.resetForm(); 
-                }
-            },
-            async loadReport() {
-                try {
-                    const res = await api.post({ action: 'get_report' });
-                    if(res.status==='success') {
-                        this.data.reportData = res.data;
-                        
-                        // Populate Bank Filter with Unique Banks from History + Current Settings
-                        const select = document.getElementById('rpt-bank-filter');
-                        const staticOpts = '<option value="">-- ทั้งหมด --</option><option value="เงินสด">เงินสด</option><option value="รอชำระ">รอชำระ</option>';
-                        
-                        // 1. Collect unique banks from History
-                        const historyBanks = new Set();
-                        this.data.reportData.forEach(d => {
-                            // Extract "Bank Name" from "โอน(Bank Name)"
-                            const match = d.paymentMethod.match(/โอน\((.*?)\)/);
-                            if(match && match[1]) {
-                                historyBanks.add(match[1]);
-                            }
-                        });
-                        
-                        // 2. Add current active banks from settings
-                        this.data.banks.forEach(b => historyBanks.add(b.name));
-                        
-                        // 3. Sort and Generate Options
-                        const sortedBanks = Array.from(historyBanks).sort();
-                        const dynOpts = sortedBanks.map(name => `<option value="${name}">โอน (${name})</option>`).join('');
-                        
-                        select.innerHTML = staticOpts + dynOpts;
-
-                        this.renderReportTable();
-                    }
-                } catch(e) { Swal.fire('Offline', 'ไม่สามารถดูรายงานได้ขณะออฟไลน์', 'warning'); }
-            },
-            clearReportFilters() {
-                document.getElementById('rpt-search').value = '';
-                document.getElementById('rpt-bank-filter').value = '';
-                document.getElementById('rpt-start-date').value = '';
-                document.getElementById('rpt-end-date').value = '';
-                this.renderReportTable();
-            },
-            renderReportTable() {
-                const search = document.getElementById('rpt-search').value.toLowerCase();
-                const bankFilter = document.getElementById('rpt-bank-filter').value;
-                const startDate = document.getElementById('rpt-start-date').value;
-                const endDate = document.getElementById('rpt-end-date').value;
-
-                // --- 1. FILTER DATA ---
-                const filtered = this.data.reportData.filter(d => {
-                    // Text Search
-                    const matchText = (d.customerName||'').toLowerCase().includes(search) || (d.invoiceId||'').toLowerCase().includes(search);
-                    
-                    // Date Range
-                    let matchDate = true;
-                    if(startDate && d.date < startDate) matchDate = false;
-                    if(endDate && d.date > endDate) matchDate = false;
-
-                    // Bank Filter
-                    let matchBank = true;
-                    if(bankFilter) {
-                        if(bankFilter === 'เงินสด') {
-                             if(!d.paymentMethod.includes('เงินสด')) matchBank = false;
-                        } else if(bankFilter === 'รอชำระ') {
-                             if(!d.paymentMethod.includes('รอชำระ')) matchBank = false;
-                        } else {
-                             // Match specific bank name inside parentheses e.g. "โอน(KBank)"
-                             // Use exact match for bank name to avoid partial confusion
-                             if(!d.paymentMethod.includes(`โอน(${bankFilter})`)) matchBank = false;
-                        }
-                    }
-                    return matchText && matchDate && matchBank;
-                });
-
-                // --- 2. CALCULATE GLOBAL STATS (Unfiltered Month/Week/Day) ---
-                const now = new Date();
-                const currentMonth = now.getMonth();
-                const currentYear = now.getFullYear();
-                const todayStr = now.toISOString().slice(0,10);
-                
-                // Week Helper
-                const getWeekNumber = (d) => {
-                    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-                    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-                    var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-                    var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
-                    return [d.getUTCFullYear(), weekNo];
-                };
-                const [currYearWeek, currWeek] = getWeekNumber(now);
-
-                let sumMonth = 0, sumWeek = 0, sumToday = 0;
-                
-                this.data.reportData.forEach(d => {
-                    if(d.note === 'ชำระหนี้ค้าง') return; 
-                    
-                    const dDate = new Date(d.date);
-                    // Month
-                    if(dDate.getMonth() === currentMonth && dDate.getFullYear() === currentYear) {
-                        sumMonth += d.totalAmount;
-                    }
-                    // Week
-                    const [y, w] = getWeekNumber(dDate);
-                    if(y === currYearWeek && w === currWeek) {
-                        sumWeek += d.totalAmount;
-                    }
-                    // Today
-                    if(d.date === todayStr) {
-                        sumToday += d.totalAmount;
-                    }
-                });
-
-                // --- 3. CALCULATE FILTERED TOTAL ---
-                let sumFiltered = 0;
-                filtered.forEach(d => {
-                    if(d.note !== 'ชำระหนี้ค้าง') sumFiltered += d.totalAmount;
-                });
-
-                // Update Cards
-                document.getElementById('rpt-month').innerText = sumMonth.toLocaleString();
-                document.getElementById('rpt-week').innerText = sumWeek.toLocaleString();
-                document.getElementById('rpt-today').innerText = sumToday.toLocaleString();
-                document.getElementById('rpt-filter-total').innerText = sumFiltered.toLocaleString();
-
-                // --- 4. PREPARE DEBT CALC FOR DISPLAY ---
-                const debtMap = {};
-                const custGroups = {};
-                this.data.reportData.forEach(x => {
-                    if(!custGroups[x.customerName]) custGroups[x.customerName] = [];
-                    custGroups[x.customerName].push(x);
-                });
-                Object.values(custGroups).forEach(group => {
-                    group.sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
-                    let pool = group.filter(x => x.note === 'ชำระหนี้ค้าง').reduce((s,x) => s + x.totalAmount, 0);
-                    group.forEach(x => {
-                        if(x.note !== 'ชำระหนี้ค้าง' && (x.paymentMethod === 'รอชำระ' || x.paymentMethod === 'ชำระแล้ว (C)')) {
-                            if(pool >= x.totalAmount) { debtMap[x.invoiceId] = 0; pool -= x.totalAmount; } 
-                            else { debtMap[x.invoiceId] = x.totalAmount - pool; pool = 0; }
-                        }
-                    });
-                });
-
-                // --- 5. RENDER GROUPED TABLE ---
-                const container = document.getElementById('rpt-container');
-                container.innerHTML = '';
-
-                // Group filtered data by Date
-                const grouped = filtered.reduce((acc, curr) => {
-                    const date = new Date(curr.date).toLocaleDateString('th-TH');
-                    if (!acc[date]) acc[date] = { date, total: 0, pending: 0, items: [] };
-                    
-                    if (curr.note !== 'ชำระหนี้ค้าง') {
-                        acc[date].total += curr.totalAmount;
-                        // Check if it was originally 'รอชำระ' or marked as such
-                        if(curr.paymentMethod.includes('รอชำระ')) {
-                            acc[date].pending += curr.totalAmount;
-                        }
-                    }
-                    acc[date].items.push(curr);
-                    return acc;
-                }, {});
-
-                Object.values(grouped).forEach(group => {
-                    const card = document.createElement('div');
-                    card.className = "bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden";
-                    let rows = group.items.map(d => {
-                        const isDebtPay = d.note === 'ชำระหนี้ค้าง';
-                        let actions = '';
-                        if (isDebtPay) {
-                            actions = `<div class="flex gap-2 justify-center">
-                                <button onclick="app.prepEdit('${d.invoiceId}', ${d.totalAmount})" class="text-blue-500 hover:text-blue-700 text-xs border px-2 py-1 rounded-md bg-white">แก้ไข</button>
-                                <button onclick="app.deleteTx('${d.invoiceId}')" class="text-red-500 hover:text-red-700 text-xs border px-2 py-1 rounded-md bg-white">ลบ</button>
-                            </div>`;
-                        }
-                        
-                        let badgeClass = 'bg-gray-100 text-gray-600';
-                        if(d.paymentMethod.includes('เงินสด')) badgeClass = 'bg-green-100 text-green-700';
-                        else if(d.paymentMethod.includes('โอน')) badgeClass = 'bg-blue-100 text-blue-700';
-                        else if(d.paymentMethod.includes('รอชำระ')) badgeClass = 'bg-amber-100 text-amber-700';
-                        if(d.note === 'ชำระหนี้ค้าง') badgeClass = 'bg-purple-100 text-purple-700';
-
-                        let displayStatus = d.note === 'ชำระหนี้ค้าง' ? 'รับชำระหนี้' : d.paymentMethod;
-                        if(d.paymentMethod === 'รอชำระ') {
-                            const remain = debtMap[d.invoiceId];
-                            if(remain !== undefined && remain > 0) {
-                                displayStatus = `รอชำระ<span class="text-red-600 font-bold">(${remain.toLocaleString()})</span>`;
-                            } else if (remain === 0) {
-                                displayStatus = `<span class="text-green-600">ชำระครบแล้ว</span>`;
-                                badgeClass = 'bg-green-100 text-green-700';
-                            }
-                        }
-
-                        return `<tr class="hover:bg-slate-50 border-b last:border-0 ${isDebtPay ? 'bg-purple-50':''}">
-                            <td class="p-3 w-[20%] text-xs font-mono text-slate-400">${d.time}<br>${d.invoiceId}</td>
-                            <td class="p-3 w-[25%] font-medium text-slate-700">${d.customerName}</td>
-                            <td class="p-3 w-[20%] text-right font-bold ${isDebtPay ? 'text-purple-600':''}">${d.totalAmount.toLocaleString()}</td>
-                            <td class="p-3 w-[15%] text-center text-xs"><span class="px-2 py-1 rounded-full ${badgeClass} inline-block leading-tight">${displayStatus}</span></td>
-                            <td class="p-3 w-[20%] text-center">${actions}</td>
-                        </tr>`;
-                    }).join('');
-
-                    card.innerHTML = `
-                        <div class="bg-slate-50 px-4 py-3 border-b flex justify-between items-center">
-                            <span class="font-bold text-slate-700 flex items-center gap-2"><i class="fa-regular fa-calendar"></i> ${group.date}</span>
-                            <div class="text-sm flex gap-4">
-                                <span class="font-bold text-slate-500">รอชำระ: <span class="text-amber-600">${group.pending.toLocaleString()}</span></span>
-                                <span class="font-bold text-emerald-600">ขายรวม: ${group.total.toLocaleString()}</span>
+                                <div>
+                                    <div class="text-[10px] text-slate-400 font-bold uppercase mb-1">System</div>
+                                    <button onclick="resetState()" class="w-full bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 rounded p-2 text-xs font-bold transition">
+                                        <i class="fa-solid fa-rotate-left mr-1"></i> RESET
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <table class="w-full text-sm"><tbody>${rows}</tbody></table>
-                    `;
-                    container.appendChild(card);
-                });
-            },
-            prepEdit(inv, amt) {
-                document.getElementById('edit-inv-id').value = inv;
-                document.getElementById('edit-amt').value = amt;
-                ui.openModal('edit-modal');
-            },
-            async confirmEdit() {
-                const inv = document.getElementById('edit-inv-id').value;
-                const amt = document.getElementById('edit-amt').value;
-                if(!amt) return;
-                const res = await api.post({ action: 'edit_transaction', invoiceId: inv, amount: amt });
-                if(res.status==='success') {
-                    ui.closeModal('edit-modal');
-                    Swal.fire({icon:'success', title:'แก้ไขแล้ว', timer:1500, showConfirmButton:false});
-                    this.loadReport();
-                }
-            },
-            async deleteTx(inv) {
-                const conf = await Swal.fire({title:'ยืนยันลบ?', icon:'warning', showCancelButton:true, confirmButtonText:'ลบ'});
-                if(conf.isConfirmed) {
-                    const res = await api.post({ action: 'delete_transaction', invoiceId: inv });
-                    if(res.status==='success') {
-                        Swal.fire('ลบสำเร็จ', '', 'success');
-                        this.loadReport();
-                    }
-                }
-            },
-            async processCheckout() {
-                const name = document.getElementById('cust-name').value.trim();
-                const total = parseFloat(document.getElementById('sum-total').innerText.replace(/,/g,''));
-                if(!name || (this.data.cart.length===0 && total <= 0)) return Swal.fire('ข้อมูลไม่ครบ', '', 'warning');
+                    </div>
 
-                // Validate Transfer Payment
-                let finalPayMethod = this.data.payMethod;
-                if (finalPayMethod === 'โอน (QR Code)') {
-                    if (!this.data.selectedBank) {
-                        return Swal.fire('กรุณาเลือกบัญชี', 'โปรดเลือกบัญชีธนาคารที่รับเงิน', 'warning');
-                    }
-                    finalPayMethod = `โอน(${this.data.selectedBank})`;
-                }
+                    <!-- RIGHT: DATA EDITOR -->
+                    <div class="flex-1 p-8 overflow-y-auto bg-[#0a0a0a] relative">
+                        <div class="max-w-5xl mx-auto pb-20">
+                            <!-- Quota Header -->
+                            <div class="grid grid-cols-3 gap-4 mb-8">
+                                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-lg">
+                                    <div>
+                                        <div class="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Total Seats</div>
+                                        <div class="text-3xl font-tech font-bold text-white mt-1">${totalSeats} <span class="text-sm text-slate-600">/ 500</span></div>
+                                    </div>
+                                    <div class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-500">
+                                        <i class="fa-solid fa-landmark"></i>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-lg relative overflow-hidden">
+                                    <div class="absolute bottom-0 left-0 h-1 bg-blue-500 transition-all" style="width:${(totalZone/LIMITS.zone)*100}%"></div>
+                                    <div>
+                                        <div class="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Zone Quota</div>
+                                        <div class="text-3xl font-tech font-bold ${totalZone >= LIMITS.zone ? 'text-red-400' : 'text-blue-400'} mt-1">
+                                            ${totalZone} <span class="text-sm text-slate-600">/ ${LIMITS.zone}</span>
+                                        </div>
+                                    </div>
+                                    <div class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-blue-500">
+                                        <i class="fa-solid fa-map-location-dot"></i>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-lg relative overflow-hidden">
+                                    <div class="absolute bottom-0 left-0 h-1 bg-green-500 transition-all" style="width:${(totalList/LIMITS.list)*100}%"></div>
+                                    <div>
+                                        <div class="text-slate-400 text-[10px] uppercase font-bold tracking-widest">List Quota</div>
+                                        <div class="text-3xl font-tech font-bold ${totalList >= LIMITS.list ? 'text-red-400' : 'text-green-400'} mt-1">
+                                            ${totalList} <span class="text-sm text-slate-600">/ ${LIMITS.list}</span>
+                                        </div>
+                                    </div>
+                                    <div class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center text-green-500">
+                                        <i class="fa-solid fa-list-ol"></i>
+                                    </div>
+                                </div>
+                            </div>
 
-                let oldDebt = 0;
-                try {
-                    // Try fetch debt if online, else 0
-                    const r = await api.post({ action: 'get_debt', name: name });
-                    if(r.status==='success') oldDebt = r.debt;
-                } catch(e){}
+                            <!-- Party List -->
+                            <div class="space-y-3">
+                                ${state.parties.map((p, i) => `
+                                    <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800 hover:border-slate-600 hover:bg-slate-900/80 transition-all flex items-center gap-6 group relative">
+                                        <!-- Color & Name -->
+                                        <div class="flex items-center gap-4 w-[35%]">
+                                            <div class="relative w-12 h-12 shrink-0">
+                                                <input type="color" value="${p.color}" onchange="updateVal(${i}, 'color', this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                                <div class="w-full h-full rounded-lg shadow-sm" style="background:${p.color}"></div>
+                                                <div class="absolute inset-0 flex items-center justify-center pointer-events-none text-white/50 text-xs"><i class="fa-solid fa-pen"></i></div>
+                                            </div>
+                                            <div class="w-full">
+                                                <div class="text-[9px] text-slate-500 uppercase font-bold">Party Name</div>
+                                                <input type="text" value="${p.name}" oninput="updateVal(${i}, 'name', this.value)" class="bg-transparent font-bold text-lg w-full focus:outline-none border-b border-transparent focus:border-slate-500 pb-1 transition-colors text-white placeholder-slate-700">
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Counters -->
+                                        <div class="flex-1 grid grid-cols-2 gap-4">
+                                            <div class="bg-black/40 px-3 py-2 rounded-lg flex items-center justify-between border border-slate-800 group-hover:border-slate-700 transition">
+                                                <button onclick="adj(${i}, 'zone', -1)" class="w-6 h-6 rounded bg-slate-800 hover:bg-red-500/20 hover:text-red-500 text-slate-400 transition flex items-center justify-center"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                                                <div class="text-center">
+                                                    <div class="text-[9px] text-slate-500 uppercase tracking-wider">ZONE</div>
+                                                    <div class="font-tech text-xl font-bold text-white leading-none mt-1">${p.zone}</div>
+                                                </div>
+                                                <button onclick="adj(${i}, 'zone', 1)" class="w-6 h-6 rounded bg-slate-800 hover:bg-green-500/20 hover:text-green-500 text-slate-400 transition flex items-center justify-center" ${totalZone >= LIMITS.zone ? 'disabled' : ''}><i class="fa-solid fa-plus text-[10px]"></i></button>
+                                            </div>
+                                            <div class="bg-black/40 px-3 py-2 rounded-lg flex items-center justify-between border border-slate-800 group-hover:border-slate-700 transition">
+                                                <button onclick="adj(${i}, 'list', -1)" class="w-6 h-6 rounded bg-slate-800 hover:bg-red-500/20 hover:text-red-500 text-slate-400 transition flex items-center justify-center"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                                                <div class="text-center">
+                                                    <div class="text-[9px] text-slate-500 uppercase tracking-wider">LIST</div>
+                                                    <div class="font-tech text-xl font-bold text-white leading-none mt-1">${p.list}</div>
+                                                </div>
+                                                <button onclick="adj(${i}, 'list', 1)" class="w-6 h-6 rounded bg-slate-800 hover:bg-green-500/20 hover:text-green-500 text-slate-400 transition flex items-center justify-center" ${totalList >= LIMITS.list ? 'disabled' : ''}><i class="fa-solid fa-plus text-[10px]"></i></button>
+                                            </div>
+                                        </div>
 
-                const itemsStr = this.data.cart.map(x=>`${x.name} (${x.qty||0}x${x.price}) [มัดจำ:${x.deposit}]`).join(', ');
-                const payload = {
-                    action: 'save_transaction',
-                    date: document.getElementById('inv-date').value,
-                    time: new Date().toLocaleTimeString('th-TH'),
-                    invoiceId: this.data.invNo,
-                    customerName: name,
-                    items: itemsStr,
-                    totalAmount: total,
-                    paymentMethod: finalPayMethod,
-                    note: 'ขายสินค้า'
-                };
+                                        <!-- Total -->
+                                        <div class="w-20 text-center border-l border-slate-800 pl-4">
+                                            <div class="text-[9px] text-slate-500 uppercase font-bold">TOTAL</div>
+                                            <div class="text-2xl font-tech font-bold text-white" style="color:${p.color}">${p.zone+p.list}</div>
+                                        </div>
+                                        
+                                        <button onclick="removeParty(${i})" class="w-8 h-8 rounded-full hover:bg-red-500/10 text-slate-600 hover:text-red-500 transition flex items-center justify-center">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <button onclick="addParty()" class="w-full mt-6 py-4 border-2 border-dashed border-slate-800 rounded-xl text-slate-500 hover:text-white hover:border-slate-600 hover:bg-slate-900 transition font-bold flex items-center justify-center gap-2 group">
+                                <span class="bg-slate-800 rounded-full w-6 h-6 flex items-center justify-center text-xs group-hover:bg-slate-700 transition"><i class="fa-solid fa-plus"></i></span>
+                                เพิ่มพรรคการเมืองใหม่
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        }
 
-                const res = await api.post(payload);
-                if(res.status==='success') {
-                    // *** บันทึกเสร็จแล้วจึงสร้าง PDF และ upload ***
-                    // หมายเหตุ: ถึงแม้บันทึกเป็น offline (res.offline=true) เราก็ยังเรียก printA5
-                    // เพราะ printA5 จะจัดการ uploadPdf ซึ่ง uploadPdf จะจัดการเข้า Queue อัตโนมัติถ้าเน็ตหลุด
-                    await this.printA5({...payload, paymentMethod: finalPayMethod}, oldDebt);
-                    
-                    const msg = res.offline ? 'บันทึกออฟไลน์แล้ว' : 'บันทึกเรียบร้อย';
-                    Swal.fire({icon:'success', title: msg, showConfirmButton:false, timer:1500});
-                    this.resetForm(); 
-                }
-            },
-            async uploadPdf(invId, base64) {
-                 const payload = {
-                     action: 'upload_pdf',
-                     fileName: `Receipt_${invId}.pdf`,
-                     fileData: base64,
-                     mimeType: 'application/pdf'
-                 };
-                 // ส่งแบบ background=true เพื่อไม่ให้ user ต้องรอนาน
-                 // ถ้าเน็ตหลุด api.post จะโยนลง queueManager ให้อัตโนมัติ
-                 api.post(payload, true); 
-            },
-            async printA5(data, oldDebt) {
-                document.getElementById('r-name').innerText = data.customerName;
-                document.getElementById('r-inv').innerText = data.invoiceId;
-                document.getElementById('r-date').innerText = new Date(data.date).toLocaleDateString('th-TH');
-                document.getElementById('r-time').innerText = data.time;
-                document.getElementById('r-pay').innerText = data.paymentMethod;
+        // Logic Bindings
+        window.updateVal = (i, k, v) => { state.parties[i][k] = v; saveState(state); };
+        window.addParty = () => { state.parties.push({ id: 'p'+Date.now(), name: 'New Party', color: '#94a3b8', zone: 0, list: 0 }); saveState(state); renderUI(); };
+        window.removeParty = (i) => { if(confirm('ยืนยันลบพรรคนี้?')) { state.parties.splice(i, 1); saveState(state); renderUI(); } };
+        
+        window.adj = (i, type, delta) => {
+            const total = state.parties.reduce((sum, p) => sum + p[type], 0);
+            const limit = LIMITS[type];
+            // Allow decrement always, allow increment only if below limit
+            if (delta > 0 && total >= limit) return;
+            state.parties[i][type] = Math.max(0, state.parties[i][type] + delta);
+            saveState(state); renderUI(); 
+        };
+        
+        window.setScene = (s) => { state.scene = s; saveState(state); renderUI(); };
+        window.setBg = (b) => { state.bg = b; saveState(state); };
+        window.pushTicker = () => { 
+            state.ticker = document.getElementById('ticker-input').value; 
+            saveState(state); 
+            // Visual feedback
+            const btn = document.querySelector('button[onclick="pushTicker()"]');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+            setTimeout(() => btn.innerHTML = originalHTML, 1000);
+        };
 
-                document.getElementById('r-body').innerHTML = this.data.cart.map(i => `
-                    <tr>
-                        <td>${i.name}</td>
-                        <td style="text-align:right">${i.price}</td>
-                        <td style="text-align:center">${i.qty||0}</td>
-                        <td style="text-align:right">${(i.price*(i.qty||0)).toLocaleString()}</td>
-                    </tr>
-                `).join('');
+        renderUI();
+    }
 
-                const sub = document.getElementById('sum-subtotal').innerText;
-                const dep = document.getElementById('sum-deposit').innerText;
-                const disc = document.getElementById('inp-discount').value || '0.00';
+    // ==========================================
+    // 5. ON-AIR DISPLAY (FRONTEND)
+    // ==========================================
+    function initOnAir() {
+        document.title = "ON AIR DISPLAY";
+        
+        app.innerHTML = `
+            <div id="main-view" class="w-full h-full flex flex-col bg-main bg-black transition-colors duration-500 relative overflow-hidden font-sans">
+                <!-- Dynamic Background -->
+                <div class="scene-bg absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-30 pointer-events-none z-0"></div>
+                <div class="scene-bg absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-black z-[-1]"></div>
                 
-                document.getElementById('r-sub').innerText = sub;
-                document.getElementById('r-dep').innerText = dep;
-                document.getElementById('r-disc').innerText = disc;
-                document.getElementById('r-total').innerText = data.totalAmount.toLocaleString();
+                <!-- Content Stage -->
+                <div id="stage" class="absolute inset-0 z-10 flex flex-col justify-end"></div>
+            </div>`;
 
-                const debtDiv = document.getElementById('r-debt-section');
-                if(data.paymentMethod === 'รอชำระ' || oldDebt > 0) {
-                    debtDiv.classList.remove('hidden');
-                    document.getElementById('r-debt-old').innerText = oldDebt.toLocaleString();
-                    let newDebt = oldDebt;
-                    if(data.paymentMethod === 'รอชำระ') newDebt += data.totalAmount;
-                    document.getElementById('r-debt-new').innerText = newDebt.toLocaleString();
-                } else {
-                    debtDiv.classList.add('hidden');
-                }
+        let currentScene = '';
+        let loopInterval = null;
 
-                const el = document.getElementById('receipt-render-area');
-                const canvas = await html2canvas(el, {scale:2});
-                const img = canvas.toDataURL('image/jpeg');
-                const pdf = new jspdf.jsPDF({orientation:'p', unit:'mm', format:'a5'});
-                const w = pdf.internal.pageSize.getWidth();
-                const h = (canvas.height * w) / canvas.width;
-                pdf.addImage(img, 'JPEG', 0, 0, w, h);
-                
-                // 1. Download ให้ User เหมือนเดิม
-                pdf.save(`${data.invoiceId}.pdf`);
-
-                // 2. แปลงเป็น Base64 และ Upload ขึ้น Drive
-                // output('datauristring') จะได้ string ยาวๆ แบบ "data:application/pdf;base64,JVBER..."
-                // เราต้อง split เอาเฉพาะส่วนหลังเครื่องหมายจุลภาค
-                const pdfBase64 = pdf.output('datauristring').split(',')[1];
-                this.uploadPdf(data.invoiceId, pdfBase64);
+        // Clock
+        setInterval(() => {
+            const timeEl = document.getElementById('clock-text');
+            if(timeEl) {
+                const now = new Date();
+                timeEl.innerText = now.toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'});
             }
-        };
+        }, 1000);
 
-        const ui = {
-            openModal(id) { document.getElementById(id).classList.remove('hidden'); if(id==='product-modal') app.renderProdList(); if(id==='bank-modal') app.renderBankList(); },
-            closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        };
+        // State Loop (200ms polling)
+        loopInterval = setInterval(() => {
+            const newState = loadState();
+            
+            // Background Management
+            const view = document.getElementById('main-view');
+            if(newState.bg === 'transparent') document.body.classList.add('transparent');
+            else document.body.classList.remove('transparent');
+            
+            // Scene Render Logic
+            const stage = document.getElementById('stage');
+            if (newState.scene !== currentScene) {
+                // Scene Changed!
+                if(chartInstance) { chartInstance.destroy(); chartInstance = null; }
+                stage.innerHTML = ''; 
+                
+                renderSceneStructure(stage, newState);
+                currentScene = newState.scene;
+                
+                // Trigger Animations
+                if (newState.scene === 'newsbar') {
+                    gsap.from("#news-container", { y: "100%", opacity: 0, duration: 0.8, ease: "power3.out" });
+                } else if(newState.scene === 'winner') {
+                    fireConfetti();
+                    gsap.from(".winner-card", { scale: 0.8, opacity: 0, duration: 1, ease: "elastic.out(1, 0.5)" });
+                } else {
+                    gsap.from(".center-content", { scale: 0.95, opacity: 0, duration: 0.5, ease: "power2.out" });
+                }
+            } else {
+                // Same Scene, Update Values
+                updateSceneValues(newState);
+            }
+            state = newState;
+        }, 200);
+    }
 
-        app.init();
-    </script>
+    // ==========================================
+    // 6. SCENE RENDERERS
+    // ==========================================
+    function renderSceneStructure(container, data) {
+        const sorted = [...data.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
+        const totalSeats = data.parties.reduce((s,p)=>s+p.zone+p.list,0);
+
+        // --- SCENE 1: NEWS BAR (LOWER THIRD) ---
+        if(data.scene === 'newsbar') {
+            container.innerHTML = `
+                <div id="news-container" class="w-full relative z-50">
+                    <div class="news-bar-bg h-40 flex flex-col justify-end relative overflow-hidden">
+                        
+                        <div class="flex-1 flex items-center px-8 gap-4 pt-2">
+                            <!-- Clock & Logo -->
+                            <div class="flex flex-col justify-center border-r border-white/10 pr-6 mr-2 h-20 shrink-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse tracking-wider">LIVE</div>
+                                    <div class="text-blue-400 font-bold uppercase text-[9px] tracking-widest">OFFICIAL</div>
+                                </div>
+                                <div id="clock-text" class="text-white font-tech font-bold text-4xl leading-none tracking-tight">00:00</div>
+                                <div class="text-slate-400 text-[9px] uppercase mt-1">Real-time Count</div>
+                            </div>
+
+                            <!-- Cards -->
+                            <div class="flex-1 flex gap-3 h-24 items-center overflow-hidden pr-4">
+                                ${sorted.slice(0, 5).map((p, i) => `
+                                    <div class="w-40 bg-[#1e293b]/60 backdrop-blur-md rounded-md p-2 border-l-4 relative overflow-hidden flex flex-col justify-center h-[90%] shadow-lg border-t border-white/5" style="border-left-color:${p.color}">
+                                        <div class="flex justify-between items-center mb-0.5">
+                                            <span class="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Rank ${i+1}</span>
+                                        </div>
+                                        <h3 class="text-sm font-bold text-white truncate w-full mb-0 leading-tight font-tech uppercase tracking-wide">${p.name}</h3>
+                                        <div class="flex items-baseline gap-1.5 mt-0.5">
+                                            <span class="text-3xl font-tech font-bold text-white num-roll leading-none" id="low-val-${p.id}" style="text-shadow:0 0 20px ${p.color}80">${p.zone+p.list}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <!-- Total Summary -->
+                            <div class="w-28 border-l border-white/10 pl-4 ml-2 h-20 flex flex-col justify-center text-right shrink-0">
+                                 <div class="text-[9px] text-slate-400 uppercase font-bold mb-0">Total Counted</div>
+                                 <div class="text-4xl font-tech font-bold text-white tracking-tighter leading-none text-yellow-500">${totalSeats}</div>
+                                 <div class="text-[9px] text-slate-500">of 500 Seats</div>
+                            </div>
+                        </div>
+
+                        <!-- Ticker Line -->
+                        <div class="h-9 bg-black/90 border-t border-white/10 flex items-center relative z-50 mt-1">
+                            <div class="bg-blue-700 h-full px-4 flex items-center justify-center shrink-0 z-20 shadow-[5px_0_15px_rgba(0,0,0,0.5)]">
+                                <span class="font-bold text-white tracking-widest text-[10px] uppercase">BREAKING NEWS</span>
+                            </div>
+                            <div class="ticker-wrap flex items-center">
+                                <div id="ticker-text" class="ticker-track text-sm font-light text-slate-200">${data.ticker}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        // --- HELPER: FULL SCREEN WRAPPER ---
+        const wrapFullScreen = (content, title="ELECTION 2026") => `
+            <div class="w-full h-full flex items-center justify-center p-8 center-content relative">
+                <!-- Header -->
+                <div class="absolute top-0 left-0 w-full h-24 flex justify-between items-center px-12 pt-6 z-50 obs-hide">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded shadow-lg animate-pulse">LIVE BROADCAST</div>
+                        <div class="text-white font-bold text-2xl tracking-widest border-l-2 border-white pl-4">${title}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-yellow-500 font-tech text-xl">OFFICIAL RESULTS</div>
+                        <div class="text-slate-400 text-xs uppercase">98% Votes Counted</div>
+                    </div>
+                </div>
+                
+                ${content}
+                
+                <!-- Footer Ticker -->
+                <div class="absolute bottom-0 w-full h-10 bg-black/80 border-t border-slate-800 flex items-center backdrop-blur-sm">
+                     <div class="bg-slate-800 px-4 h-full flex items-center text-[10px] font-bold text-slate-400 uppercase">Latest Update</div>
+                     <div class="ticker-wrap w-full"><div id="ticker-text" class="ticker-track text-sm text-slate-300 pt-0.5">${data.ticker}</div></div>
+                </div>
+            </div>`;
+
+        // --- SCENE 2: DASHBOARD ---
+        if(data.scene === 'dashboard') {
+            container.innerHTML = wrapFullScreen(`
+                <div class="w-full max-w-6xl mt-10">
+                    <div class="grid grid-cols-1 gap-3">
+                        ${sorted.map((p, i) => `
+                        <div class="glass-panel p-4 rounded-xl flex items-center relative overflow-hidden group">
+                            <div class="absolute left-0 top-0 bottom-0 w-2 transition-all duration-500 group-hover:w-4" style="background:${p.color}"></div>
+                            <div class="w-16 font-tech text-3xl font-bold text-slate-600 text-center mr-4">#${i+1}</div>
+                            <div class="flex-1 z-10">
+                                <h2 class="text-2xl font-bold text-white mb-1 tracking-wide">${p.name}</h2>
+                                <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                    <div class="h-full bar-fill relative" style="width:0%; background:${p.color}" id="bar-${p.id}">
+                                        <div class="absolute right-0 top-0 bottom-0 w-[2px] bg-white/50 shadow-[0_0_10px_white]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="w-48 text-right pr-6">
+                                <div class="text-5xl font-tech font-bold text-white tracking-tighter num-roll" id="val-total-${p.id}">${p.zone+p.list}</div>
+                                <div class="text-[9px] text-slate-500 uppercase tracking-widest">Seats</div>
+                            </div>
+                        </div>`).join('')}
+                    </div>
+                </div>
+            `, "PARLIAMENT DASHBOARD");
+        }
+        
+        // --- SCENE 3: BATTLE ---
+        else if(data.scene === 'battle') {
+            const gov = sorted[0] || {name:'-', zone:0, list:0, color:'#333'};
+            const opp = sorted[1] || {name:'-', zone:0, list:0, color:'#333'};
+            
+            container.innerHTML = wrapFullScreen(`
+                <div class="w-full max-w-5xl flex flex-col items-center mt-12">
+                    <div class="flex justify-between w-full mb-4 px-2">
+                         <div class="text-left">
+                            <h2 class="text-4xl font-bold text-white">${gov.name}</h2>
+                            <div class="text-sm text-slate-400 uppercase tracking-widest">Current Leader</div>
+                         </div>
+                         <div class="text-right">
+                            <h2 class="text-4xl font-bold text-white">${opp.name}</h2>
+                            <div class="text-sm text-slate-400 uppercase tracking-widest">Opposition Leader</div>
+                         </div>
+                    </div>
+
+                    <!-- Main Bar -->
+                    <div class="w-full h-32 bg-slate-900 rounded-full border-4 border-slate-800 relative flex overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                        <!-- Left -->
+                        <div class="h-full flex items-center justify-start pl-10 relative transition-all duration-1000" style="width:50%; background:${gov.color}" id="battle-left">
+                             <div class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-r from-transparent to-black/20"></div>
+                        </div>
+                        <!-- Right -->
+                        <div class="h-full flex items-center justify-end pr-10 relative transition-all duration-1000" style="width:50%; background:${opp.color}" id="battle-right">
+                             <div class="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-l from-transparent to-black/20"></div>
+                        </div>
+                        
+                        <!-- Center Line (Target 251) -->
+                        <div class="absolute top-0 bottom-0 w-1 bg-white left-1/2 -translate-x-1/2 z-20 shadow-[0_0_20px_white]"></div>
+                        <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-white text-black px-4 py-1 rounded font-bold shadow-lg text-xs tracking-widest border border-white">MAJORITY 251</div>
+                    </div>
+
+                    <!-- Numbers -->
+                    <div class="flex justify-between w-full mt-6">
+                        <div class="text-8xl font-tech font-bold drop-shadow-2xl" style="color:${gov.color}" id="battle-txt-left">0</div>
+                        <div class="text-8xl font-tech font-bold drop-shadow-2xl" style="color:${opp.color}" id="battle-txt-right">0</div>
+                    </div>
+                </div>
+            `, "COALITION BATTLE");
+        }
+
+        // --- SCENE 4: PARLIAMENT LAYOUT ---
+        else if(data.scene === 'parliament') {
+            let dotsHtml = '';
+            let idx = 0;
+            let seatColors = [];
+            sorted.forEach(p => { for(let i=0; i<p.zone+p.list; i++) seatColors.push(p.color); });
+            
+            // Generate Semicircle Dots (Simplified Logic)
+            for(let r=1; r<=12; r++) {
+                const radius = 20 + (r * 3.5);
+                const arcLength = Math.PI * radius;
+                let dotsInRow = Math.floor(arcLength / 3);
+                if(r===12) dotsInRow = 500 - idx; // Last row fill
+                const step = 180 / (dotsInRow + 1);
+                
+                for(let i=0; i<dotsInRow; i++) {
+                    if(idx>=500) break;
+                    const angle = (180 - (step * (i+1))) * (Math.PI / 180);
+                    const x = 50 + (radius * Math.cos(angle));
+                    const y = 90 - (radius * Math.sin(angle));
+                    const c = seatColors[idx] || '#334155';
+                    // Use % for position to make it responsive
+                    dotsHtml += `<div id="seat-${idx}" class="dot-seat absolute w-[1.1%] pb-[1.1%] rounded-full shadow-sm transition-colors duration-500" style="left:${x}%; top:${y}%; background:${c}; transform:translate(-50%,-50%); box-shadow: 0 0 2px ${c};"></div>`;
+                    idx++;
+                }
+            }
+
+            container.innerHTML = wrapFullScreen(`
+                <div class="w-full max-w-7xl aspect-[2/1] relative scale-90 sm:scale-100 transition-transform">
+                    ${dotsHtml}
+                    <!-- Podium -->
+                    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 text-center mb-0 glass-panel px-16 py-8 rounded-t-3xl border-t-4 border-white/20">
+                        <div class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Projected Leader</div>
+                        <h1 class="text-4xl font-bold text-white mb-2 tracking-wide">${sorted[0].name}</h1>
+                        <div class="text-8xl font-tech font-bold leading-none" style="color:${sorted[0].color}; text-shadow: 0 0 30px ${sorted[0].color}50">${sorted[0].zone + sorted[0].list}</div>
+                    </div>
+                </div>
+            `, "PARLIAMENT SEATING");
+        }
+
+        // --- SCENE 5: CHART ---
+        else if(data.scene === 'chart') {
+            container.innerHTML = wrapFullScreen(`
+                <div class="glass-panel p-12 rounded-[3rem] flex flex-col items-center justify-center relative border border-white/5 bg-slate-900/60 shadow-2xl">
+                    <div class="relative w-[500px] h-[500px]">
+                        <canvas id="seatsChart"></canvas>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none flex-col">
+                            <div class="text-8xl font-tech font-bold text-white">${totalSeats}</div>
+                            <div class="text-slate-500 text-sm uppercase tracking-widest">Seats Filled</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-3 gap-6 mt-10 w-full">
+                         ${sorted.slice(0,3).map(p => `
+                            <div class="flex items-center gap-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                                <div class="w-4 h-4 rounded-full" style="background:${p.color}"></div>
+                                <div class="text-sm font-bold text-slate-200">${p.name}</div>
+                                <div class="ml-auto font-tech text-xl text-white">${((p.zone+p.list)/totalSeats*100).toFixed(1)}%</div>
+                            </div>
+                         `).join('')}
+                    </div>
+                </div>
+            `, "SEAT DISTRIBUTION");
+            
+            // Chart.js Init
+            setTimeout(() => {
+                const ctx = document.getElementById('seatsChart').getContext('2d');
+                const remaining = 500 - totalSeats;
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: [...sorted.map(p => p.name), 'Empty'],
+                        datasets: [{ 
+                            data: [...sorted.map(p => p.zone+p.list), remaining], 
+                            backgroundColor: [...sorted.map(p => p.color), '#1e293b'], 
+                            borderWidth: 0,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        cutout: '75%', 
+                        animation: { animateScale: true, animateRotate: true },
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } } 
+                    }
+                });
+            }, 50);
+        }
+
+        // --- SCENE 6: WINNER ---
+        else if(data.scene === 'winner') {
+            const w = sorted[0];
+            container.innerHTML = wrapFullScreen(`
+                <div class="text-center relative z-10 winner-card">
+                    <div class="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full animate-pulse"></div>
+                    <div class="glass-panel p-20 rounded-[3rem] border-2 border-white/20 shadow-[0_0_100px_rgba(0,0,0,0.5)] relative z-10 bg-gradient-to-b from-slate-900/90 to-black/90 backdrop-blur-3xl overflow-hidden">
+                        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                        <div class="scanline absolute inset-0 opacity-20"></div>
+                        
+                        <div class="text-7xl mb-6 drop-shadow-lg animate-bounce">🏆</div>
+                        <div class="text-xl font-bold text-yellow-500 tracking-[0.8em] mb-6 uppercase border-b border-white/10 pb-4">Election Winner</div>
+                        
+                        <h1 class="text-8xl font-bold text-white mb-6 drop-shadow-2xl tracking-tight">${w.name}</h1>
+                        
+                        <div class="flex items-center justify-center gap-12 mt-8">
+                            <div>
+                                <div class="text-xs text-slate-500 uppercase mb-2">Total Seats</div>
+                                <div class="text-9xl font-tech font-bold leading-none glow-text" style="color:${w.color}; text-shadow:0 0 40px ${w.color}">${w.zone + w.list}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `, "OFFICIAL ANNOUNCEMENT");
+        }
+    }
+
+    // ==========================================
+    // 7. REAL-TIME UPDATES & ANIMATIONS
+    // ==========================================
+    function updateSceneValues(data) {
+        const sorted = [...data.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
+        
+        // News Bar Update
+        if(data.scene === 'newsbar') {
+             data.parties.forEach(p => animateNum(`low-val-${p.id}`, p.zone + p.list));
+             // Ticker Update Check
+             const tickerEl = document.getElementById('ticker-text');
+             if(tickerEl && tickerEl.innerText !== data.ticker) tickerEl.innerText = data.ticker;
+        }
+        
+        // Dashboard Update
+        else if(data.scene === 'dashboard') {
+            data.parties.forEach(p => {
+                const t = p.zone + p.list;
+                animateNum(`val-total-${p.id}`, t);
+                const bar = document.getElementById(`bar-${p.id}`);
+                if(bar) bar.style.width = `${(t/500)*100}%`;
+            });
+        }
+        
+        // Battle Update
+        else if(data.scene === 'battle') {
+            const p1 = sorted[0], p2 = sorted[1];
+            if(p1 && p2) {
+                const t1 = p1.zone + p1.list, t2 = p2.zone + p2.list;
+                
+                const left = document.getElementById('battle-left');
+                const right = document.getElementById('battle-right');
+                
+                if(left) { 
+                    left.style.width = ((t1/500)*100)+'%'; 
+                    left.style.backgroundColor = p1.color; 
+                    animateNum('battle-txt-left', t1);
+                }
+                if(right) { 
+                    right.style.width = ((t2/500)*100)+'%'; 
+                    right.style.backgroundColor = p2.color;
+                    animateNum('battle-txt-right', t2);
+                }
+            }
+        }
+    }
+
+    // Smooth Number Animation
+    function animateNum(id, newVal) {
+        const el = document.getElementById(id);
+        if(!el) return;
+        const oldVal = parseInt(el.innerText) || 0;
+        if(oldVal !== newVal) {
+            gsap.to(el, { 
+                innerHTML: newVal, 
+                duration: 1.2, 
+                snap: { innerHTML: 1 }, 
+                ease: "power2.out" 
+            });
+        }
+    }
+
+    // Confetti Effect
+    function fireConfetti() {
+        const duration = 3000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+
+        const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+        const interval = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+            if (timeLeft <= 0) return clearInterval(interval);
+
+            const particleCount = 50 * (timeLeft / duration);
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+        }, 250);
+    }
+</script>
 </body>
+</html>
 </html>
