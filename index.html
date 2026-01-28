@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PO1 NEWSCAST - ELECTION SYSTEM</title>
     
-    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
@@ -30,6 +28,7 @@
             background-color: var(--bg-dark); 
             color: white; 
             overflow: hidden; 
+            margin: 0;
         }
         
         .font-tech { font-family: 'Chakra Petch', sans-serif; }
@@ -136,14 +135,14 @@
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode');
 
-    window.changeMode = function(newMode) {
-        try {
-            const currentParams = new URLSearchParams(window.location.search);
-            currentParams.set('mode', newMode);
-            window.location.search = currentParams.toString();
-        } catch (e) {
-            console.error("Navigation Error:", e);
-            window.location.href = '?mode=' + newMode;
+    // ฟังก์ชันเปิดหน้าต่างใหม่
+    window.openWindow = function(modeName) {
+        if(modeName === 'onair') {
+            // เปิด Popup สำหรับ On-Air
+            window.open('?mode=onair', 'onair_win', 'width=1280,height=720,menubar=no,toolbar=no,location=no,status=no');
+        } else {
+            // เปิด Control ในหน้าเดิม
+            window.location.href = '?mode=' + modeName;
         }
     };
 
@@ -161,25 +160,28 @@
                 
                 <div class="glass-panel p-16 rounded-3xl text-center max-w-4xl w-full border-t-4 border-yellow-500 shadow-[0_0_100px_rgba(234,179,8,0.1)] relative z-10">
                     <div class="inline-block mb-6 px-4 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-xs font-bold tracking-widest uppercase">
-                        Election Broadcast System v2.0
+                        Election Broadcast System v2.1
                     </div>
                     <h1 class="text-8xl font-tech font-bold text-white mb-2 tracking-tight">PO1 <span class="text-yellow-500">NEWS</span></h1>
                     <p class="text-slate-400 mb-16 text-lg tracking-[0.3em] font-light">REAL-TIME GRAPHICS ENGINE</p>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-                        <button onclick="changeMode('control')" class="group h-48 bg-slate-900/50 border border-slate-700 rounded-2xl hover:bg-yellow-600 hover:border-yellow-400 hover:text-black transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden">
+                        <button onclick="openWindow('control')" class="group h-48 bg-slate-900/50 border border-slate-700 rounded-2xl hover:bg-yellow-600 hover:border-yellow-400 hover:text-black transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden">
                             <div class="absolute inset-0 bg-yellow-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
                             <i class="fa-solid fa-sliders text-6xl mb-6 group-hover:scale-110 transition-transform relative z-10"></i>
                             <span class="font-bold text-xl tracking-widest relative z-10">CONTROL ROOM</span>
-                            <span class="text-xs mt-2 text-slate-500 group-hover:text-black/70 relative z-10">Manage Data & Scenes</span>
+                            <span class="text-xs mt-2 text-slate-500 group-hover:text-black/70 relative z-10">จัดการข้อมูลและซีน (หน้าจอนี้)</span>
                         </button>
                         
-                        <button onclick="changeMode('onair')" class="group h-48 bg-slate-900/50 border border-slate-700 rounded-2xl hover:bg-blue-600 hover:border-blue-400 hover:text-white transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden">
+                        <button onclick="openWindow('onair')" class="group h-48 bg-slate-900/50 border border-slate-700 rounded-2xl hover:bg-blue-600 hover:border-blue-400 hover:text-white transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden">
                             <div class="absolute inset-0 bg-blue-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
                             <i class="fa-solid fa-tv text-6xl mb-6 group-hover:scale-110 transition-transform relative z-10"></i>
                             <span class="font-bold text-xl tracking-widest relative z-10">ON-AIR SCREEN</span>
-                            <span class="text-xs mt-2 text-slate-500 group-hover:text-white/70 relative z-10">Open in New Window (OBS)</span>
+                            <span class="text-xs mt-2 text-slate-500 group-hover:text-white/70 relative z-10">เปิดหน้าต่างใหม่สำหรับ OBS</span>
                         </button>
+                    </div>
+                    <div class="mt-8 text-xs text-slate-600">
+                        *หมายเหตุ: กรุณาเปิด Control Room ก่อน แล้วค่อยกดเปิด On-Air Screen ในหน้าต่างใหม่
                     </div>
                 </div>
             </div>`;
@@ -208,7 +210,6 @@
 
             app.innerHTML = `
                 <div class="flex h-screen bg-[#050505] text-white font-sans text-sm overflow-hidden">
-                    <!-- LEFT: SIDEBAR -->
                     <div class="w-80 bg-[#0f172a] border-r border-slate-800 flex flex-col z-20 shadow-2xl">
                         <div class="p-5 border-b border-slate-800 bg-[#020617]">
                             <h2 class="font-bold text-lg text-white tracking-wide flex items-center gap-3">
@@ -243,7 +244,7 @@
                             <div class="text-[10px] text-slate-400 font-bold uppercase mb-2">Ticker Control</div>
                             <div class="flex gap-2 mb-4">
                                 <input id="ticker-input" class="flex-1 bg-black/50 border border-slate-700 rounded px-3 py-2 text-xs text-white focus:border-blue-500 outline-none transition" value="${state.ticker}" placeholder="Running Text...">
-                                <button onclick="pushTicker()" class="bg-blue-600 px-3 rounded font-bold text-xs hover:bg-blue-500 text-white transition"><i class="fa-solid fa-paper-plane"></i></button>
+                                <button id="ticker-btn" onclick="pushTicker()" class="bg-blue-600 px-3 rounded font-bold text-xs hover:bg-blue-500 text-white transition"><i class="fa-solid fa-paper-plane"></i></button>
                             </div>
                             
                             <div class="grid grid-cols-2 gap-2">
@@ -261,13 +262,16 @@
                                     </button>
                                 </div>
                             </div>
+                            <div class="mt-4 pt-4 border-t border-slate-800">
+                                <button onclick="window.openWindow('onair')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded text-xs flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-external-link-alt"></i> Open On-Air Window
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- RIGHT: DATA EDITOR -->
                     <div class="flex-1 p-8 overflow-y-auto bg-[#0a0a0a] relative">
                         <div class="max-w-5xl mx-auto pb-20">
-                            <!-- Quota Header -->
                             <div class="grid grid-cols-3 gap-4 mb-8">
                                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-lg">
                                     <div>
@@ -304,7 +308,6 @@
                                 </div>
                             </div>
 
-                            <!-- Party List -->
                             <div class="space-y-3">
                                 ${state.parties.map((p, i) => `
                                     <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-800 hover:border-slate-600 hover:bg-slate-900/80 transition-all flex items-center gap-6 group relative">
@@ -377,7 +380,7 @@
         window.pushTicker = () => { 
             state.ticker = document.getElementById('ticker-input').value; 
             saveState(state); 
-            const btn = document.querySelector('button[onclick="pushTicker()"]');
+            const btn = document.getElementById('ticker-btn');
             const originalHTML = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-check"></i>';
             setTimeout(() => btn.innerHTML = originalHTML, 1000);
@@ -394,12 +397,9 @@
         
         app.innerHTML = `
             <div id="main-view" class="w-full h-full flex flex-col bg-main bg-black transition-colors duration-500 relative overflow-hidden font-sans">
-                <!-- Dynamic Background -->
                 <div class="scene-bg absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-30 pointer-events-none z-0"></div>
                 <div class="scene-bg absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-black z-[-1]"></div>
-                <!-- Content Stage -->
                 <div id="stage" class="absolute inset-0 z-10 flex flex-col justify-end"></div>
-                <!-- Debug Info (Hidden by default) -->
                 <div id="error-log" class="absolute top-0 left-0 text-red-500 text-xs p-2 z-50 pointer-events-none"></div>
             </div>`;
 
@@ -434,12 +434,10 @@
                 // Calculate current rank order hash
                 const sorted = [...newState.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
                 const currentSortedIDs = sorted.map(p => p.id).join(',');
-                const totalSeats = newState.parties.reduce((s,p)=>s+p.zone+p.list,0);
 
                 // Check Triggers for Re-Render (Structure Change)
                 // - Scene changed
                 // - Rank order changed (someone overtook another)
-                // - Number of parties changed
                 const shouldFullRender = (newState.scene !== currentScene) || (currentSortedIDs !== lastSortedIDs);
 
                 if (shouldFullRender) {
@@ -471,7 +469,8 @@
                 state = newState;
             } catch (e) {
                 console.error("Render Loop Error:", e);
-                document.getElementById('error-log').innerText = "Error: " + e.message;
+                const errLog = document.getElementById('error-log');
+                if(errLog) errLog.innerText = "Error: " + e.message;
             }
         }
 
@@ -494,7 +493,6 @@
                     <div class="news-bar-bg h-40 flex flex-col justify-end relative overflow-hidden">
                         
                         <div class="flex-1 flex items-center px-8 gap-4 pt-2">
-                            <!-- Clock & Logo -->
                             <div class="flex flex-col justify-center border-r border-white/10 pr-6 mr-2 h-20 shrink-0">
                                 <div class="flex items-center gap-2 mb-1">
                                     <div class="bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse tracking-wider">LIVE</div>
@@ -504,7 +502,6 @@
                                 <div class="text-slate-400 text-[9px] uppercase mt-1">Real-time Count</div>
                             </div>
 
-                            <!-- Cards -->
                             <div class="flex-1 flex gap-3 h-24 items-center overflow-hidden pr-4">
                                 ${sorted.slice(0, 5).map((p, i) => `
                                     <div class="w-40 bg-[#1e293b]/60 backdrop-blur-md rounded-md p-2 border-l-4 relative overflow-hidden flex flex-col justify-center h-[90%] shadow-lg border-t border-white/5" style="border-left-color:${p.color}" id="card-${p.id}">
@@ -519,7 +516,6 @@
                                 `).join('')}
                             </div>
 
-                            <!-- Total Summary -->
                             <div class="w-28 border-l border-white/10 pl-4 ml-2 h-20 flex flex-col justify-center text-right shrink-0">
                                  <div class="text-[9px] text-slate-400 uppercase font-bold mb-0">Total Counted</div>
                                  <div class="text-4xl font-tech font-bold text-white tracking-tighter leading-none text-yellow-500" id="total-seats-disp">${totalSeats}</div>
@@ -527,7 +523,6 @@
                             </div>
                         </div>
 
-                        <!-- Ticker Line -->
                         <div class="h-9 bg-black/90 border-t border-white/10 flex items-center relative z-50 mt-1">
                             <div class="bg-blue-700 h-full px-4 flex items-center justify-center shrink-0 z-20 shadow-[5px_0_15px_rgba(0,0,0,0.5)]">
                                 <span class="font-bold text-white tracking-widest text-[10px] uppercase">BREAKING NEWS</span>
@@ -678,8 +673,12 @@
                 </div>
             `, "SEAT DISTRIBUTION");
             
+            // Wait for DOM
             setTimeout(() => {
-                const ctx = document.getElementById('seatsChart').getContext('2d');
+                const canvas = document.getElementById('seatsChart');
+                if(!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
                 const remaining = 500 - totalSeats;
                 chartInstance = new Chart(ctx, {
                     type: 'doughnut',
@@ -698,7 +697,7 @@
                         plugins: { legend: { display: false }, tooltip: { enabled: false } } 
                     }
                 });
-            }, 50);
+            }, 100);
         }
 
         else if(data.scene === 'winner') {
