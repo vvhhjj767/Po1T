@@ -1,265 +1,548 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<title>PO1 Election Broadcast Engine</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PO1 STABLE BROADCAST - FULL SCREEN</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;600;700&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
 
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        :root { --bg-dark: #0f172a; --glass: rgba(15, 23, 42, 0.95); --neon: #3b82f6; }
+        body { font-family: 'Anuphan', sans-serif; background-color: var(--bg-dark); color: white; overflow: hidden; margin: 0; padding: 0; }
+        .font-tech { font-family: 'Chakra Petch', sans-serif; }
+        
+        /* UI Components */
+        .glass-panel { 
+            background: var(--glass); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6); 
+            backdrop-filter: blur(12px);
+        }
+        
+        /* LOWER THIRD SPECIFIC */
+        .lower-third-container {
+            background: linear-gradient(0deg, rgba(15,23,42,1) 0%, rgba(30,41,59,0.95) 100%);
+            border-top: 3px solid var(--neon);
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
+        }
 
-<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;600;700&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+        /* Animations */
+        .slide-up { animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(100px); }
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
 
-<style>
-body{margin:0;font-family:Anuphan;background:#020617;color:white;overflow:hidden}
-.font-tech{font-family:Chakra Petch}
-.glass{background:rgba(15,23,42,.85);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08)}
-.safe-area{position:absolute;inset:10%;border:2px dashed rgba(255,255,255,.25);pointer-events:none}
-</style>
+        .bar-fill { transition: width 1s cubic-bezier(0.25, 1, 0.5, 1); }
+        .dot-seat { transition: background-color 0.5s; }
+        
+        /* Ticker */
+        .ticker-wrap { width: 100%; overflow: hidden; white-space: nowrap; }
+        .ticker-track { display: inline-block; white-space: nowrap; padding-left: 100vw; animation: ticker 30s linear infinite; }
+        @keyframes ticker { 100% { transform: translate3d(-100%, 0, 0); } }
+
+        /* Background Modes */
+        body.transparent .bg-main { background: transparent !important; }
+        body.transparent .obs-hide { display: none !important; }
+        body.transparent .scene-bg { display: none !important; }
+        
+        body.green-screen .bg-main { background: #00b140 !important; }
+        body.green-screen .obs-hide { display: none !important; }
+        body.green-screen .scene-bg { display: none !important; }
+    </style>
 </head>
 <body>
 
 <div id="app" class="w-full h-full"></div>
 
 <script>
-/* ======================================================
-   CONFIG + STATE
-====================================================== */
-const KEY = "PO1_ENGINE_PRO";
+    // ==========================================
+    // 1. CONFIGURATION
+    // ==========================================
+    const STORAGE_KEY = 'PO1_STABLE_V3_FULL';
+    const LIMITS = { zone: 400, list: 100 };
 
-const DEFAULT = {
-  program:"lower3",
-  preview:"dashboard",
-  bg:"dark",
-  safe:false,
-  override:null,
-  ticker:"รายงานสดผลการเลือกตั้ง 2569",
-  parties:[
-    {id:"p1",name:"พรรคประชาชน",color:"#ff9100",zone:120,list:30,bloc:"gov"},
-    {id:"p2",name:"เพื่อไทย",color:"#e60000",zone:100,list:25,bloc:"opp"},
-    {id:"p3",name:"ภูมิใจไทย",color:"#0033cc",zone:50,list:10,bloc:"gov"}
-  ]
-};
+    const DEFAULT_DATA = {
+        parties: [
+            { id: 'p1', name: 'พรรคประชาชน', color: '#FF9100', zone: 120, list: 30 },
+            { id: 'p2', name: 'เพื่อไทย', color: '#E60000', zone: 100, list: 25 },
+            { id: 'p3', name: 'ภูมิใจไทย', color: '#0033CC', zone: 50, list: 10 },
+            { id: 'p4', name: 'รทสช.', color: '#2C3E50', zone: 20, list: 5 },
+            { id: 'p5', name: 'ประชาธิปัตย์', color: '#00AEF0', zone: 10, list: 2 }
+        ],
+        scene: 'lower3',
+        ticker: 'รายงานสดผลการเลือกตั้ง 2569 : เกาะติดสถานการณ์ล่าสุดนับคะแนน...',
+        bg: 'dark'
+    };
 
-function load(){return JSON.parse(localStorage.getItem(KEY)||JSON.stringify(DEFAULT))}
-function save(s){localStorage.setItem(KEY,JSON.stringify(s))}
+    function loadState() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+        } catch(e) {
+            return JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+    }
+    
+    function saveState(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
 
-let state = load();
+    let state = loadState();
+    let chartInstance = null;
 
-/* ======================================================
-   ROUTER
-====================================================== */
-const app=document.getElementById("app");
-const mode=new URLSearchParams(location.search).get("mode");
+    // ==========================================
+    // 2. ROUTER
+    // ==========================================
+    const app = document.getElementById('app');
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
 
-if(mode==="control") control();
-else if(mode==="onair") onair();
-else menu();
+    if (!mode) renderMenu();
+    else if (mode === 'control') initControl();
+    else if (mode === 'onair') initOnAir();
 
-/* ======================================================
-   MENU
-====================================================== */
-function menu(){
-app.innerHTML=`
-<div class="h-screen flex items-center justify-center">
-  <div class="glass p-12 rounded-2xl text-center">
-    <h1 class="text-5xl font-tech font-bold mb-6">PO1 <span class="text-blue-500">ELECTION</span></h1>
-    <div class="flex gap-6">
-      <button onclick="location.href='?mode=control'" class="px-10 py-6 bg-blue-600 rounded-xl">CONTROL</button>
-      <button onclick="location.href='?mode=onair'" class="px-10 py-6 bg-red-600 rounded-xl">ON AIR</button>
-    </div>
-  </div>
-</div>`;
-}
+    // ==========================================
+    // 3. MENU
+    // ==========================================
+    function renderMenu() {
+        app.innerHTML = `
+            <div class="h-screen w-screen flex items-center justify-center bg-slate-900">
+                <div class="bg-slate-800 p-12 rounded-2xl text-center max-w-2xl w-full border border-slate-700 shadow-2xl">
+                    <h1 class="text-6xl font-tech font-bold text-white mb-2">PO1 <span class="text-blue-500">FULL SCREEN</span></h1>
+                    <p class="text-slate-400 mb-10 text-sm uppercase tracking-widest">Broadcast Graphics System V3</p>
+                    <div class="grid grid-cols-2 gap-6">
+                        <button onclick="location.href='?mode=control'" class="h-32 bg-blue-900/50 border border-blue-500 rounded-xl hover:bg-blue-800 transition flex flex-col items-center justify-center group">
+                            <span class="text-4xl mb-2 group-hover:scale-110 transition">🎛️</span>
+                            <span class="font-bold text-white">CONTROL ROOM</span>
+                        </button>
+                        <button onclick="location.href='?mode=onair'" class="h-32 bg-red-900/50 border border-red-500 rounded-xl hover:bg-red-800 transition flex flex-col items-center justify-center group">
+                            <span class="text-4xl mb-2 group-hover:scale-110 transition">📺</span>
+                            <span class="font-bold text-white">ON-AIR DISPLAY</span>
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+    }
 
-/* ======================================================
-   CONTROL ROOM (DIRECTOR MODE)
-====================================================== */
-function control(){
-document.title="PO1 Control";
-render();
+    // ==========================================
+    // 4. CONTROL ROOM
+    // ==========================================
+    function initControl() {
+        document.title = "Control - PO1";
+        
+        function renderUI() {
+            const totalZone = state.parties.reduce((s, p) => s + p.zone, 0);
+            const totalList = state.parties.reduce((s, p) => s + p.list, 0);
 
-function render(){
-app.innerHTML=`
-<div class="flex h-screen">
-  <div class="w-80 bg-slate-900 p-4 space-y-4">
-    <h2 class="font-bold text-xl">🎛 Director</h2>
+            app.innerHTML = `
+                <div class="flex h-screen bg-black text-white font-sans text-sm">
+                    <div class="w-80 bg-slate-900 border-r border-slate-700 flex flex-col z-20">
+                        <div class="p-6 border-b border-slate-700">
+                            <h2 class="font-bold text-xl text-white tracking-wide flex items-center gap-3">
+                                <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span> CONTROL
+                            </h2>
+                        </div>
+                        
+                        <div class="p-4 space-y-2 overflow-y-auto flex-1">
+                            <div class="text-[10px] text-slate-500 font-bold uppercase px-2 mb-1">SCENE SELECTION</div>
+                            ${[
+                                {id:'lower3', label:'📺 Lower Third', desc:'แถบล่าง (News Ticker)'},
+                                {id:'dashboard', label:'📊 Dashboard', desc:'ตารางคะแนนรวม'},
+                                {id:'parliament', label:'🏛️ Parliament', desc:'ผังที่นั่งสภา 500'},
+                                {id:'battle', label:'⚔️ Battle Gauge', desc:'รัฐบาล vs ฝ่ายค้าน'},
+                                {id:'chart', label:'🍩 Donut Chart', desc:'สัดส่วนเก้าอี้'},
+                                {id:'winner', label:'🏆 Winner', desc:'ประกาศชัยชนะ'}
+                            ].map(s => `
+                                <button onclick="setScene('${s.id}')" class="w-full text-left p-4 rounded-xl mb-1 border transition-all ${state.scene===s.id ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}">
+                                    <div class="font-bold text-base flex justify-between items-center">
+                                        ${s.label}
+                                        ${state.scene===s.id ? '<span class="text-[10px] bg-white text-blue-900 px-2 rounded-full font-bold">ON AIR</span>' : ''}
+                                    </div>
+                                    <div class="text-[10px] opacity-70 mt-1">${s.desc}</div>
+                                </button>
+                            `).join('')}
+                        </div>
 
-    <div>
-      <div class="text-xs mb-1">PREVIEW</div>
-      ${sceneBtn("preview")}
-    </div>
+                        <div class="p-4 border-t border-slate-700 bg-slate-800">
+                            <div class="text-[10px] text-slate-400 font-bold uppercase mb-2">Background Key</div>
+                            <select onchange="setBg(this.value)" class="w-full bg-black border border-slate-600 rounded p-2 text-xs text-white mb-4">
+                                <option value="dark" ${state.bg==='dark'?'selected':''}>Standard (Dark)</option>
+                                <option value="green" ${state.bg==='green'?'selected':''}>Green Screen (Chroma)</option>
+                                <option value="transparent" ${state.bg==='transparent'?'selected':''}>Transparent (OBS)</option>
+                            </select>
+                            
+                            <div class="text-[10px] text-slate-400 font-bold uppercase mb-2">News Ticker</div>
+                            <div class="flex gap-2">
+                                <input id="ticker-input" class="flex-1 bg-black border border-slate-600 rounded p-2 text-xs text-white" value="${state.ticker}">
+                                <button onclick="pushTicker()" class="bg-blue-600 px-4 rounded font-bold text-xs hover:bg-blue-500">SET</button>
+                            </div>
+                        </div>
+                    </div>
 
-    <button onclick="take()" class="w-full py-3 bg-red-600 font-bold rounded-xl">TAKE TO AIR</button>
+                    <div class="flex-1 p-8 overflow-y-auto bg-black">
+                        <div class="max-w-4xl mx-auto pb-20">
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex justify-between items-center">
+                                    <span class="text-slate-400 text-xs uppercase font-bold">Zone Quota</span>
+                                    <div class="text-2xl font-tech font-bold ${totalZone >= LIMITS.zone ? 'text-red-500' : 'text-blue-400'}">
+                                        ${totalZone} <span class="text-sm text-slate-600">/ ${LIMITS.zone}</span>
+                                    </div>
+                                </div>
+                                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex justify-between items-center">
+                                    <span class="text-slate-400 text-xs uppercase font-bold">List Quota</span>
+                                    <div class="text-2xl font-tech font-bold ${totalList >= LIMITS.list ? 'text-red-500' : 'text-green-400'}">
+                                        ${totalList} <span class="text-sm text-slate-600">/ ${LIMITS.list}</span>
+                                    </div>
+                                </div>
+                            </div>
 
-    <div>
-      <div class="text-xs mb-1">PROGRAM</div>
-      <div class="p-2 bg-black rounded">${state.program}</div>
-    </div>
+                            <div class="space-y-3">
+                                ${state.parties.map((p, i) => `
+                                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 hover:border-slate-600 transition flex items-center gap-4 group">
+                                        <div class="flex items-center gap-3 w-1/3">
+                                            <input type="color" value="${p.color}" onchange="updateVal(${i}, 'color', this.value)" class="w-10 h-10 rounded-lg border-0 bg-transparent cursor-pointer">
+                                            <input type="text" value="${p.name}" oninput="updateVal(${i}, 'name', this.value)" class="bg-transparent font-bold text-xl w-full focus:outline-none border-b border-transparent focus:border-slate-500 px-2 text-white">
+                                        </div>
+                                        
+                                        <div class="flex-1 grid grid-cols-2 gap-4">
+                                            <div class="bg-black/30 p-2 rounded-lg flex items-center justify-between border border-slate-800">
+                                                <button onclick="adj(${i}, 'zone', -1)" class="w-8 h-8 rounded bg-slate-800 hover:bg-red-500 font-bold">-</button>
+                                                <div class="text-center">
+                                                    <div class="text-[9px] text-slate-500 uppercase">ZONE</div>
+                                                    <div class="font-tech text-2xl font-bold text-white">${p.zone}</div>
+                                                </div>
+                                                <button onclick="adj(${i}, 'zone', 1)" class="w-8 h-8 rounded bg-slate-800 hover:bg-green-500 font-bold" ${totalZone >= LIMITS.zone ? 'disabled style="opacity:0.3"' : ''}>+</button>
+                                            </div>
+                                            <div class="bg-black/30 p-2 rounded-lg flex items-center justify-between border border-slate-800">
+                                                <button onclick="adj(${i}, 'list', -1)" class="w-8 h-8 rounded bg-slate-800 hover:bg-red-500 font-bold">-</button>
+                                                <div class="text-center">
+                                                    <div class="text-[9px] text-slate-500 uppercase">LIST</div>
+                                                    <div class="font-tech text-2xl font-bold text-white">${p.list}</div>
+                                                </div>
+                                                <button onclick="adj(${i}, 'list', 1)" class="w-8 h-8 rounded bg-slate-800 hover:bg-green-500 font-bold" ${totalList >= LIMITS.list ? 'disabled style="opacity:0.3"' : ''}>+</button>
+                                            </div>
+                                        </div>
 
-    <hr class="opacity-20">
+                                        <button onclick="removeParty(${i})" class="w-8 h-8 rounded text-slate-600 hover:text-red-500 transition">✕</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="flex gap-2 mt-6">
+                                <button onclick="addParty()" class="flex-1 py-4 border-2 border-dashed border-slate-800 rounded-xl text-slate-500 hover:text-white hover:border-slate-500 hover:bg-slate-900 transition font-bold">
+                                    + Add Party
+                                </button>
+                                 <button onclick="resetData()" class="px-4 py-4 border-2 border-slate-800 rounded-xl text-red-500 hover:bg-red-900/20 hover:border-red-500 transition font-bold">
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        }
 
-    <label class="flex items-center gap-2 text-sm">
-      <input type="checkbox" ${state.safe?"checked":""} onchange="toggleSafe(this.checked)">
-      Safe Area
-    </label>
+        window.updateVal = (i, k, v) => { state.parties[i][k] = v; saveState(state); };
+        window.addParty = () => { state.parties.push({ id: 'p'+Date.now(), name: 'พรรคใหม่', color: '#888888', zone: 0, list: 0 }); saveState(state); renderUI(); };
+        window.removeParty = (i) => { if(confirm('ยืนยันลบ?')) { state.parties.splice(i, 1); saveState(state); renderUI(); } };
+        window.resetData = () => { if(confirm('Reset all to default?')) { localStorage.removeItem(STORAGE_KEY); location.reload(); } };
+        
+        window.adj = (i, type, delta) => {
+            const total = state.parties.reduce((sum, p) => sum + p[type], 0);
+            const limit = LIMITS[type];
+            if (delta > 0 && total >= limit) return; 
+            state.parties[i][type] = Math.max(0, state.parties[i][type] + delta);
+            saveState(state); renderUI(); 
+        };
+        
+        window.setScene = (s) => { state.scene = s; saveState(state); renderUI(); };
+        window.setBg = (b) => { state.bg = b; saveState(state); };
+        window.pushTicker = () => { state.ticker = document.getElementById('ticker-input').value; saveState(state); alert('Ticker Updated!'); };
 
-    <select onchange="setBg(this.value)" class="w-full bg-black p-2 rounded">
-      <option value="dark">Dark</option>
-      <option value="gray">Gray</option>
-      <option value="transparent">Transparent</option>
-    </select>
+        renderUI();
+    }
 
-    <button onclick="override('black')" class="w-full bg-black py-2 rounded">BLACK</button>
-    <button onclick="override(null)" class="w-full bg-slate-700 py-2 rounded">CLEAR</button>
-  </div>
+    // ==========================================
+    // 5. ON-AIR DISPLAY
+    // ==========================================
+    function initOnAir() {
+        document.title = "ON AIR DISPLAY";
+        
+        app.innerHTML = `
+            <div id="main-view" class="w-full h-full flex flex-col bg-main bg-slate-900 transition-colors duration-500 relative overflow-hidden">
+                <div class="scene-bg absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-30 pointer-events-none"></div>
+                <div id="stage" class="absolute inset-0 z-10 flex flex-col justify-end"></div>
+            </div>`;
+            
+        // CLOCK
+        setInterval(() => {
+            const timeEl = document.getElementById('clock-text');
+            if(timeEl) timeEl.innerText = new Date().toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'});
+        }, 1000);
 
-  <div class="flex-1 bg-black flex items-center justify-center text-slate-500">
-    PREVIEW & PROGRAM CONTROL
-  </div>
-</div>`;
-}
+        let currentScene = '';
+        
+        setInterval(() => {
+            const newState = loadState();
+            const view = document.getElementById('main-view');
+            document.body.className = ''; 
+            if(newState.bg === 'transparent') document.body.classList.add('transparent');
+            else if(newState.bg === 'green') document.body.classList.add('green-screen');
+            
+            const tickerEl = document.getElementById('ticker-text');
+            if(tickerEl && tickerEl.innerText !== newState.ticker) tickerEl.innerText = newState.ticker;
 
-function sceneBtn(type){
-return ["lower3","dashboard","parliament","battle","winner"].map(s=>
-`<button onclick="setScene('${type}','${s}')"
-class="w-full text-left px-4 py-2 rounded mb-1 ${state[type]===s?"bg-blue-600":"bg-slate-800"}">${s}</button>`
-).join("");
-}
+            const stage = document.getElementById('stage');
+            if (newState.scene !== currentScene || stage.innerHTML === '') {
+                renderSceneStructure(stage, newState);
+                currentScene = newState.scene;
+                
+                if(newState.scene === 'lower3') {
+                    gsap.from("#lower3-bar", { y: 200, opacity: 0, duration: 0.8, ease: "power2.out" });
+                } else {
+                    gsap.from(".slide-up", { opacity: 0, y: 50, duration: 0.8, ease: "power2.out" });
+                }
+            } else {
+                updateSceneValues(newState);
+            }
+            state = newState;
+        }, 300);
+    }
 
-window.setScene=(t,s)=>{state[t]=s;save(state);render()}
-window.take=()=>{state.program=state.preview;save(state);render()}
-window.setBg=b=>{state.bg=b;save(state)}
-window.toggleSafe=v=>{state.safe=v;save(state)}
-window.override=o=>{state.override=o;save(state)}
-}
+    // ==========================================
+    // 6. SCENE RENDERERS (VISUALS)
+    // ==========================================
+    function renderSceneStructure(container, data) {
+        if(chartInstance) { chartInstance.destroy(); chartInstance = null; }
+        
+        const sorted = [...data.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
+        const totalSeats = data.parties.reduce((s,p)=>s+p.zone+p.list,0);
 
-/* ======================================================
-   ON AIR ENGINE
-====================================================== */
-function onair(){
-document.title="PO1 ON AIR";
+        // 🔴 1. LOWER THIRD (Compact & Full Width)
+        if(data.scene === 'lower3') {
+            container.innerHTML = `
+                <div class="flex-1 w-full pointer-events-none"></div>
+                
+                <div id="lower3-bar" class="w-full relative z-50">
+                    <div class="lower-third-container h-36 flex flex-col justify-end relative overflow-hidden">
+                        
+                        <div class="flex-1 flex items-center px-6 gap-6 pt-2 pb-2">
+                            <div class="flex flex-col justify-center border-r border-slate-600 pr-6 mr-2 h-20 shrink-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded animate-pulse">LIVE</div>
+                                </div>
+                                <div id="clock-text" class="text-white font-tech font-bold text-4xl leading-none tracking-tight">00:00</div>
+                            </div>
 
-app.innerHTML=`
-<div id="view" class="w-full h-full relative bg-black">
-  <div id="stage" class="absolute inset-0"></div>
-</div>`;
+                            <div class="flex-1 flex gap-2 h-24 items-center w-full">
+                                ${sorted.slice(0, 5).map((p, i) => `
+                                    <div class="flex-1 bg-slate-800/80 rounded-lg px-4 py-2 border-l-4 relative overflow-hidden flex flex-col justify-center h-full shadow-lg" style="border-color:${p.color}; min-width: 0;">
+                                        <div class="flex justify-between items-center mb-0.5">
+                                            <span class="text-[9px] text-slate-400 font-bold uppercase truncate">No. ${i+1}</span>
+                                        </div>
+                                        <h3 class="text-lg font-bold text-white truncate w-full mb-0 leading-tight">${p.name}</h3>
+                                        <div class="flex items-end gap-1 mt-0">
+                                            <span class="text-4xl font-tech font-bold text-white num-roll leading-none" id="low-val-${p.id}" style="text-shadow:0 0 15px ${p.color}">${p.zone+p.list}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
 
-apply(load());
+                            <div class="w-28 border-l border-slate-600 pl-6 ml-2 h-20 flex flex-col justify-center text-right shrink-0">
+                                 <div class="text-[9px] text-slate-400 uppercase font-bold mb-0">Total</div>
+                                 <div class="text-4xl font-tech font-bold text-white tracking-tighter leading-none">${totalSeats}</div>
+                                 <div class="text-[9px] text-slate-500">of 500</div>
+                            </div>
+                        </div>
 
-window.addEventListener("storage",e=>{
- if(e.key===KEY) apply(JSON.parse(e.newValue));
-});
+                        <div class="h-8 bg-black border-t border-slate-700 flex items-center relative z-50">
+                            <div class="bg-blue-700 h-full px-4 flex items-center justify-center shrink-0 z-20 shadow-xl">
+                                <span class="font-bold text-white tracking-widest text-[10px]">UPDATE</span>
+                            </div>
+                            <div class="ticker-wrap bg-slate-900 h-full flex items-center">
+                                <div id="ticker-text" class="ticker-track text-sm font-light text-slate-300">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            return;
+        }
 
-setInterval(()=>apply(load()),1500);
-}
+        // Standard Wrapper for Full Screen Scenes (Maximized)
+        const wrap = (content) => `
+            <div class="absolute top-0 left-0 w-full h-20 flex justify-between items-center px-8 pt-4 z-50 obs-hide">
+                <div class="flex items-center gap-4">
+                    <div class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded shadow-lg">LIVE</div>
+                    <div class="text-white font-bold text-2xl shadow-black drop-shadow-md">ELECTION 2026</div>
+                </div>
+                <div class="font-tech text-slate-400 text-lg opacity-80">PO1 STABLE</div>
+            </div>
+            
+            <div class="w-full h-full flex items-center justify-center p-4 relative slide-up pb-12">
+                ${content}
+            </div>
+            
+            <div class="absolute bottom-0 w-full h-8 bg-black border-t border-slate-800 flex items-center z-50">
+                 <div class="bg-blue-700 h-full px-4 flex items-center justify-center shrink-0 z-20"><span class="font-bold text-white text-[10px]">NEWS</span></div>
+                 <div class="ticker-wrap w-full bg-slate-900 h-full flex items-center"><div id="ticker-text" class="ticker-track text-sm text-slate-300">...</div></div>
+            </div>`;
 
-function apply(s){
-state=s;
-document.body.className="";
-if(s.bg==="gray")document.body.style.background="#808080";
-if(s.bg==="transparent")document.body.style.background="transparent";
+        // 🔵 2. DASHBOARD (Scaled Up)
+        if(data.scene === 'dashboard') {
+            container.innerHTML = wrap(`
+                <div class="w-full max-w-[90%] scale-105 transform origin-center">
+                    <div class="grid grid-cols-1 gap-2">
+                        ${sorted.map((p, i) => `
+                        <div class="glass-panel px-6 py-4 rounded-xl flex items-center relative overflow-hidden">
+                            <div class="absolute left-0 top-0 bottom-0 w-2" style="background:${p.color}"></div>
+                            <div class="w-16 font-tech text-5xl font-bold text-slate-600 text-center mr-6 opacity-50">0${i+1}</div>
+                            <div class="flex-1 z-10">
+                                <h2 class="text-4xl font-bold text-white mb-2 tracking-tight">${p.name}</h2>
+                                <div class="w-full h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                                    <div class="h-full bar-fill relative" style="width:${((p.zone+p.list)/500)*100}%; background:${p.color}" id="bar-${p.id}">
+                                        <div class="absolute right-0 top-0 bottom-0 w-[2px] bg-white opacity-50 shadow-[0_0_10px_white]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="w-48 text-right pr-2 pl-4">
+                                <div class="text-7xl font-tech font-bold text-white num-roll drop-shadow-xl leading-none" id="val-total-${p.id}">${p.zone+p.list}</div>
+                            </div>
+                        </div>`).join('')}
+                    </div>
+                </div>
+            `);
+        }
+        
+        // 🔵 3. PARLIAMENT (Maximized)
+        else if(data.scene === 'parliament') {
+            let dotsHtml = '';
+            let idx = 0;
+            let seatColors = [];
+            sorted.forEach(p => { for(let i=0; i<p.zone+p.list; i++) seatColors.push(p.color); });
+            
+            for(let r=1; r<=12; r++) {
+                const radius = 22 + (r * 3.8);
+                const arcLength = Math.PI * radius;
+                let dotsInRow = Math.floor(arcLength / 3.2);
+                if(r===12) dotsInRow = 500 - idx;
+                
+                const step = 180 / (dotsInRow + 1);
+                for(let i=0; i<dotsInRow; i++) {
+                    if(idx>=500) break;
+                    const angle = (180 - (step * (i+1))) * (Math.PI / 180);
+                    const x = 50 + (radius * Math.cos(angle));
+                    const y = 90 - (radius * Math.sin(angle));
+                    const c = seatColors[idx] || '#1e293b';
+                    dotsHtml += `<div class="dot-seat absolute w-[1.2%] pb-[1.2%] rounded-full shadow-sm" style="left:${x}%; top:${y}%; background:${c}; transform:translate(-50%,-50%); box-shadow: 0 0 4px ${c};"></div>`;
+                    idx++;
+                }
+            }
+            container.innerHTML = wrap(`
+                <div class="relative w-[90vw] max-w-[1400px] aspect-[1.9/1] mt-10">
+                    ${dotsHtml}
+                    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 text-center mb-0 glass-panel px-16 py-8 rounded-t-3xl border-t-2 border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                        <div class="text-sm text-slate-400 font-bold uppercase tracking-widest mb-2">Leading Party</div>
+                        <h1 class="text-6xl font-bold text-white mb-2 tracking-tight">${sorted[0].name}</h1>
+                        <div class="text-9xl font-tech font-bold leading-none drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]" style="color:${sorted[0].color}">${sorted[0].zone + sorted[0].list}</div>
+                    </div>
+                </div>
+            `);
+        }
 
-const stage=document.getElementById("stage");
-stage.innerHTML="";
+        // 🔵 4. BATTLE GAUGE
+        else if(data.scene === 'battle') {
+            container.innerHTML = wrap(`
+                <div class="w-full max-w-[90%] flex flex-col items-center">
+                    <h2 class="text-5xl font-bold mb-20 uppercase tracking-[0.3em] text-white/30">Coalition vs Opposition</h2>
+                    <div class="w-full h-56 bg-slate-900 rounded-full border-8 border-slate-800 relative flex overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                        <div class="h-full bg-blue-600 flex items-center justify-start pl-12 relative transition-all duration-1000" style="width:50%" id="battle-left">
+                            <span class="text-6xl font-bold text-white drop-shadow-lg z-10" id="battle-txt-left">Gov: 0</span>
+                        </div>
+                        <div class="h-full bg-red-600 flex items-center justify-end pr-12 relative transition-all duration-1000" style="width:50%" id="battle-right">
+                             <span class="text-6xl font-bold text-white drop-shadow-lg z-10" id="battle-txt-right">Opp: 0</span>
+                        </div>
+                        <div class="absolute top-0 bottom-0 w-3 bg-white left-1/2 -translate-x-1/2 z-20 shadow-[0_0_40px_white]"></div>
+                        <div class="absolute -top-20 left-1/2 -translate-x-1/2 bg-white text-black px-8 py-2 rounded-full font-bold shadow-xl border-4 border-slate-900 text-xl">TARGET 251</div>
+                    </div>
+                </div>
+            `);
+        }
 
-if(s.override==="black") return;
+        // 🔵 5. CHART
+        else if(data.scene === 'chart') {
+            container.innerHTML = wrap(`
+                <div class="glass-panel p-12 rounded-[3rem] flex flex-col items-center justify-center relative bg-slate-900/90 w-[80vh] h-[80vh]">
+                    <h2 class="text-4xl font-bold mb-8 text-white uppercase tracking-widest">Parliament 500</h2>
+                    <div class="w-full h-full relative">
+                        <canvas id="seatsChart"></canvas>
+                    </div>
+                </div>
+            `);
+            setTimeout(() => {
+                const ctx = document.getElementById('seatsChart').getContext('2d');
+                const remaining = 500 - totalSeats;
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: [...sorted.map(p => p.name), 'Empty'],
+                        datasets: [{ data: [...sorted.map(p => p.zone+p.list), remaining], backgroundColor: [...sorted.map(p => p.color), '#1e293b'], borderWidth: 0, hoverOffset: 20 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false }, datalabels: { display: false } } }
+                });
+            }, 100);
+        }
 
-SCENES[s.program]?.render(stage,s);
+        // 🔵 6. WINNER
+        else if(data.scene === 'winner') {
+            const w = sorted[0];
+            container.innerHTML = wrap(`
+                <div class="text-center relative z-10 scale-125">
+                    <div class="glass-panel p-24 rounded-[3rem] border border-white/20 shadow-2xl relative z-10 bg-slate-900/80 backdrop-blur-3xl">
+                        <div class="text-8xl mb-6 animate-bounce drop-shadow-lg">🏆</div>
+                        <div class="text-2xl font-bold text-slate-400 tracking-[0.5em] mb-4 uppercase">Projected Winner</div>
+                        <h1 class="text-9xl font-bold text-white mb-8 drop-shadow-2xl">${w.name}</h1>
+                        <div class="text-[12rem] font-tech font-bold leading-none glow-text" style="color:${w.color}; text-shadow: 0 0 50px ${w.color}50">${w.zone + w.list}</div>
+                    </div>
+                </div>
+            `);
+        }
+    }
 
-if(s.safe){
- const sa=document.createElement("div");
- sa.className="safe-area";
- stage.appendChild(sa);
-}
-}
+    // --- 7. UPDATES ---
+    function updateSceneValues(data) {
+        const sorted = [...data.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
+        
+        if(data.scene === 'lower3') {
+             data.parties.forEach(p => animateNum(`low-val-${p.id}`, p.zone + p.list));
+        }
+        else if(data.scene === 'dashboard') {
+            data.parties.forEach(p => {
+                const t = p.zone + p.list;
+                animateNum(`val-total-${p.id}`, t);
+                const bar = document.getElementById(`bar-${p.id}`);
+                if(bar) bar.style.width = `${(t/500)*100}%`;
+            });
+        }
+        else if(data.scene === 'battle') {
+            const p1 = sorted[0], p2 = sorted[1];
+            if(p1 && p2) {
+                const t1 = p1.zone + p1.list, t2 = p2.zone + p2.list;
+                const left = document.getElementById('battle-left');
+                const right = document.getElementById('battle-right');
+                if(left) { left.style.width = `${(t1/500)*100}%`; left.style.backgroundColor = p1.color; document.getElementById('battle-txt-left').innerText = `${p1.name}: ${t1}`; }
+                if(right) { right.style.width = `${(t2/500)*100}%`; right.style.backgroundColor = p2.color; document.getElementById('battle-txt-right').innerText = `${p2.name}: ${t2}`; }
+            }
+        }
+    }
 
-/* ======================================================
-   SCENE REGISTRY
-====================================================== */
-const SCENES={
-
-lower3:{
-render:(c,s)=>{
-const sorted=[...s.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
-c.innerHTML=`
-<div class="absolute bottom-0 w-full glass p-6 flex gap-4">
- ${sorted.slice(0,5).map(p=>`
- <div class="flex-1 border-l-4 pl-3" style="border-color:${p.color}">
-   <div class="text-sm">${p.name}</div>
-   <div class="text-4xl font-tech" id="n-${p.id}">${p.zone+p.list}</div>
- </div>`).join("")}
-</div>`;
-sorted.forEach(p=>roll(`n-${p.id}`,p.zone+p.list));
-}
-},
-
-dashboard:{
-render:(c,s)=>{
-c.innerHTML=`
-<div class="w-full h-full flex flex-col items-center justify-center gap-4">
- ${s.parties.map(p=>`
- <div class="w-2/3 glass p-4 flex justify-between">
-   <span>${p.name}</span>
-   <span class="font-tech text-3xl" id="d-${p.id}">${p.zone+p.list}</span>
- </div>`).join("")}
-</div>`;
-s.parties.forEach(p=>roll(`d-${p.id}`,p.zone+p.list));
-}
-},
-
-parliament:{
-render:(c,s)=>{
-const total=s.parties.reduce((t,p)=>t+p.zone+p.list,0);
-c.innerHTML=`
-<div class="h-full flex items-center justify-center">
- <div class="glass p-16 text-center">
-  <div class="text-7xl font-tech">${total}</div>
-  <div class="text-sm text-slate-400">TOTAL SEATS</div>
- </div>
-</div>`;
-}
-},
-
-battle:{
-render:(c,s)=>{
-const gov=sum(s.parties.filter(p=>p.bloc==="gov"));
-const opp=sum(s.parties.filter(p=>p.bloc==="opp"));
-c.innerHTML=`
-<div class="h-full flex items-center justify-center">
- <div class="w-3/4 h-24 flex rounded-full overflow-hidden">
-  <div class="bg-blue-600 flex items-center pl-6" style="width:${gov/5}%">GOV ${gov}</div>
-  <div class="bg-red-600 flex items-center justify-end pr-6" style="width:${opp/5}%">OPP ${opp}</div>
- </div>
-</div>`;
-}
-},
-
-winner:{
-render:(c,s)=>{
-const w=[...s.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list))[0];
-c.innerHTML=`
-<div class="h-full flex items-center justify-center">
- <div class="glass p-24 text-center">
-  <div class="text-8xl mb-6">🏆</div>
-  <h1 class="text-6xl">${w.name}</h1>
-  <div class="text-[8rem] font-tech" style="color:${w.color}">${w.zone+w.list}</div>
- </div>
-</div>`;
-}
-}
-
-};
-
-/* ======================================================
-   UTILS
-====================================================== */
-function roll(id,val){
-const el=document.getElementById(id);
-if(!el) return;
-gsap.to(el,{innerHTML:val,duration:1.2,snap:{innerHTML:1},ease:"power3.out"});
-}
-function sum(arr){return arr.reduce((t,p)=>t+p.zone+p.list,0)}
+    function animateNum(id, newVal) {
+        const el = document.getElementById(id);
+        if(!el) return;
+        const oldVal = parseInt(el.innerText) || 0;
+        if(oldVal !== newVal) {
+            gsap.to(el, { innerHTML: newVal, duration: 1.5, snap: { innerHTML: 1 }, ease: "power2.out" });
+        }
+    }
 </script>
 </body>
 </html>
