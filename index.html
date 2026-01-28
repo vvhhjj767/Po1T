@@ -9,15 +9,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
     <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
         :root { 
             --bg-dark: #050505; 
-            --glass: rgba(15, 23, 42, 0.9); 
+            --glass: rgba(15, 23, 42, 0.95); /* เพิ่มความทึบเล็กน้อยให้อ่านง่าย */
             --glass-border: rgba(255,255,255,0.1);
             --neon-blue: #3b82f6; 
             --neon-gold: #fbbf24; 
@@ -115,14 +113,12 @@
     function resetState() {
         if(confirm('รีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น? (หน้าจอ On-Air จะรีเฟรชด้วย)')) {
             saveState(DEFAULT_DATA);
-            // บังคับรีโหลดหน้าจอเพื่อเคลียร์บั๊ก
             location.reload(); 
         }
     }
 
     let state = loadState();
     let chartInstance = null;
-    let confettiInterval = null; // ตัวแปรเก็บพลุ เพื่อสั่งหยุดได้
 
     // ==========================================
     // 2. ROUTER & NAVIGATION
@@ -131,7 +127,6 @@
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode');
 
-    // ฟังก์ชันเปิดหน้าต่างใหม่ (Safe Mode)
     window.openWindow = function(modeName) {
         if(modeName === 'onair') {
             window.open('?mode=onair', 'onair_win', 'width=1280,height=720,menubar=no,toolbar=no,location=no,status=no');
@@ -154,7 +149,7 @@
                 
                 <div class="glass-panel p-16 rounded-3xl text-center max-w-4xl w-full border-t-4 border-yellow-500 shadow-[0_0_100px_rgba(234,179,8,0.1)] relative z-10">
                     <div class="inline-block mb-6 px-4 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-xs font-bold tracking-widest uppercase">
-                        Election Broadcast System v2.1 (Fix)
+                        Election Broadcast System v2.2 (No Confetti)
                     </div>
                     <h1 class="text-8xl font-tech font-bold text-white mb-2 tracking-tight">PO1 <span class="text-yellow-500">NEWS</span></h1>
                     <p class="text-slate-400 mb-16 text-lg tracking-[0.3em] font-light">REAL-TIME GRAPHICS ENGINE</p>
@@ -192,7 +187,7 @@
                 {id:'battle', icon:'fa-hand-fist', label:'Battle Gauge', desc:'วัดพลังรัฐบาล vs ฝ่ายค้าน'},
                 {id:'parliament', icon:'fa-users-rectangle', label:'Parliament', desc:'ผังที่นั่งสภา 500 คน'},
                 {id:'chart', icon:'fa-chart-pie', label:'Donut Chart', desc:'สัดส่วนเก้าอี้'},
-                {id:'winner', icon:'fa-trophy', label:'Winner', desc:'ประกาศผู้ชนะ (ระวัง! มีพลุ)'}
+                {id:'winner', icon:'fa-trophy', label:'Winner', desc:'ประกาศผู้ชนะ (ไม่มีพลุ)'}
             ];
 
             app.innerHTML = `
@@ -383,7 +378,7 @@
                 <div class="scene-bg absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-30 pointer-events-none z-0"></div>
                 <div class="scene-bg absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-black z-[-1]"></div>
                 <div id="stage" class="absolute inset-0 z-10 flex flex-col justify-end"></div>
-                <div id="error-log" class="absolute top-0 left-0 text-red-500 text-xs p-2 z-50 pointer-events-none"></div>
+                <div id="status-msg" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-slate-700 text-sm font-bold tracking-widest uppercase z-0 pointer-events-none">Waiting for Signal...</div>
             </div>`;
 
         let currentScene = '';
@@ -414,28 +409,31 @@
 
                 const sorted = [...newState.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
                 const currentSortedIDs = sorted.map(p => p.id).join(',');
-                const shouldFullRender = (newState.scene !== currentScene) || (currentSortedIDs !== lastSortedIDs);
+                
+                // FORCE RENDER if stage is empty OR logic changed
+                const isStageEmpty = stage.innerHTML.trim() === '';
+                const shouldFullRender = (newState.scene !== currentScene) || (currentSortedIDs !== lastSortedIDs) || isStageEmpty;
 
                 if (shouldFullRender) {
-                    // STOP CONFETTI if not winner scene anymore
-                    if (newState.scene !== 'winner') stopConfetti();
-
                     // Destroy old chart
                     if(chartInstance) { chartInstance.destroy(); chartInstance = null; }
                     
                     stage.innerHTML = ''; 
                     renderSceneStructure(stage, newState);
                     
-                    // Animations
+                    // Animations (Only simple ones to prevent black screen)
                     if (newState.scene === 'newsbar') {
                         gsap.from("#news-container", { y: "100%", opacity: 0, duration: 0.8, ease: "power3.out" });
                     } else if(newState.scene === 'winner') {
-                        fireConfetti();
-                        // ลบ opacity: 0 ออกเพื่อป้องกันบั๊กจอคำ ให้ใช้ scale อย่างเดียว
-                        gsap.from(".winner-card", { scale: 0.5, duration: 1, ease: "elastic.out(1, 0.5)" });
+                        // FORCE VISIBILITY: ไม่ใช้ Opacity 0 เริ่มต้น
+                        gsap.from(".winner-card", { scale: 0.8, duration: 0.5, ease: "back.out(1.7)" });
                     } else {
                         gsap.from(".center-content", { scale: 0.95, opacity: 0, duration: 0.5, ease: "power2.out" });
                     }
+
+                    // Remove waiting message if content exists
+                    const statusMsg = document.getElementById('status-msg');
+                    if(statusMsg) statusMsg.style.display = 'none';
 
                     currentScene = newState.scene;
                     lastSortedIDs = currentSortedIDs;
@@ -447,8 +445,7 @@
                 state = newState;
             } catch (e) {
                 console.error("Render Loop Error:", e);
-                const errLog = document.getElementById('error-log');
-                if(errLog) errLog.innerText = "Error: " + e.message;
+                // Emergency Recovery
             }
         }
         
@@ -640,13 +637,14 @@
         }
         else if(data.scene === 'winner') {
             const w = sorted[0];
-            // Safety Check: ถ้าไม่มีข้อมูลพรรคเลย ให้แสดงข้อความรอ
+            // Safety Check: ถ้าไม่มีข้อมูลพรรคเลย
             if (!w) {
                 container.innerHTML = wrapFullScreen(`<h1 class="text-4xl font-bold text-slate-500">WAITING FOR RESULTS...</h1>`, "OFFICIAL ANNOUNCEMENT");
                 return;
             }
             container.innerHTML = wrapFullScreen(`
-                <div class="text-center relative z-10 winner-card" style="opacity:1;"> <div class="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full animate-pulse"></div>
+                <div class="text-center relative z-10 winner-card" style="opacity: 1 !important;"> 
+                    <div class="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full animate-pulse"></div>
                     <div class="glass-panel p-20 rounded-[3rem] border-2 border-white/20 shadow-[0_0_100px_rgba(0,0,0,0.5)] relative z-10 bg-gradient-to-b from-slate-900/90 to-black/90 backdrop-blur-3xl overflow-hidden">
                         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                         <div class="scanline absolute inset-0 opacity-20"></div>
@@ -719,25 +717,6 @@
         const oldVal = parseInt(el.innerText) || 0;
         if(oldVal !== newVal) {
             gsap.to(el, { innerHTML: newVal, duration: 1.2, snap: { innerHTML: 1 }, ease: "power2.out" });
-        }
-    }
-
-    function fireConfetti() {
-        if (confettiInterval) return; // ถ้ามีพลุอยู่แล้วไม่ต้องยิงซ้ำ
-        const duration = 3000;
-        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
-        const randomInRange = (min, max) => Math.random() * (max - min) + min;
-
-        confettiInterval = setInterval(function() {
-            confetti(Object.assign({}, defaults, { particleCount: 50, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-            confetti(Object.assign({}, defaults, { particleCount: 50, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
-        }, 250);
-    }
-
-    function stopConfetti() {
-        if (confettiInterval) {
-            clearInterval(confettiInterval);
-            confettiInterval = null;
         }
     }
 </script>
