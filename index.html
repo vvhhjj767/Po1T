@@ -71,12 +71,6 @@
         body.transparent .bg-main { background: transparent !important; }
         body.transparent .obs-hide { display: none !important; }
         body.transparent .scene-bg { display: none !important; }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #475569; }
     </style>
 </head>
 <body>
@@ -119,14 +113,16 @@
     }
 
     function resetState() {
-        if(confirm('รีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น?')) {
+        if(confirm('รีเซ็ตข้อมูลทั้งหมดกลับเป็นค่าเริ่มต้น? (หน้าจอ On-Air จะรีเฟรชด้วย)')) {
             saveState(DEFAULT_DATA);
-            location.reload();
+            // บังคับรีโหลดหน้าจอเพื่อเคลียร์บั๊ก
+            location.reload(); 
         }
     }
 
     let state = loadState();
     let chartInstance = null;
+    let confettiInterval = null; // ตัวแปรเก็บพลุ เพื่อสั่งหยุดได้
 
     // ==========================================
     // 2. ROUTER & NAVIGATION
@@ -135,13 +131,11 @@
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode');
 
-    // ฟังก์ชันเปิดหน้าต่างใหม่
+    // ฟังก์ชันเปิดหน้าต่างใหม่ (Safe Mode)
     window.openWindow = function(modeName) {
         if(modeName === 'onair') {
-            // เปิด Popup สำหรับ On-Air
             window.open('?mode=onair', 'onair_win', 'width=1280,height=720,menubar=no,toolbar=no,location=no,status=no');
         } else {
-            // เปิด Control ในหน้าเดิม
             window.location.href = '?mode=' + modeName;
         }
     };
@@ -160,35 +154,28 @@
                 
                 <div class="glass-panel p-16 rounded-3xl text-center max-w-4xl w-full border-t-4 border-yellow-500 shadow-[0_0_100px_rgba(234,179,8,0.1)] relative z-10">
                     <div class="inline-block mb-6 px-4 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-500 text-xs font-bold tracking-widest uppercase">
-                        Election Broadcast System v2.1
+                        Election Broadcast System v2.1 (Fix)
                     </div>
                     <h1 class="text-8xl font-tech font-bold text-white mb-2 tracking-tight">PO1 <span class="text-yellow-500">NEWS</span></h1>
                     <p class="text-slate-400 mb-16 text-lg tracking-[0.3em] font-light">REAL-TIME GRAPHICS ENGINE</p>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
                         <button onclick="openWindow('control')" class="group h-48 bg-slate-900/50 border border-slate-700 rounded-2xl hover:bg-yellow-600 hover:border-yellow-400 hover:text-black transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden">
-                            <div class="absolute inset-0 bg-yellow-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
                             <i class="fa-solid fa-sliders text-6xl mb-6 group-hover:scale-110 transition-transform relative z-10"></i>
                             <span class="font-bold text-xl tracking-widest relative z-10">CONTROL ROOM</span>
-                            <span class="text-xs mt-2 text-slate-500 group-hover:text-black/70 relative z-10">จัดการข้อมูลและซีน (หน้าจอนี้)</span>
                         </button>
                         
                         <button onclick="openWindow('onair')" class="group h-48 bg-slate-900/50 border border-slate-700 rounded-2xl hover:bg-blue-600 hover:border-blue-400 hover:text-white transition-all duration-300 flex flex-col items-center justify-center relative overflow-hidden">
-                            <div class="absolute inset-0 bg-blue-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
                             <i class="fa-solid fa-tv text-6xl mb-6 group-hover:scale-110 transition-transform relative z-10"></i>
                             <span class="font-bold text-xl tracking-widest relative z-10">ON-AIR SCREEN</span>
-                            <span class="text-xs mt-2 text-slate-500 group-hover:text-white/70 relative z-10">เปิดหน้าต่างใหม่สำหรับ OBS</span>
                         </button>
-                    </div>
-                    <div class="mt-8 text-xs text-slate-600">
-                        *หมายเหตุ: กรุณาเปิด Control Room ก่อน แล้วค่อยกดเปิด On-Air Screen ในหน้าต่างใหม่
                     </div>
                 </div>
             </div>`;
     }
 
     // ==========================================
-    // 4. CONTROL ROOM (BACKEND)
+    // 4. CONTROL ROOM
     // ==========================================
     function initControl() {
         document.title = "Control Room - PO1 News";
@@ -205,7 +192,7 @@
                 {id:'battle', icon:'fa-hand-fist', label:'Battle Gauge', desc:'วัดพลังรัฐบาล vs ฝ่ายค้าน'},
                 {id:'parliament', icon:'fa-users-rectangle', label:'Parliament', desc:'ผังที่นั่งสภา 500 คน'},
                 {id:'chart', icon:'fa-chart-pie', label:'Donut Chart', desc:'สัดส่วนเก้าอี้'},
-                {id:'winner', icon:'fa-trophy', label:'Winner', desc:'ประกาศผู้ชนะ (มีพลุ)'}
+                {id:'winner', icon:'fa-trophy', label:'Winner', desc:'ประกาศผู้ชนะ (ระวัง! มีพลุ)'}
             ];
 
             app.innerHTML = `
@@ -219,7 +206,6 @@
                                 </span>
                                 LIVE CONTROL
                             </h2>
-                            <div class="text-[10px] text-slate-500 mt-1">Status: Active | Auto-Save: ON</div>
                         </div>
                         
                         <div class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
@@ -258,11 +244,11 @@
                                 <div>
                                     <div class="text-[10px] text-slate-400 font-bold uppercase mb-1">System</div>
                                     <button onclick="resetState()" class="w-full bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 rounded p-2 text-xs font-bold transition">
-                                        <i class="fa-solid fa-rotate-left mr-1"></i> RESET
+                                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> RESET
                                     </button>
                                 </div>
                             </div>
-                            <div class="mt-4 pt-4 border-t border-slate-800">
+                             <div class="mt-4 pt-4 border-t border-slate-800">
                                 <button onclick="window.openWindow('onair')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded text-xs flex items-center justify-center gap-2">
                                     <i class="fa-solid fa-external-link-alt"></i> Open On-Air Window
                                 </button>
@@ -271,7 +257,7 @@
                     </div>
 
                     <div class="flex-1 p-8 overflow-y-auto bg-[#0a0a0a] relative">
-                        <div class="max-w-5xl mx-auto pb-20">
+                         <div class="max-w-5xl mx-auto pb-20">
                             <div class="grid grid-cols-3 gap-4 mb-8">
                                 <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex items-center justify-between shadow-lg">
                                     <div>
@@ -366,7 +352,6 @@
         window.updateVal = (i, k, v) => { state.parties[i][k] = v; saveState(state); renderUI(); };
         window.addParty = () => { state.parties.push({ id: 'p'+Date.now(), name: 'New Party', color: '#94a3b8', zone: 0, list: 0 }); saveState(state); renderUI(); };
         window.removeParty = (i) => { if(confirm('ยืนยันลบพรรคนี้?')) { state.parties.splice(i, 1); saveState(state); renderUI(); } };
-        
         window.adj = (i, type, delta) => {
             const total = state.parties.reduce((sum, p) => sum + p[type], 0);
             const limit = LIMITS[type];
@@ -374,7 +359,6 @@
             state.parties[i][type] = Math.max(0, state.parties[i][type] + delta);
             saveState(state); renderUI(); 
         };
-        
         window.setScene = (s) => { state.scene = s; saveState(state); renderUI(); };
         window.setBg = (b) => { state.bg = b; saveState(state); };
         window.pushTicker = () => { 
@@ -390,11 +374,10 @@
     }
 
     // ==========================================
-    // 5. ON-AIR DISPLAY (FRONTEND)
+    // 5. ON-AIR DISPLAY
     // ==========================================
     function initOnAir() {
         document.title = "ON AIR DISPLAY";
-        
         app.innerHTML = `
             <div id="main-view" class="w-full h-full flex flex-col bg-main bg-black transition-colors duration-500 relative overflow-hidden font-sans">
                 <div class="scene-bg absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-30 pointer-events-none z-0"></div>
@@ -404,9 +387,9 @@
             </div>`;
 
         let currentScene = '';
-        let lastSortedIDs = ''; // To detect order/rank changes
+        let lastSortedIDs = '';
 
-        // Clock Update
+        // Clock
         setInterval(() => {
             const timeEl = document.getElementById('clock-text');
             if(timeEl) {
@@ -415,54 +398,49 @@
             }
         }, 1000);
 
-        // Core Render Loop
         function loop() {
             try {
                 const newState = loadState();
                 
-                // 1. Background Check
+                // Update Background Mode
                 const view = document.getElementById('main-view');
                 if(view) {
                     if(newState.bg === 'transparent') document.body.classList.add('transparent');
                     else document.body.classList.remove('transparent');
                 }
-                
-                // 2. Data Diffing Strategy
-                const stage = document.getElementById('stage');
-                if(!stage) return; // Safety
 
-                // Calculate current rank order hash
+                const stage = document.getElementById('stage');
+                if(!stage) return;
+
                 const sorted = [...newState.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
                 const currentSortedIDs = sorted.map(p => p.id).join(',');
-
-                // Check Triggers for Re-Render (Structure Change)
-                // - Scene changed
-                // - Rank order changed (someone overtook another)
                 const shouldFullRender = (newState.scene !== currentScene) || (currentSortedIDs !== lastSortedIDs);
 
                 if (shouldFullRender) {
-                    // Full Re-Render (Structure)
+                    // STOP CONFETTI if not winner scene anymore
+                    if (newState.scene !== 'winner') stopConfetti();
+
+                    // Destroy old chart
                     if(chartInstance) { chartInstance.destroy(); chartInstance = null; }
-                    stage.innerHTML = ''; 
                     
+                    stage.innerHTML = ''; 
                     renderSceneStructure(stage, newState);
                     
-                    // Entrance Animations
+                    // Animations
                     if (newState.scene === 'newsbar') {
                         gsap.from("#news-container", { y: "100%", opacity: 0, duration: 0.8, ease: "power3.out" });
                     } else if(newState.scene === 'winner') {
                         fireConfetti();
-                        gsap.from(".winner-card", { scale: 0.8, opacity: 0, duration: 1, ease: "elastic.out(1, 0.5)" });
+                        // ลบ opacity: 0 ออกเพื่อป้องกันบั๊กจอคำ ให้ใช้ scale อย่างเดียว
+                        gsap.from(".winner-card", { scale: 0.5, duration: 1, ease: "elastic.out(1, 0.5)" });
                     } else {
                         gsap.from(".center-content", { scale: 0.95, opacity: 0, duration: 0.5, ease: "power2.out" });
                     }
 
-                    // Update Trackers
                     currentScene = newState.scene;
                     lastSortedIDs = currentSortedIDs;
                     
                 } else {
-                    // Soft Update (Values/Text Only)
                     updateSceneValues(newState);
                 }
                 
@@ -473,10 +451,8 @@
                 if(errLog) errLog.innerText = "Error: " + e.message;
             }
         }
-
-        // Force initial render immediately
+        
         loop();
-        // Start polling
         setInterval(loop, 200);
     }
 
@@ -487,55 +463,7 @@
         const sorted = [...data.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
         const totalSeats = data.parties.reduce((s,p)=>s+p.zone+p.list,0);
 
-        if(data.scene === 'newsbar') {
-            container.innerHTML = `
-                <div id="news-container" class="w-full relative z-50">
-                    <div class="news-bar-bg h-40 flex flex-col justify-end relative overflow-hidden">
-                        
-                        <div class="flex-1 flex items-center px-8 gap-4 pt-2">
-                            <div class="flex flex-col justify-center border-r border-white/10 pr-6 mr-2 h-20 shrink-0">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <div class="bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse tracking-wider">LIVE</div>
-                                    <div class="text-blue-400 font-bold uppercase text-[9px] tracking-widest">OFFICIAL</div>
-                                </div>
-                                <div id="clock-text" class="text-white font-tech font-bold text-4xl leading-none tracking-tight">00:00</div>
-                                <div class="text-slate-400 text-[9px] uppercase mt-1">Real-time Count</div>
-                            </div>
-
-                            <div class="flex-1 flex gap-3 h-24 items-center overflow-hidden pr-4">
-                                ${sorted.slice(0, 5).map((p, i) => `
-                                    <div class="w-40 bg-[#1e293b]/60 backdrop-blur-md rounded-md p-2 border-l-4 relative overflow-hidden flex flex-col justify-center h-[90%] shadow-lg border-t border-white/5" style="border-left-color:${p.color}" id="card-${p.id}">
-                                        <div class="flex justify-between items-center mb-0.5">
-                                            <span class="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Rank ${i+1}</span>
-                                        </div>
-                                        <h3 class="text-sm font-bold text-white truncate w-full mb-0 leading-tight font-tech uppercase tracking-wide party-name" id="name-${p.id}">${p.name}</h3>
-                                        <div class="flex items-baseline gap-1.5 mt-0.5">
-                                            <span class="text-3xl font-tech font-bold text-white num-roll leading-none" id="low-val-${p.id}" style="text-shadow:0 0 20px ${p.color}80">${p.zone+p.list}</span>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-
-                            <div class="w-28 border-l border-white/10 pl-4 ml-2 h-20 flex flex-col justify-center text-right shrink-0">
-                                 <div class="text-[9px] text-slate-400 uppercase font-bold mb-0">Total Counted</div>
-                                 <div class="text-4xl font-tech font-bold text-white tracking-tighter leading-none text-yellow-500" id="total-seats-disp">${totalSeats}</div>
-                                 <div class="text-[9px] text-slate-500">of 500 Seats</div>
-                            </div>
-                        </div>
-
-                        <div class="h-9 bg-black/90 border-t border-white/10 flex items-center relative z-50 mt-1">
-                            <div class="bg-blue-700 h-full px-4 flex items-center justify-center shrink-0 z-20 shadow-[5px_0_15px_rgba(0,0,0,0.5)]">
-                                <span class="font-bold text-white tracking-widest text-[10px] uppercase">BREAKING NEWS</span>
-                            </div>
-                            <div class="ticker-wrap flex items-center">
-                                <div id="ticker-text" class="ticker-track text-sm font-light text-slate-200">${data.ticker}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            return;
-        }
-
+        // Helper for Full Screen
         const wrapFullScreen = (content, title="ELECTION 2026") => `
             <div class="w-full h-full flex items-center justify-center p-8 center-content relative">
                 <div class="absolute top-0 left-0 w-full h-24 flex justify-between items-center px-12 pt-6 z-50 obs-hide">
@@ -555,7 +483,48 @@
                 </div>
             </div>`;
 
-        if(data.scene === 'dashboard') {
+        if(data.scene === 'newsbar') {
+            container.innerHTML = `
+                <div id="news-container" class="w-full relative z-50">
+                    <div class="news-bar-bg h-40 flex flex-col justify-end relative overflow-hidden">
+                        <div class="flex-1 flex items-center px-8 gap-4 pt-2">
+                            <div class="flex flex-col justify-center border-r border-white/10 pr-6 mr-2 h-20 shrink-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded animate-pulse tracking-wider">LIVE</div>
+                                    <div class="text-blue-400 font-bold uppercase text-[9px] tracking-widest">OFFICIAL</div>
+                                </div>
+                                <div id="clock-text" class="text-white font-tech font-bold text-4xl leading-none tracking-tight">00:00</div>
+                            </div>
+                            <div class="flex-1 flex gap-3 h-24 items-center overflow-hidden pr-4">
+                                ${sorted.slice(0, 5).map((p, i) => `
+                                    <div class="w-40 bg-[#1e293b]/60 backdrop-blur-md rounded-md p-2 border-l-4 relative overflow-hidden flex flex-col justify-center h-[90%] shadow-lg border-t border-white/5" style="border-left-color:${p.color}" id="card-${p.id}">
+                                        <div class="flex justify-between items-center mb-0.5">
+                                            <span class="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Rank ${i+1}</span>
+                                        </div>
+                                        <h3 class="text-sm font-bold text-white truncate w-full mb-0 leading-tight font-tech uppercase tracking-wide party-name" id="name-${p.id}">${p.name}</h3>
+                                        <div class="flex items-baseline gap-1.5 mt-0.5">
+                                            <span class="text-3xl font-tech font-bold text-white num-roll leading-none" id="low-val-${p.id}" style="text-shadow:0 0 20px ${p.color}80">${p.zone+p.list}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="w-28 border-l border-white/10 pl-4 ml-2 h-20 flex flex-col justify-center text-right shrink-0">
+                                 <div class="text-[9px] text-slate-400 uppercase font-bold mb-0">Total Counted</div>
+                                 <div class="text-4xl font-tech font-bold text-white tracking-tighter leading-none text-yellow-500" id="total-seats-disp">${totalSeats}</div>
+                            </div>
+                        </div>
+                        <div class="h-9 bg-black/90 border-t border-white/10 flex items-center relative z-50 mt-1">
+                            <div class="bg-blue-700 h-full px-4 flex items-center justify-center shrink-0 z-20 shadow-[5px_0_15px_rgba(0,0,0,0.5)]">
+                                <span class="font-bold text-white tracking-widest text-[10px] uppercase">BREAKING NEWS</span>
+                            </div>
+                            <div class="ticker-wrap flex items-center">
+                                <div id="ticker-text" class="ticker-track text-sm font-light text-slate-200">${data.ticker}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        }
+        else if(data.scene === 'dashboard') {
             container.innerHTML = wrapFullScreen(`
                 <div class="w-full max-w-6xl mt-10">
                     <div class="grid grid-cols-1 gap-3">
@@ -580,30 +549,18 @@
                 </div>
             `, "PARLIAMENT DASHBOARD");
         }
-        
         else if(data.scene === 'battle') {
             const gov = sorted[0] || {name:'-', zone:0, list:0, color:'#333'};
             const opp = sorted[1] || {name:'-', zone:0, list:0, color:'#333'};
-            
             container.innerHTML = wrapFullScreen(`
                 <div class="w-full max-w-5xl flex flex-col items-center mt-12">
                     <div class="flex justify-between w-full mb-4 px-2">
-                         <div class="text-left">
-                            <h2 class="text-4xl font-bold text-white" id="battle-name-left">${gov.name}</h2>
-                            <div class="text-sm text-slate-400 uppercase tracking-widest">Current Leader</div>
-                         </div>
-                         <div class="text-right">
-                            <h2 class="text-4xl font-bold text-white" id="battle-name-right">${opp.name}</h2>
-                            <div class="text-sm text-slate-400 uppercase tracking-widest">Opposition Leader</div>
-                         </div>
+                         <div class="text-left"><h2 class="text-4xl font-bold text-white" id="battle-name-left">${gov.name}</h2></div>
+                         <div class="text-right"><h2 class="text-4xl font-bold text-white" id="battle-name-right">${opp.name}</h2></div>
                     </div>
                     <div class="w-full h-32 bg-slate-900 rounded-full border-4 border-slate-800 relative flex overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                        <div class="h-full flex items-center justify-start pl-10 relative transition-all duration-1000" style="width:${((gov.zone+gov.list)/500)*100}%; background:${gov.color}" id="battle-left">
-                             <div class="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-r from-transparent to-black/20"></div>
-                        </div>
-                        <div class="h-full flex items-center justify-end pr-10 relative transition-all duration-1000" style="width:${((opp.zone+opp.list)/500)*100}%; background:${opp.color}" id="battle-right">
-                             <div class="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-l from-transparent to-black/20"></div>
-                        </div>
+                        <div class="h-full flex items-center justify-start pl-10 relative transition-all duration-1000" style="width:${((gov.zone+gov.list)/500)*100}%; background:${gov.color}" id="battle-left"></div>
+                        <div class="h-full flex items-center justify-end pr-10 relative transition-all duration-1000" style="width:${((opp.zone+opp.list)/500)*100}%; background:${opp.color}" id="battle-right"></div>
                         <div class="absolute top-0 bottom-0 w-1 bg-white left-1/2 -translate-x-1/2 z-20 shadow-[0_0_20px_white]"></div>
                         <div class="absolute -top-12 left-1/2 -translate-x-1/2 bg-white text-black px-4 py-1 rounded font-bold shadow-lg text-xs tracking-widest border border-white">MAJORITY 251</div>
                     </div>
@@ -614,43 +571,38 @@
                 </div>
             `, "COALITION BATTLE");
         }
-
         else if(data.scene === 'parliament') {
             let dotsHtml = '';
             let idx = 0;
             let seatColors = [];
             sorted.forEach(p => { for(let i=0; i<p.zone+p.list; i++) seatColors.push(p.color); });
-            
             for(let r=1; r<=12; r++) {
                 const radius = 20 + (r * 3.5);
                 const arcLength = Math.PI * radius;
                 let dotsInRow = Math.floor(arcLength / 3);
                 if(r===12) dotsInRow = 500 - idx; 
                 const step = 180 / (dotsInRow + 1);
-                
                 for(let i=0; i<dotsInRow; i++) {
                     if(idx>=500) break;
                     const angle = (180 - (step * (i+1))) * (Math.PI / 180);
                     const x = 50 + (radius * Math.cos(angle));
                     const y = 90 - (radius * Math.sin(angle));
                     const c = seatColors[idx] || '#334155';
-                    dotsHtml += `<div id="seat-${idx}" class="dot-seat absolute w-[1.1%] pb-[1.1%] rounded-full shadow-sm transition-colors duration-500" style="left:${x}%; top:${y}%; background:${c}; transform:translate(-50%,-50%); box-shadow: 0 0 2px ${c};"></div>`;
+                    dotsHtml += `<div class="absolute w-[1.1%] pb-[1.1%] rounded-full shadow-sm" style="left:${x}%; top:${y}%; background:${c}; transform:translate(-50%,-50%); box-shadow: 0 0 2px ${c};"></div>`;
                     idx++;
                 }
             }
-
             container.innerHTML = wrapFullScreen(`
                 <div class="w-full max-w-7xl aspect-[2/1] relative scale-90 sm:scale-100 transition-transform">
                     ${dotsHtml}
                     <div class="absolute bottom-0 left-1/2 -translate-x-1/2 text-center mb-0 glass-panel px-16 py-8 rounded-t-3xl border-t-4 border-white/20">
                         <div class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-2">Projected Leader</div>
-                        <h1 class="text-4xl font-bold text-white mb-2 tracking-wide">${sorted[0].name}</h1>
-                        <div class="text-8xl font-tech font-bold leading-none" style="color:${sorted[0].color}; text-shadow: 0 0 30px ${sorted[0].color}50">${sorted[0].zone + sorted[0].list}</div>
+                        <h1 class="text-4xl font-bold text-white mb-2 tracking-wide">${sorted[0]?.name || '-'}</h1>
+                        <div class="text-8xl font-tech font-bold leading-none" style="color:${sorted[0]?.color || '#fff'}">${(sorted[0]?.zone + sorted[0]?.list) || 0}</div>
                     </div>
                 </div>
             `, "PARLIAMENT SEATING");
         }
-
         else if(data.scene === 'chart') {
             container.innerHTML = wrapFullScreen(`
                 <div class="glass-panel p-12 rounded-[3rem] flex flex-col items-center justify-center relative border border-white/5 bg-slate-900/60 shadow-2xl">
@@ -661,23 +613,11 @@
                             <div class="text-slate-500 text-sm uppercase tracking-widest">Seats Filled</div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-3 gap-6 mt-10 w-full">
-                         ${sorted.slice(0,3).map(p => `
-                            <div class="flex items-center gap-3 bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                                <div class="w-4 h-4 rounded-full" style="background:${p.color}"></div>
-                                <div class="text-sm font-bold text-slate-200">${p.name}</div>
-                                <div class="ml-auto font-tech text-xl text-white">${((p.zone+p.list)/totalSeats*100).toFixed(1)}%</div>
-                            </div>
-                         `).join('')}
-                    </div>
                 </div>
             `, "SEAT DISTRIBUTION");
-            
-            // Wait for DOM
             setTimeout(() => {
                 const canvas = document.getElementById('seatsChart');
                 if(!canvas) return;
-                
                 const ctx = canvas.getContext('2d');
                 const remaining = 500 - totalSeats;
                 chartInstance = new Chart(ctx, {
@@ -687,8 +627,7 @@
                         datasets: [{ 
                             data: [...sorted.map(p => p.zone+p.list), remaining], 
                             backgroundColor: [...sorted.map(p => p.color), '#1e293b'], 
-                            borderWidth: 0,
-                            hoverOffset: 10
+                            borderWidth: 0, hoverOffset: 10
                         }]
                     },
                     options: { 
@@ -699,12 +638,15 @@
                 });
             }, 100);
         }
-
         else if(data.scene === 'winner') {
             const w = sorted[0];
+            // Safety Check: ถ้าไม่มีข้อมูลพรรคเลย ให้แสดงข้อความรอ
+            if (!w) {
+                container.innerHTML = wrapFullScreen(`<h1 class="text-4xl font-bold text-slate-500">WAITING FOR RESULTS...</h1>`, "OFFICIAL ANNOUNCEMENT");
+                return;
+            }
             container.innerHTML = wrapFullScreen(`
-                <div class="text-center relative z-10 winner-card">
-                    <div class="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full animate-pulse"></div>
+                <div class="text-center relative z-10 winner-card" style="opacity:1;"> <div class="absolute inset-0 bg-blue-500/20 blur-[100px] rounded-full animate-pulse"></div>
                     <div class="glass-panel p-20 rounded-[3rem] border-2 border-white/20 shadow-[0_0_100px_rgba(0,0,0,0.5)] relative z-10 bg-gradient-to-b from-slate-900/90 to-black/90 backdrop-blur-3xl overflow-hidden">
                         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
                         <div class="scanline absolute inset-0 opacity-20"></div>
@@ -723,62 +665,46 @@
         }
     }
 
-    // ==========================================
-    // 7. REAL-TIME UPDATES (VALUES ONLY)
-    // ==========================================
     function updateSceneValues(data) {
         const sorted = [...data.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
-        
-        // News Bar Update
         if(data.scene === 'newsbar') {
              const totalSeats = data.parties.reduce((s,p)=>s+p.zone+p.list,0);
              const tDisp = document.getElementById('total-seats-disp');
              if(tDisp) tDisp.innerText = totalSeats;
-
              data.parties.forEach(p => {
                  animateNum(`low-val-${p.id}`, p.zone + p.list);
-                 // Also update name & color in case of edit
                  const nameEl = document.getElementById(`name-${p.id}`);
                  if(nameEl) nameEl.innerText = p.name;
                  const cardEl = document.getElementById(`card-${p.id}`);
                  if(cardEl) cardEl.style.borderLeftColor = p.color;
              });
-             
              const tickerEl = document.getElementById('ticker-text');
              if(tickerEl && tickerEl.innerText !== data.ticker) tickerEl.innerText = data.ticker;
         }
-        
         else if(data.scene === 'dashboard') {
             data.parties.forEach(p => {
                 const t = p.zone + p.list;
                 animateNum(`val-total-${p.id}`, t);
                 const bar = document.getElementById(`bar-${p.id}`);
-                if(bar) { 
-                    bar.style.width = `${(t/500)*100}%`; 
-                    bar.style.backgroundColor = p.color;
-                }
+                if(bar) { bar.style.width = `${(t/500)*100}%`; bar.style.backgroundColor = p.color; }
                 const nameEl = document.getElementById(`name-full-${p.id}`);
                 if(nameEl) nameEl.innerText = p.name;
             });
         }
-        
         else if(data.scene === 'battle') {
             const p1 = sorted[0], p2 = sorted[1];
             if(p1 && p2) {
                 const t1 = p1.zone + p1.list, t2 = p2.zone + p2.list;
                 const left = document.getElementById('battle-left');
                 const right = document.getElementById('battle-right');
-                
                 if(left) { 
-                    left.style.width = ((t1/500)*100)+'%'; 
-                    left.style.backgroundColor = p1.color; 
+                    left.style.width = ((t1/500)*100)+'%'; left.style.backgroundColor = p1.color; 
                     animateNum('battle-txt-left', t1);
                     document.getElementById('battle-txt-left').style.color = p1.color;
                     document.getElementById('battle-name-left').innerText = p1.name;
                 }
                 if(right) { 
-                    right.style.width = ((t2/500)*100)+'%'; 
-                    right.style.backgroundColor = p2.color;
+                    right.style.width = ((t2/500)*100)+'%'; right.style.backgroundColor = p2.color;
                     animateNum('battle-txt-right', t2);
                     document.getElementById('battle-txt-right').style.color = p2.color;
                     document.getElementById('battle-name-right').innerText = p2.name;
@@ -792,28 +718,27 @@
         if(!el) return;
         const oldVal = parseInt(el.innerText) || 0;
         if(oldVal !== newVal) {
-            gsap.to(el, { 
-                innerHTML: newVal, 
-                duration: 1.2, 
-                snap: { innerHTML: 1 }, 
-                ease: "power2.out" 
-            });
+            gsap.to(el, { innerHTML: newVal, duration: 1.2, snap: { innerHTML: 1 }, ease: "power2.out" });
         }
     }
 
     function fireConfetti() {
+        if (confettiInterval) return; // ถ้ามีพลุอยู่แล้วไม่ต้องยิงซ้ำ
         const duration = 3000;
-        const animationEnd = Date.now() + duration;
         const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
         const randomInRange = (min, max) => Math.random() * (max - min) + min;
 
-        const interval = setInterval(function() {
-            const timeLeft = animationEnd - Date.now();
-            if (timeLeft <= 0) return clearInterval(interval);
-            const particleCount = 50 * (timeLeft / duration);
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
-            confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+        confettiInterval = setInterval(function() {
+            confetti(Object.assign({}, defaults, { particleCount: 50, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+            confetti(Object.assign({}, defaults, { particleCount: 50, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
         }, 250);
+    }
+
+    function stopConfetti() {
+        if (confettiInterval) {
+            clearInterval(confettiInterval);
+            confettiInterval = null;
+        }
     }
 </script>
 </body>
