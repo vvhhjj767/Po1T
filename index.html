@@ -1,545 +1,598 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ระบบรายงานผลการเลือกตั้ง (Production Grade)</title>
+    <title>Election News Network | Broadcast System</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;700&family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Oswald:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 
     <style>
+        /* --- DESIGN SYSTEM --- */
         :root {
-            --bg-dark: #0f172a;
-            --bg-panel: #1e293b;
-            --bg-input: #020617;
+            --bg-deep: #020617;
+            --bg-panel: #0f172a;
+            --bg-surface: #1e293b;
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-accent: #38bdf8;
+            
             --border: #334155;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
             --accent: #3b82f6;
             --danger: #ef4444;
-            --success: #22c55e;
-            --warning: #eab308;
+            --success: #10b981;
             
-            --font-th: 'Prompt', sans-serif;
-            --font-num: 'Oswald', sans-serif;
+            --font-ui: 'Inter', sans-serif;
+            --font-display: 'Oswald', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            
+            --glass: rgba(15, 23, 42, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; user-select: none; }
+        
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            font-family: var(--font-th);
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            font-family: var(--font-ui);
             height: 100vh;
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- UTILITY CLASSES --- */
-        .flex-center { display: flex; align-items: center; justify-content: center; }
-        .flex-col { display: flex; flex-direction: column; }
+        /* --- UTILITIES --- */
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
         .full-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
-        .hidden { display: none; }
-        .num-font { font-family: var(--font-num); }
-
-        /* --- ANIMATIONS --- */
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
-        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .w-full { width: 100%; }
+        .h-full { height: 100%; }
+        .text-right { text-align: right; }
         
-        .list-move, 
-        .list-enter-active, 
-        .list-leave-active { transition: all 0.5s cubic-bezier(0.55, 0, 0.1, 1); }
-        .list-enter-from, 
-        .list-leave-to { opacity: 0; transform: translateX(-30px); }
+        /* --- ANIMATIONS --- */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.6s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+        .list-move, .list-enter-active, .list-leave-active { transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .list-enter-from, .list-leave-to { opacity: 0; transform: translateX(-20px); }
         .list-leave-active { position: absolute; width: 100%; }
 
-        @keyframes pulse-live { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-        @keyframes highlight-gain { 
-            0% { transform: scale(1); filter: brightness(1); } 
-            50% { transform: scale(1.1); filter: brightness(1.5); } 
-            100% { transform: scale(1); filter: brightness(1); } 
+        @keyframes pulse-glow {
+            0% { text-shadow: 0 0 0 rgba(255,255,255,0); transform: scale(1); }
+            50% { text-shadow: 0 0 20px currentColor; transform: scale(1.1); filter: brightness(1.3); }
+            100% { text-shadow: 0 0 0 rgba(255,255,255,0); transform: scale(1); }
         }
-
-        /* --- LANDING PAGE --- */
-        .landing { z-index: 999; background: var(--bg-dark); background-image: radial-gradient(circle at top, #1e293b, #0f172a); }
-        .btn-large {
-            padding: 2rem; width: 300px; border-radius: 16px; border: 1px solid var(--border);
-            background: rgba(255,255,255,0.05); color: white; cursor: pointer;
-            display: flex; flex-direction: column; align-items: center; gap: 1rem;
-            transition: all 0.2s;
-        }
-        .btn-large:hover { background: var(--bg-panel); border-color: var(--accent); transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
         
-        /* --- DIRECTOR MODE --- */
-        .director-grid { display: grid; grid-template-columns: 400px 1fr; height: 100vh; }
+        @keyframes ticker-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+        /* --- LANDING --- */
+        .landing-bg { background: radial-gradient(circle at top, #1e293b, #020617); }
+        .btn-entry {
+            padding: 2rem 4rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            border-radius: 12px; color: var(--text-primary); cursor: pointer; transition: all 0.2s;
+            display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 250px;
+        }
+        .btn-entry:hover { background: var(--bg-surface); border-color: var(--accent); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+
+        /* --- DIRECTOR LAYOUT --- */
+        .director-grid { display: grid; grid-template-columns: 360px 1fr; height: 100vh; }
         
         /* Sidebar */
         .sidebar { background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .sidebar-head { padding: 1.5rem; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); }
-        .sidebar-body { flex: 1; overflow-y: auto; padding: 1rem; }
+        .sidebar-header { padding: 1.5rem; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); }
+        .sidebar-content { flex: 1; overflow-y: auto; padding: 1rem; }
         
-        .party-card { background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px; margin-bottom: 0.8rem; border: 1px solid transparent; }
-        .party-card.active { border-color: var(--border); background: rgba(255,255,255,0.06); }
+        .control-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+        .control-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
         
-        .seat-control { display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.3); border-radius: 6px; padding: 4px; margin-top: 5px; }
-        .btn-seat { width: 28px; height: 28px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-family: var(--font-num); display: grid; place-items: center; }
-        .btn-minus { background: #475569; color: white; }
+        .btn-mini { width: 28px; height: 28px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; display: grid; place-items: center; }
+        .btn-minus { background: #334155; color: white; }
         .btn-plus { background: var(--success); color: black; }
-        .btn-seat:disabled { opacity: 0.2; cursor: not-allowed; }
+        .btn-plus:disabled { opacity: 0.2; cursor: not-allowed; }
 
-        /* Main Control */
-        .main-control { padding: 2rem; background: #020617; display: flex; flex-direction: column; gap: 2rem; }
-        .scene-btn { 
-            aspect-ratio: 16/9; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 12px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem;
-            cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+        .btn-launch { padding: 8px 12px; font-size: 0.8rem; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600; }
+        .btn-launch:hover { filter: brightness(1.1); }
+
+        /* Main Stage (Director) */
+        .main-stage { background: #020617; display: flex; flex-direction: column; }
+        .scene-selector { padding: 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+        .scene-card {
+            aspect-ratio: 16/9; background: var(--bg-panel); border: 2px solid var(--border); border-radius: 10px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+            cursor: pointer; transition: all 0.2s; position: relative;
         }
-        .scene-btn:hover { border-color: var(--text-muted); }
-        .scene-btn.active { border-color: var(--danger); background: #3f1818; }
-        .scene-btn.active::after { content: 'ON AIR'; position: absolute; top: 8px; right: 8px; background: var(--danger); font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; animation: pulse-live 1.5s infinite; }
+        .scene-card:hover { border-color: var(--text-secondary); }
+        .scene-card.active { border-color: var(--danger); background: #2a1212; }
+        .scene-card.active::before { content: 'LIVE'; position: absolute; top: 8px; right: 8px; background: var(--danger); font-size: 0.6rem; padding: 2px 6px; border-radius: 3px; font-weight: bold; }
 
-        /* --- ON AIR MODE --- */
-        .onair-stage { position: relative; width: 100%; height: 100%; overflow: hidden; }
-        /* Background styles */
-        .bg-standard { background: radial-gradient(circle at center, #1e293b 0%, #020617 100%); }
-        .bg-transparent { background: transparent !important; } /* For OBS Layering */
-        .bg-green { background: #00b140 !important; } /* For Chroma Key */
-
-        .broadcast-header { position: absolute; top: 40px; left: 50px; right: 50px; display: flex; justify-content: space-between; z-index: 10; }
-        .live-tag { background: var(--danger); color: white; padding: 5px 15px; border-radius: 4px; font-weight: bold; font-family: var(--font-num); letter-spacing: 1px; animation: pulse-live 2s infinite; }
-
-        /* Scene: Table */
-        .rank-container { position: absolute; top: 160px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 1100px; }
-        .rank-row { 
-            display: grid; grid-template-columns: 60px 1fr 150px; align-items: center; padding: 1rem 1.5rem;
-            background: rgba(255,255,255,0.05); margin-bottom: 0.8rem; border-radius: 8px; border-left: 8px solid transparent;
-            backdrop-filter: blur(5px);
+        /* --- ON-AIR LAYOUT (PREMIUM TV STYLE) --- */
+        .broadcast-view { 
+            background: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 80%);
+            color: white; overflow: hidden;
         }
-        .rank-num { font-family: var(--font-num); color: var(--text-muted); font-size: 1.2rem; }
-        .party-name { font-size: 1.6rem; font-weight: 600; display: flex; align-items: center; gap: 15px; }
-        .seat-val { font-family: var(--font-num); font-size: 2.5rem; font-weight: 700; text-align: right; }
-        .highlight-anim { animation: highlight-gain 0.5s ease-out; }
-
-        /* Scene: Hemicycle */
-        .hemi-wrapper { position: absolute; bottom: 60px; width: 100%; height: 65%; display: flex; justify-content: center; align-items: flex-end; }
-        .hemi-container { position: relative; width: 800px; height: 400px; }
-        .dot { position: absolute; width: 14px; height: 14px; border-radius: 50%; transition: background 0.8s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .hemi-stat { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; margin-bottom: 40px; }
-
-        /* Scene: Donut */
-        .donut-wrapper { display: flex; align-items: center; justify-content: center; height: 100%; }
-        .donut-legend { margin-left: 60px; }
         
-        /* Scene: Top 3 */
-        .top3-wrapper { display: flex; align-items: flex-end; justify-content: center; height: 100%; padding-bottom: 120px; gap: 40px; }
-        .podium { width: 280px; display: flex; flex-direction: column; align-items: center; text-align: center; border-radius: 16px 16px 0 0; border-top: 8px solid; background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); padding: 2rem; position: relative; transition: height 0.5s ease; }
-        .podium.p1 { height: 70%; transform: scale(1.1); z-index: 10; box-shadow: 0 0 50px rgba(0,0,0,0.5); background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent); }
-        .podium.p2 { height: 55%; opacity: 0.9; }
-        .podium.p3 { height: 45%; opacity: 0.8; }
+        /* 1. Global Header */
+        .broadcast-header {
+            position: absolute; top: 0; left: 0; width: 100%; height: 80px;
+            background: linear-gradient(to bottom, rgba(2, 6, 23, 0.9), transparent);
+            display: flex; justify-content: space-between; align-items: flex-start;
+            padding: 24px 48px; z-index: 50;
+        }
+        .header-left { display: flex; flex-direction: column; }
+        .header-label { font-family: var(--font-display); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-secondary); }
+        .header-clock { font-family: var(--font-mono); font-size: 1.2rem; color: var(--text-primary); margin-top: 4px; }
+        
+        .header-center { position: absolute; left: 50%; transform: translateX(-50%); top: 24px; text-align: center; }
+        .header-badge { 
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); 
+            padding: 6px 16px; border-radius: 20px; backdrop-filter: blur(5px);
+            font-size: 0.8rem; letter-spacing: 1px; text-transform: uppercase; color: var(--text-secondary);
+        }
+
+        .header-right { width: 200px; text-align: right; }
+        .progress-label { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+        .progress-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--accent); transition: width 1s ease; }
+
+        /* 2. Scenes */
+        .scene-container { 
+            position: absolute; top: 100px; bottom: 80px; left: 48px; right: 48px;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* Dashboard Table */
+        .dashboard-table { width: 100%; max-width: 1200px; display: flex; flex-direction: column; gap: 12px; }
+        .rank-row {
+            display: grid; grid-template-columns: 60px 1fr 200px; align-items: center;
+            background: rgba(255,255,255,0.03); border-left: 6px solid transparent;
+            padding: 20px 32px; border-radius: 8px; backdrop-filter: blur(4px);
+            transition: transform 0.3s;
+        }
+        .rank-row.leader { background: rgba(255,255,255,0.07); transform: scale(1.02); margin-bottom: 8px; border-radius: 12px; }
+        .rank-idx { font-family: var(--font-mono); color: var(--text-secondary); font-size: 1.2rem; }
+        .party-name { font-size: 2rem; font-weight: 600; font-family: var(--font-display); letter-spacing: 0.5px; display: flex; align-items: center; gap: 16px; }
+        .party-color-indicator { width: 16px; height: 16px; border-radius: 50%; box-shadow: 0 0 15px currentColor; }
+        .seat-count { font-family: var(--font-display); font-size: 3rem; font-weight: 700; text-align: right; line-height: 1; }
+        .seat-count.gaining { animation: pulse-glow 0.8s ease-out; }
+
+        /* Hemicycle */
+        .hemicycle-wrapper { position: relative; width: 900px; height: 450px; }
+        .hemi-dot { position: absolute; width: 14px; height: 14px; border-radius: 50%; transition: background 0.8s, transform 0.5s; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .hemi-center { position: absolute; bottom: 0; width: 100%; text-align: center; }
+
+        /* Top 3 */
+        .podium-wrapper { display: flex; align-items: flex-end; gap: 40px; height: 100%; padding-bottom: 50px; }
+        .podium-col { width: 300px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .podium-bar { width: 100%; background: linear-gradient(to top, rgba(255,255,255,0.05), transparent); border-top: 6px solid; border-radius: 12px 12px 0 0; transition: height 1s; }
+        .p-rank-1 { height: 400px; } .p-rank-2 { height: 300px; } .p-rank-3 { height: 200px; }
 
         /* Ticker */
-        .ticker-bar { position: absolute; bottom: 40px; left: 0; width: 100%; height: 50px; background: var(--warning); color: black; display: flex; z-index: 100; border-top: 4px solid white; box-shadow: 0 -10px 30px rgba(0,0,0,0.5); }
-        .ticker-lbl { background: var(--danger); color: white; padding: 0 30px; display: grid; place-items: center; font-weight: 800; font-size: 1.2rem; z-index: 2; }
-        .ticker-area { flex: 1; overflow: hidden; position: relative; display: flex; align-items: center; }
-        .ticker-text { white-space: nowrap; display: inline-block; padding-left: 100%; animation: ticker-scroll 20s linear infinite; font-size: 1.4rem; font-weight: 700; text-transform: uppercase; }
+        .ticker-bar {
+            position: absolute; bottom: 40px; left: 0; width: 100%; height: 50px;
+            background: var(--text-primary); color: var(--bg-deep);
+            display: flex; align-items: center; z-index: 100;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        }
+        .ticker-label { 
+            background: var(--danger); color: white; padding: 0 40px; height: 100%; 
+            display: flex; align-items: center; font-family: var(--font-display); font-weight: 700; letter-spacing: 1px;
+            position: relative; z-index: 2;
+        }
+        .ticker-content-wrapper { flex: 1; overflow: hidden; position: relative; height: 100%; display: flex; align-items: center; }
+        .ticker-text { white-space: nowrap; padding-left: 100%; animation: ticker-scroll 25s linear infinite; font-weight: 600; font-size: 1.1rem; text-transform: uppercase; }
 
-        /* Utils */
-        input[type="text"], input[type="number"] { background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; padding: 8px; border-radius: 4px; width: 100%; font-family: var(--font-th); }
-        input[type="color"] { border: none; background: none; width: 30px; height: 30px; cursor: pointer; }
-        .btn-reset { background: transparent; border: 1px solid var(--danger); color: var(--danger); padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-top: 20px; width: 100%; }
-        .btn-reset:hover { background: var(--danger); color: white; }
+        /* Input Styles */
+        input[type="text"], input[type="number"] {
+            background: var(--bg-deep); border: 1px solid var(--border);
+            color: white; padding: 6px 10px; border-radius: 6px; width: 100%;
+            font-family: var(--font-ui); font-size: 0.9rem;
+        }
+        input[type="color"] { border: none; background: none; width: 24px; height: 24px; cursor: pointer; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); }
+
     </style>
 </head>
 <body>
 
 <div id="app">
 
-    <div v-if="mode === 'landing'" class="full-screen landing flex-center">
-        <div style="text-align: center;">
-            <h1 class="num-font" style="font-size: 4rem; margin-bottom: 10px;">ELECTION <span style="color:var(--accent)">SYSTEM</span></h1>
-            <p style="color:var(--text-muted); margin-bottom: 40px;">ระบบรายงานผลคะแนนแบบ Real-time</p>
-            
-            <div class="flex-center" style="gap: 30px;">
-                <div @click="setMode('director')" class="btn-large">
-                    <i data-lucide="settings-2" width="48" height="48"></i>
-                    <div>
-                        <h3 class="num-font" style="font-size:1.5rem;">DIRECTOR</h3>
-                        <span style="font-size:0.9rem; color:var(--text-muted)">หน้าจอควบคุม (Back Office)</span>
-                    </div>
-                </div>
-                <div @click="setMode('onair')" class="btn-large" style="border-color: var(--danger);">
-                    <i data-lucide="tv-2" width="48" height="48" style="color:var(--danger)"></i>
-                    <div>
-                        <h3 class="num-font" style="font-size:1.5rem;">ON-AIR</h3>
-                        <span style="font-size:0.9rem; color:var(--text-muted)">หน้าจอออกอากาศ (Output)</span>
-                    </div>
-                </div>
-            </div>
-            
-            <p style="margin-top: 40px; font-size: 0.8rem; color: #475569;">
-                วิธีใช้: เปิดไฟล์นี้ใน 2 Tabs (Tab หนึ่งเลือก Director, อีก Tab เลือก On-Air)<br>
-                ระบบจะ Sync ข้อมูลหากันอัตโนมัติและบันทึกข้อมูลไว้ในเครื่อง
-            </p>
+    <div v-if="mode === 'landing'" class="full-screen landing-bg flex-center flex flex-col justify-center items-center">
+        <h1 style="font-family: var(--font-display); font-size: 4rem; margin-bottom: 8px;">ELECTION <span style="color:var(--accent)">NEWS</span></h1>
+        <p style="color:var(--text-secondary); margin-bottom: 40px; letter-spacing: 2px;">BROADCAST GRAPHICS SYSTEM</p>
+        
+        <div class="flex gap-4">
+            <button @click="setMode('director')" class="btn-entry">
+                <i data-lucide="monitor" width="40" height="40"></i>
+                <span style="font-weight: 600; font-size: 1.2rem;">DIRECTOR CONTROL</span>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">Back Office Interface</span>
+            </button>
+            <button @click="setMode('onair')" class="btn-entry" style="border-color: rgba(239, 68, 68, 0.3);">
+                <i data-lucide="tv" width="40" height="40" style="color: var(--danger);"></i>
+                <span style="font-weight: 600; font-size: 1.2rem;">ON-AIR VIEW</span>
+                <span style="font-size: 0.8rem; color: var(--text-secondary);">Clean Broadcast Output</span>
+            </button>
         </div>
     </div>
 
     <div v-if="mode === 'director'" class="director-grid">
         <div class="sidebar">
-            <div class="sidebar-head">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                    <span style="font-size: 0.9rem; color: var(--text-muted);">ที่นั่งรวม (Total Seats)</span>
-                    <span class="num-font" style="font-size: 1.5rem; font-weight: bold;" :style="{color: totalSeats > 500 ? 'var(--danger)' : 'var(--text-main)'}">
-                        {{ totalSeats }} / 500
-                    </span>
+            <div class="sidebar-header">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 style="font-family: var(--font-display); letter-spacing: 1px; color: var(--text-secondary);">CONTROLLER</h2>
+                    <span style="font-family: var(--font-mono); font-size: 0.9rem;">{{ currentTime }}</span>
                 </div>
-                <div style="height: 6px; background: #334155; border-radius: 3px; overflow: hidden;">
-                    <div :style="{width: (totalSeats/500*100) + '%', background: totalSeats > 500 ? 'var(--danger)' : 'var(--success)'}" style="height: 100%; transition: width 0.3s;"></div>
-                </div>
-            </div>
-
-            <div class="sidebar-body">
-                <div v-for="p in parties" :key="p.id" class="party-card">
-                    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px;">
-                        <input type="color" v-model="p.color" @change="saveData">
-                        <input type="text" v-model="p.name" @input="saveData" style="font-weight: 600;">
-                        <div class="num-font" style="font-size: 1.2rem; font-weight: bold; min-width: 40px; text-align: right;">
-                            {{ p.district + p.list }}
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div>
-                            <span style="font-size: 0.7rem; color: var(--text-muted);">เขต (District)</span>
-                            <div class="seat-control">
-                                <button class="btn-seat btn-minus" @click="updateSeat(p, 'district', -1)">-</button>
-                                <span class="num-font" style="font-weight: bold;">{{ p.district }}</span>
-                                <button class="btn-seat btn-plus" @click="updateSeat(p, 'district', 1)" :disabled="totalSeats >= 500">+</button>
-                            </div>
-                        </div>
-                        <div>
-                            <span style="font-size: 0.7rem; color: var(--text-muted);">บัญชีรายชื่อ (P-List)</span>
-                            <div class="seat-control">
-                                <button class="btn-seat btn-minus" @click="updateSeat(p, 'list', -1)">-</button>
-                                <span class="num-font" style="font-weight: bold;">{{ p.list }}</span>
-                                <button class="btn-seat btn-plus" @click="updateSeat(p, 'list', 1)" :disabled="totalSeats >= 500">+</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <button @click="addParty" style="width: 100%; padding: 10px; border: 1px dashed var(--text-muted); color: var(--text-muted); background: transparent; border-radius: 6px; cursor: pointer; margin-top: 10px;">
-                    + เพิ่มพรรคการเมือง
+                
+                <button @click="openOnAirWindow" class="btn-launch w-full justify-center mb-6">
+                    <i data-lucide="external-link" width="16"></i> OPEN ON-AIR VIEW
                 </button>
 
-                <div style="margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px;">
-                    <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 5px;">พื้นหลัง On-Air (OBS Mode)</label>
-                    <select v-model="bgMode" @change="saveData" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: white; border-radius: 4px;">
-                        <option value="standard">มาตรฐาน (Standard)</option>
-                        <option value="transparent">โปร่งใส (Transparent for OBS)</option>
-                        <option value="green">จอเขียว (Green Screen)</option>
-                    </select>
-
-                    <button @click="resetData" class="btn-reset">
-                        ⚠ ล้างคะแนนทั้งหมด (Reset Data)
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="main-control">
-            <div>
-                <h2 class="num-font" style="margin-bottom: 15px;">SCENE SELECTOR</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px;">
-                    <div v-for="scene in scenes" :key="scene.id" 
-                         class="scene-btn" 
-                         :class="{active: activeScene === scene.id}"
-                         @click="activeScene = scene.id; saveData()">
-                        <i :data-lucide="scene.icon"></i>
-                        <span style="font-weight: 600; font-size: 0.9rem;">{{ scene.name }}</span>
+                <div class="p-4 bg-slate-900 rounded border border-slate-700 mb-4">
+                    <div class="flex justify-between text-xs text-slate-400 uppercase mb-1">Total Allocated</div>
+                    <div class="flex justify-between items-end">
+                        <span class="text-3xl font-bold font-mono">{{ totalSeats }}</span>
+                        <span class="text-sm text-slate-500 mb-1">/ 500</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-1 mt-2 rounded overflow-hidden">
+                        <div class="h-full bg-green-500 transition-all" :style="{width: (totalSeats/500*100)+'%'}"></div>
                     </div>
                 </div>
+
+                <div class="mb-4">
+                    <div class="flex justify-between text-xs text-slate-400 mb-2">COUNTING PROGRESS: {{ countingProgress }}%</div>
+                    <input type="range" v-model="countingProgress" min="0" max="100" @input="saveState">
+                </div>
             </div>
 
-            <div style="background: var(--bg-panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
-                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                    <h3 class="num-font">TICKER CONTROL</h3>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 0.8rem;" :style="{color: tickerActive ? 'var(--success)' : 'var(--text-muted)'}">
-                            {{ tickerActive ? 'SHOWING' : 'HIDDEN' }}
-                        </span>
-                        <input type="checkbox" v-model="tickerActive" @change="saveData" style="width: 20px; height: 20px;">
+            <div class="sidebar-content">
+                <div v-for="party in parties" :key="party.id" class="control-card">
+                    <div class="flex items-center gap-2 mb-2">
+                        <input type="color" v-model="party.color" @change="saveState">
+                        <input type="text" v-model="party.name" @input="saveState" class="font-bold">
+                        <span class="font-mono font-bold text-lg w-12 text-right">{{ party.district + party.list }}</span>
                     </div>
-                </div>
-                <input type="text" v-model="tickerText" @input="saveData" placeholder="พิมพ์ข่าวด่วนที่นี่..." style="margin-bottom: 15px; font-size: 1.1rem;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 0.8rem; color: var(--text-muted);">SPEED</span>
-                    <input type="range" v-model="tickerSpeed" min="10" max="50" @input="saveData" style="flex: 1;">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div v-if="mode === 'onair'" class="onair-stage" :class="bgClass">
-        
-        <div class="broadcast-header">
-            <div>
-                <h1 class="num-font" style="font-size: 2.5rem; line-height: 1;">ELECTION <span style="color:var(--accent)">2026</span></h1>
-                <span style="font-size: 1rem; color: var(--text-muted); letter-spacing: 2px;">OFFICIAL RESULT</span>
-            </div>
-            <div>
-                <div class="live-tag">LIVE</div>
-            </div>
-        </div>
-
-        <transition name="fade">
-            <div v-if="activeScene === 'table'" class="rank-container">
-                <div style="display: grid; grid-template-columns: 60px 1fr 150px; padding: 0 1.5rem 10px; color: var(--text-muted); font-size: 0.9rem;">
-                    <span>อันดับ</span><span>พรรคการเมือง</span><span style="text-align: right;">ที่นั่งรวม</span>
-                </div>
-                <transition-group name="list">
-                    <div v-for="(p, idx) in sortedParties" :key="p.id" class="rank-row" :style="{borderLeftColor: p.color}">
-                        <span class="rank-num">#{{ idx + 1 }}</span>
-                        <div class="party-name">
-                            <div :style="{background: p.color}" style="width: 12px; height: 12px; border-radius: 50%;"></div>
-                            {{ p.name }}
-                        </div>
-                        <div class="seat-val" :style="{color: p.color}" :class="{ 'highlight-anim': p.justUpdated }">
-                            {{ p.district + p.list }}
-                        </div>
-                    </div>
-                </transition-group>
-            </div>
-        </transition>
-
-        <transition name="fade">
-            <div v-if="activeScene === 'hemicycle'" class="full-screen">
-                <div class="hemi-wrapper">
-                    <div class="hemi-container">
-                        <div v-for="(dot, i) in hemiDots" :key="i" class="dot"
-                             :style="{ left: dot.x + 'px', bottom: dot.y + 'px', backgroundColor: dot.color }">
-                        </div>
-                    </div>
-                </div>
-                <div class="hemi-stat">
-                    <h2 style="font-size: 1.5rem; margin-bottom: 5px;">จำนวนที่นั่งในสภา</h2>
-                    <div class="num-font" style="font-size: 5rem; font-weight: 700; line-height: 1;">
-                        {{ totalSeats }} <span style="font-size: 2.5rem; color: var(--text-muted);">/ 500</span>
-                    </div>
-                </div>
-            </div>
-        </transition>
-
-        <transition name="fade">
-            <div v-if="activeScene === 'donut'" class="donut-wrapper">
-                <div style="position: relative; width: 600px; height: 600px;">
-                    <svg viewBox="0 0 100 100" style="transform: rotate(-90deg); width: 100%; height: 100%;">
-                        <circle v-for="(seg, i) in donutSegs" :key="i" cx="50" cy="50" r="40" 
-                                fill="transparent" :stroke="seg.color" stroke-width="12"
-                                :stroke-dasharray="seg.dash" :stroke-dashoffset="seg.offset"
-                                style="transition: all 1s ease-out;" />
-                    </svg>
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
-                        <div class="num-font" style="font-size: 5rem; font-weight: 700; line-height: 1;">{{ totalSeats }}</div>
-                        <div style="color: var(--text-muted);">SEATS</div>
-                    </div>
-                </div>
-                <div class="donut-legend">
-                    <div v-for="p in sortedParties.slice(0, 5)" :key="p.id" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                        <div :style="{background: p.color}" style="width: 20px; height: 20px; border-radius: 4px;"></div>
+                    
+                    <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <div style="font-size: 1.2rem; font-weight: 600;">{{ p.name }}</div>
-                            <div class="num-font" style="font-size: 1.5rem; font-weight: 700; color: var(--text-muted);">{{ p.district + p.list }}</div>
+                            <div class="text-[10px] text-slate-500 uppercase mb-1">District</div>
+                            <div class="flex justify-between items-center bg-black/20 p-1 rounded">
+                                <button class="btn-mini btn-minus" @click="updateSeats(party, 'district', -1)">-</button>
+                                <span class="font-mono text-sm">{{ party.district }}</span>
+                                <button class="btn-mini btn-plus" @click="updateSeats(party, 'district', 1)" :disabled="totalSeats>=500">+</button>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-[10px] text-slate-500 uppercase mb-1">Party List</div>
+                            <div class="flex justify-between items-center bg-black/20 p-1 rounded">
+                                <button class="btn-mini btn-minus" @click="updateSeats(party, 'list', -1)">-</button>
+                                <span class="font-mono text-sm">{{ party.list }}</span>
+                                <button class="btn-mini btn-plus" @click="updateSeats(party, 'list', 1)" :disabled="totalSeats>=500">+</button>
+                            </div>
                         </div>
                     </div>
                 </div>
+                
+                <button @click="addParty" class="w-full py-2 border border-dashed border-slate-600 text-slate-400 rounded hover:bg-slate-800 text-sm mt-2">+ Add Party</button>
             </div>
-        </transition>
+        </div>
 
-        <transition name="fade">
-            <div v-if="activeScene === 'top3'" class="top3-wrapper">
-                <div v-for="(p, i) in top3Parties" :key="p.id" class="podium" 
-                     :class="'p' + (i+1)"
-                     :style="{borderTopColor: p.color}">
-                    <div style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text-muted);">
-                        {{ i === 0 ? 'อันดับ 1' : 'อันดับ ' + (i+1) }}
+        <div class="main-stage">
+            <div class="p-8 border-b border-slate-800">
+                <h2 class="font-display text-slate-400 tracking-widest text-sm mb-4">LIVE SCENE SELECTION</h2>
+                <div class="scene-selector p-0">
+                    <div v-for="scene in scenes" :key="scene.id" 
+                         class="scene-card" 
+                         :class="{ active: activeScene === scene.id }"
+                         @click="activeScene = scene.id; saveState()">
+                        <i :data-lucide="scene.icon"></i>
+                        <span class="font-bold text-sm">{{ scene.name }}</span>
                     </div>
-                    <div class="num-font" style="font-size: 5rem; font-weight: 700; line-height: 1; margin-bottom: 10px;" :style="{color: p.color}">
-                        {{ p.district + p.list }}
-                    </div>
-                    <div style="font-size: 1.4rem; font-weight: 600;">{{ p.name }}</div>
                 </div>
             </div>
-        </transition>
 
-        <transition name="fade">
+            <div class="p-8 mt-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-display text-slate-400 tracking-widest text-sm">TICKER CONTROL</h2>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" v-model="tickerActive" @change="saveState">
+                        <span class="text-xs font-bold" :class="tickerActive ? 'text-green-500':'text-slate-500'">{{ tickerActive ? 'ON AIR' : 'OFF' }}</span>
+                    </label>
+                </div>
+                <input type="text" v-model="tickerText" @input="saveState" class="p-4 text-lg mb-4">
+                <div class="flex items-center gap-4 text-xs text-slate-400">
+                    <span>SPEED</span>
+                    <input type="range" v-model="tickerSpeed" min="10" max="60" @input="saveState">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div v-if="mode === 'onair'" class="full-screen broadcast-view">
+        
+        <header class="broadcast-header">
+            <div class="header-left">
+                <div class="header-label">Unofficial Results</div>
+                <div class="header-clock">{{ currentTime }}</div>
+            </div>
+
+            <div class="header-center">
+                <div class="header-badge">LIVE RESULTS</div>
+            </div>
+
+            <div class="header-right">
+                <div class="progress-label">Counted: {{ countingProgress }}%</div>
+                <div class="progress-track">
+                    <div class="progress-bar" :style="{width: countingProgress + '%'}"></div>
+                </div>
+            </div>
+        </header>
+
+        <div class="scene-container">
+            
+            <transition name="fade">
+                <div v-if="activeScene === 'dashboard'" class="dashboard-table">
+                    <transition-group name="list">
+                        <div v-for="(party, idx) in sortedParties" :key="party.id" 
+                             class="rank-row" :class="{ 'leader': idx === 0 }"
+                             :style="{ borderLeftColor: party.color }">
+                            <div class="rank-idx">#{{ idx + 1 }}</div>
+                            <div class="party-name" :style="{ color: idx === 0 ? 'white' : '#cbd5e1' }">
+                                {{ party.name }}
+                                <div class="party-color-indicator" :style="{ color: party.color }"></div>
+                            </div>
+                            <div class="seat-count" 
+                                 :style="{ color: party.color }"
+                                 :class="{ 'gaining': party.justUpdated }">
+                                {{ party.district + party.list }}
+                            </div>
+                        </div>
+                    </transition-group>
+                </div>
+            </transition>
+
+            <transition name="fade">
+                <div v-if="activeScene === 'hemicycle'" class="flex flex-col items-center justify-end h-full">
+                    <div class="hemicycle-wrapper">
+                        <div v-for="(dot, i) in hemicycleDots" :key="i" class="hemi-dot"
+                             :style="{ 
+                                 left: dot.x + 'px', 
+                                 bottom: dot.y + 'px', 
+                                 background: dot.color 
+                             }">
+                        </div>
+                    </div>
+                    <div class="text-center mt-8 mb-12">
+                        <div class="font-display text-6xl font-bold">{{ totalSeats }}</div>
+                        <div class="text-slate-400 tracking-widest text-sm uppercase">Total Seats Allocated</div>
+                    </div>
+                </div>
+            </transition>
+
+            <transition name="fade">
+                <div v-if="activeScene === 'top3'" class="podium-wrapper">
+                    <div v-if="sortedParties[1]" class="podium-col">
+                        <div class="text-slate-400 font-mono mb-2">RANK #2</div>
+                        <div class="font-display text-6xl font-bold mb-4" :style="{color: sortedParties[1].color}">
+                            {{ sortedParties[1].district + sortedParties[1].list }}
+                        </div>
+                        <div class="text-2xl font-bold mb-4">{{ sortedParties[1].name }}</div>
+                        <div class="podium-bar p-rank-2" :style="{ borderColor: sortedParties[1].color, background: `linear-gradient(to top, ${sortedParties[1].color}22, transparent)` }"></div>
+                    </div>
+                     <div v-if="sortedParties[0]" class="podium-col -mt-12">
+                        <div class="text-yellow-400 font-mono mb-2 font-bold">CURRENT LEADER</div>
+                        <div class="font-display text-8xl font-bold mb-4" :style="{color: sortedParties[0].color}">
+                            {{ sortedParties[0].district + sortedParties[0].list }}
+                        </div>
+                        <div class="text-3xl font-bold mb-4">{{ sortedParties[0].name }}</div>
+                        <div class="podium-bar p-rank-1" :style="{ borderColor: sortedParties[0].color, background: `linear-gradient(to top, ${sortedParties[0].color}33, transparent)` }"></div>
+                    </div>
+                     <div v-if="sortedParties[2]" class="podium-col">
+                        <div class="text-slate-400 font-mono mb-2">RANK #3</div>
+                        <div class="font-display text-6xl font-bold mb-4" :style="{color: sortedParties[2].color}">
+                            {{ sortedParties[2].district + sortedParties[2].list }}
+                        </div>
+                        <div class="text-2xl font-bold mb-4">{{ sortedParties[2].name }}</div>
+                        <div class="podium-bar p-rank-3" :style="{ borderColor: sortedParties[2].color, background: `linear-gradient(to top, ${sortedParties[2].color}22, transparent)` }"></div>
+                    </div>
+                </div>
+            </transition>
+
+            <transition name="fade">
+                <div v-if="activeScene === 'donut'" class="relative w-[600px] h-[600px] flex items-center justify-center">
+                    <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
+                        <circle v-for="(seg, i) in donutSegments" :key="i"
+                            cx="50" cy="50" r="40" fill="transparent"
+                            :stroke="seg.color" stroke-width="12"
+                            :stroke-dasharray="seg.dash" :stroke-dashoffset="seg.offset"
+                            class="transition-all duration-1000 ease-out"
+                        />
+                    </svg>
+                    <div class="absolute text-center">
+                        <div class="text-7xl font-bold font-display">{{ totalSeats }}</div>
+                        <div class="text-sm tracking-[0.3em] text-slate-400 mt-2">SEATS FILLED</div>
+                    </div>
+                </div>
+            </transition>
+        </div>
+
+        <transition name="slide-up">
             <div v-if="tickerActive" class="ticker-bar">
-                <div class="ticker-lbl">BREAKING NEWS</div>
-                <div class="ticker-area">
-                    <div class="ticker-text" :style="{animationDuration: (60 - tickerSpeed) + 's'}">
-                        {{ tickerText }} &nbsp;&nbsp; • &nbsp;&nbsp; {{ tickerText }} &nbsp;&nbsp; • &nbsp;&nbsp; {{ tickerText }}
+                <div class="ticker-label">BREAKING NEWS</div>
+                <div class="ticker-content-wrapper">
+                    <div class="ticker-text" :style="{ animationDuration: (70 - tickerSpeed) + 's' }">
+                        {{ tickerText }} &nbsp; • &nbsp; {{ tickerText }} &nbsp; • &nbsp; {{ tickerText }}
                     </div>
                 </div>
             </div>
         </transition>
 
     </div>
+
 </div>
 
 <script>
-    const { createApp, reactive, computed, watch, onMounted, nextTick } = Vue;
+    const { createApp, reactive, computed, onMounted, nextTick, ref } = Vue;
 
     createApp({
         setup() {
-            // --- STATE INIT ---
+            // --- CONSTANTS ---
+            const TOTAL_SEATS = 500;
+            const MAX_DISTRICT = 400;
+            const MAX_LIST = 100;
+            
+            // --- STATE ---
             const state = reactive({
-                mode: 'landing', 
-                activeScene: 'table',
-                bgMode: 'standard', // standard, transparent, green
+                mode: 'landing',
+                activeScene: 'dashboard',
+                countingProgress: 63,
                 tickerActive: true,
-                tickerText: "ปิดหีบเลือกตั้งแล้ว อยู่ระหว่างการนับคะแนน... เกาะติดผลได้ที่นี่ตลอด 24 ชั่วโมง",
+                tickerText: "POLLS CLOSED AT 5:00 PM • COUNTING UNDERWAY • VOTER TURNOUT ESTIMATED AT 75%",
                 tickerSpeed: 30,
                 parties: [
-                    { id: 1, name: "พรรคก้าวไกล", color: "#F97316", district: 0, list: 0, justUpdated: false },
-                    { id: 2, name: "พรรคเพื่อไทย", color: "#EF4444", district: 0, list: 0, justUpdated: false },
-                    { id: 3, name: "พรรคภูมิใจไทย", color: "#1D4ED8", district: 0, list: 0, justUpdated: false },
-                    { id: 4, name: "พรรคพลังประชารัฐ", color: "#22C55E", district: 0, list: 0, justUpdated: false },
-                    { id: 5, name: "พรรครวมไทยสร้างชาติ", color: "#3B82F6", district: 0, list: 0, justUpdated: false }
+                    { id: 1, name: "Democratic Alliance", color: "#3b82f6", district: 145, list: 30, justUpdated: false },
+                    { id: 2, name: "National People's Party", color: "#ef4444", district: 120, list: 25, justUpdated: false },
+                    { id: 3, name: "Liberal Union", color: "#eab308", district: 60, list: 10, justUpdated: false },
+                    { id: 4, name: "Green Future", color: "#10b981", district: 30, list: 5, justUpdated: false },
+                    { id: 5, name: "United Front", color: "#8b5cf6", district: 10, list: 2, justUpdated: false }
                 ]
             });
 
-            const channel = new BroadcastChannel('election_prod_v1');
+            const currentTime = ref('00:00:00');
+            const scenes = [
+                { id: 'dashboard', name: 'MAIN DASHBOARD', icon: 'list' },
+                { id: 'hemicycle', name: 'HEMICYCLE', icon: 'circle' },
+                { id: 'top3', name: 'TOP 3 LEADING', icon: 'bar-chart-2' },
+                { id: 'donut', name: 'SEAT SHARE', icon: 'pie-chart' }
+            ];
 
-            // --- LOCAL STORAGE LOGIC ---
-            const saveData = () => {
-                if(state.mode === 'director') {
-                    // Save to LocalStorage
-                    const dataToSave = JSON.stringify({
-                        parties: state.parties,
-                        activeScene: state.activeScene,
-                        bgMode: state.bgMode,
-                        tickerActive: state.tickerActive,
-                        tickerText: state.tickerText,
-                        tickerSpeed: state.tickerSpeed
-                    });
-                    localStorage.setItem('election_data', dataToSave);
+            // --- SYNC ENGINE ---
+            const channel = new BroadcastChannel('election_news_network_v1');
 
-                    // Sync to OnAir
-                    channel.postMessage(JSON.parse(dataToSave));
+            const saveState = () => {
+                const data = JSON.stringify(state);
+                localStorage.setItem('enn_state', data);
+                if (state.mode === 'director') {
+                    channel.postMessage(JSON.parse(data));
                 }
             };
 
-            const loadData = () => {
-                const saved = localStorage.getItem('election_data');
-                if(saved) {
-                    const data = JSON.parse(saved);
-                    state.parties = data.parties;
-                    state.activeScene = data.activeScene;
-                    state.bgMode = data.bgMode || 'standard';
-                    state.tickerActive = data.tickerActive;
-                    state.tickerText = data.tickerText;
-                    state.tickerSpeed = data.tickerSpeed;
+            const loadState = () => {
+                const data = localStorage.getItem('enn_state');
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    // Merge properties carefully
+                    state.activeScene = parsed.activeScene;
+                    state.countingProgress = parsed.countingProgress;
+                    state.tickerActive = parsed.tickerActive;
+                    state.tickerText = parsed.tickerText;
+                    state.tickerSpeed = parsed.tickerSpeed;
+                    state.parties = parsed.parties;
                 }
             };
 
-            // --- SYNC & EVENTS ---
+            // --- LIFECYCLE ---
             onMounted(() => {
                 lucide.createIcons();
-                loadData(); // Load on startup
+                loadState();
 
-                channel.onmessage = (e) => {
-                    if(state.mode === 'onair') {
-                        // Detect Animation Trigger
-                        e.data.parties.forEach((newP) => {
+                // Clock
+                setInterval(() => {
+                    const now = new Date();
+                    currentTime.value = now.toLocaleTimeString('en-US', { hour12: false });
+                }, 1000);
+
+                // Listener
+                channel.onmessage = (event) => {
+                    if (state.mode === 'onair') {
+                        const incoming = event.data;
+                        
+                        // Check for updates to trigger animation
+                        incoming.parties.forEach(newP => {
                             const oldP = state.parties.find(p => p.id === newP.id);
-                            if(oldP && (newP.district + newP.list !== oldP.district + oldP.list)) {
-                                newP.justUpdated = true;
-                                setTimeout(() => newP.justUpdated = false, 1000);
+                            if (oldP) {
+                                const oldTotal = oldP.district + oldP.list;
+                                const newTotal = newP.district + newP.list;
+                                if (newTotal > oldTotal) {
+                                    newP.justUpdated = true;
+                                    setTimeout(() => newP.justUpdated = false, 1000);
+                                }
                             }
                         });
 
-                        state.parties = e.data.parties;
-                        state.activeScene = e.data.activeScene;
-                        state.bgMode = e.data.bgMode;
-                        state.tickerActive = e.data.tickerActive;
-                        state.tickerText = e.data.tickerText;
-                        state.tickerSpeed = e.data.tickerSpeed;
+                        Object.assign(state, incoming);
                     }
                 };
             });
 
             // --- ACTIONS ---
-            const updateSeat = (party, type, delta) => {
-                const total = state.parties.reduce((sum, p) => sum + p.district + p.list, 0);
-                if (delta > 0 && total >= 500) return; // Cap at 500
-
-                if (type === 'district') {
-                    const val = party.district + delta;
-                    if(val >= 0 && val <= 400) party.district = val;
-                } else {
-                    const val = party.list + delta;
-                    if(val >= 0 && val <= 100) party.list = val;
-                }
-                saveData();
-            };
-
-            const addParty = () => {
-                state.parties.push({ id: Date.now(), name: 'พรรคใหม่', color: '#94a3b8', district: 0, list: 0, justUpdated: false });
-                saveData();
-            };
-
-            const resetData = () => {
-                if(confirm('ยืนยันล้างข้อมูลคะแนนทั้งหมด? (ไม่สามารถกู้คืนได้)')) {
-                    state.parties.forEach(p => { p.district = 0; p.list = 0; });
-                    saveData();
-                }
-            };
-
             const setMode = (m) => {
                 state.mode = m;
                 nextTick(() => lucide.createIcons());
             };
 
+            const openOnAirWindow = () => {
+                const url = window.location.href;
+                window.open(url, '_blank');
+            };
+
+            const updateSeats = (party, type, delta) => {
+                const total = state.parties.reduce((sum, p) => sum + p.district + p.list, 0);
+                if (delta > 0 && total >= TOTAL_SEATS) return;
+
+                if (type === 'district') {
+                    const val = party.district + delta;
+                    if (val >= 0 && val <= MAX_DISTRICT) party.district = val;
+                } else {
+                    const val = party.list + delta;
+                    if (val >= 0 && val <= MAX_LIST) party.list = val;
+                }
+                saveState();
+            };
+
+            const addParty = () => {
+                state.parties.push({ id: Date.now(), name: "New Party", color: "#94a3b8", district: 0, list: 0, justUpdated: false });
+                saveState();
+            };
+
             // --- COMPUTED ---
             const totalSeats = computed(() => state.parties.reduce((sum, p) => sum + p.district + p.list, 0));
-            
             const sortedParties = computed(() => [...state.parties].sort((a,b) => (b.district + b.list) - (a.district + a.list)));
-            const top3Parties = computed(() => sortedParties.value.slice(0, 3));
-
-            const bgClass = computed(() => {
-                if (state.bgMode === 'transparent') return 'bg-transparent';
-                if (state.bgMode === 'green') return 'bg-green';
-                return 'bg-standard';
-            });
-
-            // Graphics Logic
-            const hemiDots = computed(() => {
+            
+            // Visual generators
+            const hemicycleDots = computed(() => {
                 const dots = [];
                 const rows = 12;
                 const r_inner = 180;
-                const r_step = 22;
+                const r_step = 25;
                 let colorQ = [];
                 
-                // Fill colors based on sorted parties
                 sortedParties.value.forEach(p => {
                     for(let i=0; i<(p.district + p.list); i++) colorQ.push(p.color);
                 });
 
                 let cIdx = 0;
-                // Generate Arc
                 for(let r=0; r<rows; r++) {
                     const rad = r_inner + (r * r_step);
                     const arcLen = Math.PI * rad;
                     const count = Math.floor(arcLen / 16);
                     for(let i=0; i<count; i++) {
-                        if(cIdx >= 500) break;
+                        if(cIdx >= TOTAL_SEATS) break;
                         const angle = Math.PI - (i / (count - 1)) * Math.PI;
                         dots.push({
-                            x: (rad * Math.cos(angle)) + 400 - 7, // Center 800px width container, minus half dot
+                            x: (rad * Math.cos(angle)) + 450 - 7, // Center of 900px
                             y: rad * Math.sin(angle),
-                            color: colorQ[cIdx] || '#334155'
+                            color: colorQ[cIdx] || '#1e293b'
                         });
                         cIdx++;
                     }
@@ -547,33 +600,27 @@
                 return dots;
             });
 
-            const donutSegs = computed(() => {
+            const donutSegments = computed(() => {
                 const c = 2 * Math.PI * 40;
                 let off = 0;
                 const arr = [];
                 sortedParties.value.forEach(p => {
-                    const val = ((p.district + p.list)/500) * c;
+                    const val = ((p.district + p.list)/TOTAL_SEATS) * c;
                     arr.push({ color: p.color, dash: `${val} ${c}`, offset: -off });
                     off += val;
                 });
-                if(totalSeats.value < 500) {
-                    const rem = ((500 - totalSeats.value)/500) * c;
-                    arr.push({ color: '#334155', dash: `${rem} ${c}`, offset: -off });
+                if(totalSeats.value < TOTAL_SEATS) {
+                    const rem = ((TOTAL_SEATS - totalSeats.value)/TOTAL_SEATS) * c;
+                    arr.push({ color: '#1e293b', dash: `${rem} ${c}`, offset: -off });
                 }
                 return arr;
             });
 
             return {
-                ...state, state,
-                updateSeat, saveData, addParty, resetData, setMode,
-                totalSeats, sortedParties, top3Parties, bgClass,
-                hemiDots, donutSegs,
-                scenes: [
-                    {id:'table', name:'TABLE (ตาราง)', icon:'table'},
-                    {id:'hemicycle', name:'HEMICYCLE (สภา)', icon:'circle-dot'},
-                    {id:'top3', name:'TOP 3 (ผู้นำ)', icon:'trophy'},
-                    {id:'donut', name:'DONUT (สัดส่วน)', icon:'pie-chart'},
-                ]
+                ...state,
+                state, currentTime, scenes,
+                setMode, updateSeats, addParty, saveState, openOnAirWindow,
+                totalSeats, sortedParties, hemicycleDots, donutSegments
             };
         }
     }).mount('#app');
