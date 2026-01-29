@@ -203,47 +203,47 @@
             pointer-events: auto;
         }
 
-        /* --- DASHBOARD REDESIGN (BALANCED) --- */
+        /* --- DASHBOARD REDESIGN (BALANCED & FULL) --- */
         .dash-layout { 
             display: grid; 
-            /* ปรับสัดส่วนให้สมดุลขึ้น: กราฟแท่ง 1.5ส่วน - ว่าง 0.2ส่วน - วงกลม 1.3ส่วน */
-            grid-template-columns: 500px 1fr 500px; 
-            width: 85%; max-width: 1400px; height: 100%; align-items: center; 
+            /* Split 45% List, 55% Hemicycle to fill space better */
+            grid-template-columns: 45% 55%; 
+            width: 90%; max-width: 1800px; height: 100%; align-items: center; 
             margin: 0 auto;
+            gap: 50px;
         }
         
         /* Container for Bars */
         #dash-bars {
-            display: flex; flex-direction: column; width: 100%; gap: 10px;
+            display: flex; flex-direction: column; width: 100%; gap: 12px;
             perspective: 1000px;
+            justify-content: center;
         }
 
         .party-bar {
             position: relative;
-            height: 64px; 
+            height: 58px; /* Slightly smaller to fit 10 items comfortably */
             display: flex; align-items: center; padding: 0 20px; justify-content: space-between; 
-            border-radius: 4px;
-            background: linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+            border-radius: 6px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             /* Initial state for animation */
             opacity: 0; transform: translateX(-50px);
         }
         
-        /* Slide Entrance - Works via .scene.active cascade */
         .scene.active .party-bar.entrance {
             animation: slideIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
-        
         @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
 
         .party-bar-indicator {
-            position: absolute; left: 0; top: 0; bottom: 0; width: 6px; border-radius: 4px 0 0 4px;
+            position: absolute; left: 0; top: 0; bottom: 0; width: 8px; border-radius: 4px 0 0 4px;
         }
         
-        .bar-name { font-size: 1.6rem; font-weight: 700; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); padding-left: 15px; }
+        .bar-name { font-size: 1.6rem; font-weight: 600; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); padding-left: 20px; }
         
-        /* ตัวเลขคะแนน */
         .bar-val { 
-            font-size: 2.4rem; font-weight: 800; font-family: var(--font-mono); color: white; 
+            font-size: 2.2rem; font-weight: 800; font-family: var(--font-mono); color: white; 
             position: relative; z-index: 2; transition: transform 0.2s;
         }
 
@@ -252,31 +252,43 @@
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 100%; height: 100%; border-radius: 50%;
             background: var(--glow-color);
-            filter: blur(20px); opacity: 0; z-index: -1;
+            filter: blur(25px); opacity: 0; z-index: -1;
         }
         .bar-val.updating .update-glow {
             animation: glowPulse 0.8s ease-out;
         }
 
+        /* Also apply glow to All Stats */
+        .stat-card-total { position: relative; transition: transform 0.2s; }
+        .stat-card-total .update-glow { width: 150%; height: 150%; filter: blur(30px); }
+        .stat-card-total.updating .update-glow { animation: glowPulse 0.8s ease-out; }
+
         @keyframes glowPulse {
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-            50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.5); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
+            50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
         }
 
         /* Hemicycle Wrapper */
         .hemi-wrapper {
-            grid-column: 3;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            opacity: 0; transform: translateX(50px);
+            opacity: 0; transform: scale(0.9);
+            height: 100%;
         }
         .scene.active .hemi-wrapper {
-            animation: slideInLeft 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            animation: scaleIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
             animation-delay: 0.2s;
         }
-        @keyframes slideInLeft { to { opacity: 1; transform: translateX(0); } }
+        @keyframes scaleIn { to { opacity: 1; transform: scale(1); } }
 
-        .big-number { font-family: var(--font-mono); font-size: 8rem; font-weight: 800; line-height: 0.9; color: white; text-shadow: 0 0 50px rgba(255,255,255,0.1); }
+        /* Larger Canvas */
+        #dash-hemi {
+            max-width: 100%;
+            height: auto;
+            filter: drop-shadow(0 0 20px rgba(0,0,0,0.3));
+        }
+
+        .big-number { font-family: var(--font-mono); font-size: 9rem; font-weight: 800; line-height: 0.9; color: white; text-shadow: 0 0 60px rgba(255,255,255,0.1); margin-top: 20px; }
         
         /* --- TOP 3 PODIUM --- */
         .top3-container { 
@@ -320,7 +332,7 @@
         }
         .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .stat-card-name { font-size: 1.4rem; font-weight: 700; color: white; }
-        .stat-card-total { font-size: 3rem; font-weight: 800; font-family: var(--font-mono); color: white; line-height: 1; position: relative; }
+        .stat-card-total { font-size: 3rem; font-weight: 800; font-family: var(--font-mono); color: white; line-height: 1; z-index: 1; }
         
         .stat-breakdown { display: flex; gap: 12px; margin-top: auto; }
         .stat-badge-mini {
@@ -344,13 +356,14 @@
         .ticker-anim { 
             white-space: nowrap; 
             position: absolute;
-            color: white; font-size: 1.4rem; font-weight: 400;
-            animation: marquee 30s linear infinite; 
-            padding-left: 0; /* reset */
+            color: white; font-size: 1.8rem; font-weight: 400; /* Increased font size */
+            animation: marquee 25s linear infinite; 
+            padding-left: 0; 
             will-change: transform;
+            height: 100%; display: flex; align-items: center; /* Center Vertically */
+            padding-top: 4px; /* Optical center for Thai font */
         }
         
-        /* Animation: Start from right edge (100vw), end at left edge (-100% of element width) */
         @keyframes marquee {
             0% { transform: translateX(100vw); }
             100% { transform: translateX(-100%); }
@@ -414,21 +427,19 @@
             <div id="oa-clock" class="font-mono" style="font-size:2.2rem; font-weight:800;">18:00:00</div>
         </header>
 
-        <!-- Scene 1: Dashboard (Balanced) -->
+        <!-- Scene 1: Dashboard (Balanced & Full) -->
         <div id="scene-dashboard" class="scene active">
             <div class="dash-layout">
-                <!-- Left: Bars -->
+                <!-- Left: List of 10 -->
                 <div id="dash-bars"></div>
                 
-                <!-- Center: Spacer (Auto) -->
-                <div></div>
-
-                <!-- Right: Hemicycle -->
+                <!-- Right: Large Hemicycle -->
                 <div class="hemi-wrapper">
-                    <canvas id="dash-hemi" width="600" height="320"></canvas>
-                    <div style="text-align:center; margin-top:10px;">
+                    <!-- Increased size for Hemicycle -->
+                    <canvas id="dash-hemi" width="900" height="460"></canvas>
+                    <div style="text-align:center;">
                         <div id="oa-total-display" class="big-number">0</div>
-                        <div style="font-size:1.2rem; letter-spacing:6px; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:0px;">Total Seats</div>
+                        <div style="font-size:1.5rem; letter-spacing:8px; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:0px;">Total Seats</div>
                     </div>
                 </div>
             </div>
@@ -488,6 +499,9 @@
                 { id: 'p5', name: 'รวมไทยสร้างชาติ', color: '#dc2626', const: 10, list: 5, coal: false },
                 { id: 'p6', name: 'ประชาธิปัตย์', color: '#60a5fa', const: 5, list: 3, coal: false },
                 { id: 'p7', name: 'ชาติไทยพัฒนา', color: '#db2777', const: 2, list: 0, coal: false },
+                { id: 'p8', name: 'ไทยสร้างไทย', color: '#c026d3', const: 1, list: 0, coal: false },
+                { id: 'p9', name: 'เสรีรวมไทย', color: '#eab308', const: 1, list: 0, coal: false },
+                { id: 'p10', name: 'ประชาชาติ', color: '#a3e635', const: 1, list: 0, coal: false },
             ]
         };
         
@@ -508,14 +522,13 @@
 
                 initParticles(); 
                 loopRender();    
-                updateOnAir(true); // First force render
+                updateOnAir(true); 
                 
                 broadcast.onmessage = (event) => {
                     const newState = event.data;
                     const sceneChanged = newState.scene !== currentScene;
                     currentScene = newState.scene;
 
-                    // Detect Score Changes for Effects
                     newState.parties.forEach(p => {
                         const newScore = p.const + p.list;
                         const oldScore = previousScores[p.id] || 0;
@@ -540,7 +553,6 @@
         }
         
         function triggerUpdateEffect(partyId, color) {
-            // Wait for DOM
             setTimeout(() => {
                 // Dashboard Glow
                 const barVal = document.querySelector(`#bar-${partyId} .bar-val`);
@@ -553,10 +565,10 @@
                 // All Stats Glow
                 const statVal = document.getElementById(`stat-total-${partyId}`);
                 if(statVal) {
-                    statVal.style.setProperty('--flash-color', color);
-                    statVal.classList.remove('flash');
+                    statVal.style.setProperty('--glow-color', color);
+                    statVal.classList.remove('updating');
                     void statVal.offsetWidth;
-                    statVal.classList.add('flash');
+                    statVal.classList.add('updating');
                 }
             }, 50);
         }
@@ -653,11 +665,12 @@
 
         // --- ON-AIR LOGIC ---
         function initParticles() {
-            const rows = 12; const cx = 300; const cy = 280; const innerR = 100; const outerR = 260;
+            // New Canvas Size = 900x460. Center ~450, 420.
+            const rows = 12; const cx = 450; const cy = 420; const innerR = 150; const outerR = 400;
             let posArray = [];
             for (let r = 0; r < rows; r++) {
                 const radius = innerR + (r * (outerR - innerR) / (rows - 1));
-                const count = Math.floor((Math.PI * radius) / 14); 
+                const count = Math.floor((Math.PI * radius) / 16); // Spacing adjustment
                 for (let i = 0; i < count; i++) {
                     const angle = Math.PI - (i / (count - 1)) * Math.PI;
                     posArray.push({ x: cx + radius * Math.cos(angle), y: cy - radius * Math.sin(angle), angle: angle });
@@ -678,19 +691,19 @@
             document.getElementById('oa-ticker').innerText = state.ticker;
             const sorted = [...state.parties].sort((a,b) => (b.const+b.list) - (a.const+a.list));
 
-            // Scene 1: Dashboard (Balanced & Diff Update)
+            // Scene 1: Dashboard
             if(state.scene === 'dashboard') {
                 const dashBars = document.getElementById('dash-bars'); 
                 
-                // Only clear if scene changed to reset animations, otherwise update in place
+                // Show Top 10
                 if(sceneChanged) {
                     dashBars.innerHTML = '';
-                    sorted.slice(0, 6).forEach((p, i) => {
+                    sorted.slice(0, 10).forEach((p, i) => {
                         const val = p.const + p.list;
                         const bar = document.createElement('div'); 
                         bar.id = `bar-${p.id}`; 
-                        bar.className = 'party-bar entrance'; // Add entrance animation class
-                        bar.style.animationDelay = (i * 0.1) + 's'; 
+                        bar.className = 'party-bar entrance';
+                        bar.style.animationDelay = (i * 0.05) + 's'; 
                         
                         bar.innerHTML = `
                             <div class="party-bar-indicator" style="background-color: ${p.color};"></div>
@@ -703,13 +716,11 @@
                         dashBars.appendChild(bar);
                     });
                 } else {
-                    // Update Values Only (No Animation Re-run)
-                    sorted.slice(0, 6).forEach(p => {
+                    sorted.slice(0, 10).forEach(p => {
                         let bar = document.getElementById(`bar-${p.id}`);
-                        if(!bar) return; // Should handle new top parties differently in real app, but ok for now
+                        if(!bar) return; 
                         const valEl = bar.querySelector('.bar-val');
-                        // Update number text node only, keeping glow div
-                        valEl.childNodes[0].nodeValue = p.const + p.list + "\n"; // Preserve spacing
+                        valEl.childNodes[0].nodeValue = p.const + p.list + "\n"; 
                     });
                 }
 
@@ -717,7 +728,6 @@
                 animateNumber(document.getElementById('oa-total-display'), parseInt(document.getElementById('oa-total-display').innerText), totalVal);
             }
 
-            // Other Scenes (Simple Re-render for now)
             if(state.scene === 'top3') {
                 const list = document.getElementById('top3-list'); list.innerHTML = '';
                 [{d:sorted[1],r:2,c:'rank-2'}, {d:sorted[0],r:1,c:'rank-1'}, {d:sorted[2],r:3,c:'rank-3'}].forEach(item => {
@@ -735,7 +745,6 @@
 
             if(state.scene === 'all_stats') {
                 const grid = document.getElementById('all-stats-list');
-                // Rebuild only if scene changed or just update numbers
                 if(sceneChanged) {
                     grid.innerHTML = '';
                     sorted.forEach(p => {
@@ -743,7 +752,10 @@
                             <div class="stat-card">
                                 <div class="stat-card-header">
                                     <div class="stat-card-name" style="color:${p.color}">${p.name}</div>
-                                    <div id="stat-total-${p.id}" class="stat-card-total">${p.const + p.list}</div>
+                                    <div id="stat-total-${p.id}" class="stat-card-total">
+                                        ${p.const + p.list}
+                                        <div class="update-glow"></div>
+                                    </div>
                                 </div>
                                 <div class="stat-breakdown">
                                     <div class="stat-badge-mini">
@@ -762,7 +774,7 @@
                 } else {
                      sorted.forEach(p => {
                         const el = document.getElementById(`stat-total-${p.id}`);
-                        if(el) el.innerText = p.const + p.list;
+                        if(el) el.childNodes[0].nodeValue = p.const + p.list + "\n";
                      });
                 }
             }
@@ -788,7 +800,7 @@
                 const canvas = document.getElementById('dash-hemi');
                 if(canvas) {
                     const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, 600, 320);
+                    ctx.clearRect(0, 0, 900, 460);
                     particles.forEach(p => { 
                         ctx.fillStyle = p.tc; 
                         ctx.beginPath(); 
