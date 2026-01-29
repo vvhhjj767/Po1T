@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ElectionOS V4 - Premium Broadcast</title>
+    <title>ElectionOS V4 - Final Control</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,20 +12,17 @@
     <style>
         /* --- THEME VARIABLES --- */
         :root {
-            /* New Premium Dark Theme Colors */
             --bg-deep: #050505;
             --bg-card: #121214;
             --bg-input: #202023;
-            --border: rgba(255, 255, 255, 0.15);
-            
-            --accent: #3b82f6; /* Classic Blue */
-            --accent-glow: rgba(59, 130, 246, 0.5);
+            --border: rgba(255, 255, 255, 0.12);
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.4);
             --danger: #ef4444;
             --success: #10b981;
             --progress-color: #22c55e;
-            
-            --text-main: #ffffff;
-            --text-muted: #94a3b8;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
 
             --font-ui: 'Prompt', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
@@ -49,22 +46,22 @@
         .justify-between { justify-content: space-between; }
         .w-full { width: 100%; }
 
-        /* --- DIRECTOR LAYOUT (Controls) --- */
+        /* --- DIRECTOR LAYOUT --- */
         #director-app {
             display: grid;
             grid-template-columns: 300px 1fr;
             grid-template-rows: 70px 1fr;
             height: 100vh;
-            background: #0f172a; /* Slate Dark for Admin */
+            background: var(--bg-deep);
         }
 
         .dir-header {
             grid-column: 1 / -1;
-            background: #020617;
+            background: var(--bg-deep);
             border-bottom: 1px solid var(--border);
             padding: 0 24px;
             display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             z-index: 20;
         }
 
@@ -72,50 +69,53 @@
         .logo-accent { color: var(--accent); }
 
         .dir-sidebar {
-            background: #0f172a;
+            background: #09090b;
             border-right: 1px solid var(--border);
             padding: 24px;
             display: flex; flex-direction: column; gap: 24px;
         }
 
         .dir-main {
-            background: #1e293b;
+            background: #0f0f11;
             padding: 32px;
             overflow-y: auto;
         }
 
-        /* --- CONTROLS STYLING --- */
+        /* --- CONTROLS --- */
         .scene-btn {
             width: 100%; padding: 14px 16px; text-align: left; 
-            background: #334155; color: #cbd5e1; 
+            background: var(--bg-input); color: var(--text-muted); 
             border: 1px solid transparent; margin-bottom: 8px; border-radius: 10px; 
-            font-weight: 600; cursor: pointer; transition: all 0.2s ease;
+            font-weight: 500; cursor: pointer; transition: all 0.2s ease;
             font-family: var(--font-ui);
         }
-        .scene-btn:hover { background: #475569; color: white; transform: translateX(2px); }
+        .scene-btn:hover { background: #2a2a2e; color: white; transform: translateX(2px); }
         .scene-btn.active { 
             background: var(--accent); color: white; 
             box-shadow: 0 4px 15px var(--accent-glow); 
-            border-color: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.2);
+            font-weight: 600;
         }
 
         .btn-update-ticker {
             width: 100%; background: var(--success); color: white; 
             border: none; padding: 12px; border-radius: 10px; 
-            font-weight: 700; cursor: pointer; margin-top: 12px;
-            font-family: var(--font-ui); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            font-weight: 600; cursor: pointer; margin-top: 12px;
+            font-family: var(--font-ui); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
             transition: all 0.2s;
         }
         .btn-update-ticker:hover { filter: brightness(1.1); transform: translateY(-1px); }
         .btn-update-ticker:active { transform: translateY(1px); }
 
+        /* Manual Progress Input (Sidebar Style) */
         .progress-control-box {
-            background: #1e293b; padding: 12px; border-radius: 10px; border: 1px solid var(--border);
+            background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid var(--border);
             display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
         }
-        .progress-label-dir { font-size: 0.8rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; }
+        .progress-label-dir { font-size: 0.8rem; color: #aaa; font-weight: 600; text-transform: uppercase; }
+        .progress-input-wrapper { display: flex; align-items: center; gap: 5px; }
         .manual-progress-input {
-            width: 50px; background: #020617; border: 1px solid var(--border); color: var(--success);
+            width: 50px; background: #000; border: 1px solid var(--border); color: var(--success);
             font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; text-align: center;
             border-radius: 4px; padding: 4px;
         }
@@ -126,85 +126,75 @@
             display: grid;
             grid-template-columns: 24px 1fr auto auto 40px 40px;
             gap: 16px; align-items: center;
-            background: #1e293b; 
+            background: var(--bg-card); 
             padding: 10px 20px; 
             border-radius: 12px; 
             border: 1px solid var(--border);
+            transition: border-color 0.2s;
         }
+        .party-card:hover { border-color: rgba(255,255,255,0.3); }
+
         .party-name { font-size: 1rem; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         .control-pill {
             display: flex; align-items: center;
-            background: #0f172a; border-radius: 8px; padding: 3px; border: 1px solid var(--border);
+            background: var(--bg-input); border-radius: 8px; padding: 3px; border: 1px solid var(--border);
         }
         .control-label {
-            font-size: 0.7rem; color: #94a3b8; font-weight: 600;
+            font-size: 0.7rem; color: var(--text-muted); font-weight: 600;
             padding: 0 10px 0 6px; border-right: 1px solid rgba(255,255,255,0.1); margin-right: 4px;
         }
+        
         .btn-circle {
-            width: 28px; height: 28px; background: #334155; color: white; border: none; border-radius: 6px;
-            font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px; background: #3f3f46; color: white; border: none; border-radius: 6px;
+            font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;
         }
         .btn-circle:hover { background: var(--accent); }
+        
         .input-num {
             width: 40px; background: transparent; border: none; color: white; text-align: center; font-family: var(--font-mono); font-weight: 700; font-size: 1rem;
         }
-        .btn-del { background: transparent; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer; }
+
+        .checkbox-custom { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; }
+        .btn-del { background: transparent; border: none; color: #52525b; font-size: 1.2rem; cursor: pointer; transition: color 0.2s; }
         .btn-del:hover { color: var(--danger); }
 
         .stats-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
         .stat-badge {
-            background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-family: var(--font-mono); border: 1px solid rgba(59, 130, 246, 0.3); font-size: 0.85rem;
+            background: rgba(59, 130, 246, 0.1); color: var(--accent); padding: 4px 10px; border-radius: 6px; font-weight: 600; font-family: var(--font-mono); border: 1px solid rgba(59, 130, 246, 0.2); font-size: 0.85rem;
         }
+        .stat-badge.full { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
 
-        /* --- ON-AIR NEW PREMIUM STYLE --- */
+        /* --- ON-AIR MOTION & STYLE --- */
         #on-air-app {
             position: relative; width: 100vw; height: 100vh;
-            /* World-Class News Background: Deep Navy/Slate Radial + Vignette */
-            background: radial-gradient(ellipse at center, #1e293b 0%, #0f172a 40%, #020617 100%);
+            background: radial-gradient(circle at 50% 50%, #151518 0%, #000000 90%);
             overflow: hidden;
             font-family: var(--font-ui);
-            color: #fff;
         }
-        
-        /* Premium Subtle Grid */
         .bg-grid {
             position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 100px 100px; /* Bigger grid cells */
-            transform: perspective(1000px) rotateX(15deg); /* Slight tilt */
-            z-index: 0; pointer-events: none;
-            /* Mask to fade out edges */
-            mask-image: radial-gradient(circle, black 30%, transparent 80%);
-            -webkit-mask-image: radial-gradient(circle, black 30%, transparent 80%);
+            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 80px 80px; transform: perspective(1000px) rotateX(20deg); z-index: 0; pointer-events: none;
         }
-
         .oa-header {
             position: absolute; top: 0; left: 0; width: 100%; height: 90px;
             display: flex; justify-content: space-between; align-items: center; padding: 0 60px; z-index: 100;
         }
         
-        /* Scene Container - OPTICAL BALANCE FIX */
+        /* Scene Container */
         .scene {
-            position: absolute; 
-            top: 70px; /* Moved UP slightly */
-            bottom: 90px; /* Increased bottom spacing to account for Ticker visual weight */
-            left: 0; width: 100%;
+            position: absolute; top: 90px; bottom: 70px; left: 0; width: 100%;
             display: flex; align-items: center; justify-content: center;
-            opacity: 0; transform: scale(1.02); 
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-            pointer-events: none;
+            opacity: 0; transform: scale(1.02); transition: opacity 0.5s ease-out, transform 0.5s ease-out; pointer-events: none;
         }
         .scene.active { opacity: 1; transform: scale(1); pointer-events: auto; }
 
-        /* --- DASHBOARD REDESIGN (Shifted Up) --- */
+        /* --- DASHBOARD REDESIGN --- */
         .dash-layout { 
             display: grid; grid-template-columns: 45% 55%; 
             width: 90%; max-width: 1800px; height: 100%; align-items: center; 
             margin: 0 auto; gap: 50px;
-            /* Shift entire grid content slightly up visually */
-            padding-bottom: 40px; 
         }
         
         #dash-bars { position: relative; width: 100%; height: 600px; }
@@ -212,92 +202,80 @@
         .party-bar {
             position: absolute; left: 0; right: 0;
             height: 58px; display: flex; align-items: center; padding: 0 20px; justify-content: space-between; 
-            border-radius: 6px; 
-            /* Glassmorphism Bar */
-            background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%);
-            border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-radius: 6px; background: linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             transition: top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s;
         }
         
         .scene.active .party-bar.entrance { animation: slideIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
         @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
 
-        .party-bar-indicator { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; border-radius: 6px 0 0 6px; }
-        /* Text Shadows for High Contrast */
-        .bar-name { font-size: 1.6rem; font-weight: 600; color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.8); padding-left: 20px; }
-        .bar-val { font-size: 2.2rem; font-weight: 800; font-family: var(--font-mono); color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.8); position: relative; z-index: 2; transition: transform 0.2s; }
+        .party-bar-indicator { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; border-radius: 4px 0 0 4px; }
+        .bar-name { font-size: 1.6rem; font-weight: 600; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); padding-left: 20px; }
+        .bar-val { font-size: 2.2rem; font-weight: 800; font-family: var(--font-mono); color: white; position: relative; z-index: 2; transition: transform 0.2s; }
 
         /* --- GLOW EFFECT --- */
         .update-glow {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; border-radius: 50%;
-            background: var(--glow-color); filter: blur(30px); opacity: 0; z-index: -1; pointer-events: none;
+            background: var(--glow-color); filter: blur(25px); opacity: 0; z-index: -1; pointer-events: none;
         }
         .updating .update-glow { animation: glowPulse 0.8s ease-out; }
         @keyframes glowPulse { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.5); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2); } }
 
-        /* Hemicycle Wrapper */
-        .hemi-wrapper { 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            opacity: 0; transform: scale(0.9); height: 100%; 
-        }
+        /* Hemicycle */
+        .hemi-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transform: scale(0.9); height: 100%; }
         .scene.active .hemi-wrapper { animation: scaleIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: 0.2s; }
         @keyframes scaleIn { to { opacity: 1; transform: scale(1); } }
-        
-        #dash-hemi { max-width: 100%; height: auto; filter: drop-shadow(0 0 30px rgba(0,0,0,0.6)); } /* Deep Shadow */
+        #dash-hemi { max-width: 100%; height: auto; filter: drop-shadow(0 0 25px rgba(0,0,0,0.4)); }
         .hemi-info { position: absolute; bottom: 20px; text-align: center; }
-        .big-number { font-family: var(--font-mono); font-size: 8rem; font-weight: 800; line-height: 0.8; color: white; text-shadow: 0 0 60px rgba(255,255,255,0.2), 0 4px 10px rgba(0,0,0,0.8); }
-        .big-label { font-size: 1.4rem; letter-spacing: 4px; color: #cbd5e1; font-weight: 600; margin-top: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .big-number { font-family: var(--font-mono); font-size: 8rem; font-weight: 800; line-height: 0.8; color: white; text-shadow: 0 0 60px rgba(255,255,255,0.15); }
+        .big-label { font-size: 1.4rem; letter-spacing: 4px; color: var(--text-muted); font-weight: 600; margin-top: 10px; }
         
         /* --- TOP 3 PODIUM --- */
-        .top3-container { position: relative; width: 100%; height: 75%; max-width: 1200px; margin: 0 auto; margin-top: -30px; /* Slight lift */ }
+        .top3-container { position: relative; width: 100%; height: 75%; max-width: 1200px; margin: 0 auto; }
         .top3-card {
             position: absolute; bottom: 0; width: 300px;
-            /* Premium Gradient */
-            background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);
-            border: 1px solid rgba(255,255,255,0.1); border-bottom: none; border-radius: 20px 20px 0 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0.8) 100%);
+            border: 1px solid rgba(255,255,255,0.15); border-bottom: none; border-radius: 20px 20px 0 0;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            backdrop-filter: blur(20px); box-shadow: 0 -10px 50px rgba(0,0,0,0.5); padding-top: 40px; 
+            backdrop-filter: blur(20px); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); padding-top: 40px; 
             transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.6s ease;
         }
         
         .scene.active .top3-card.entrance { animation: popUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
         @keyframes popUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        .top3-score { font-size: 6.5rem; font-family: var(--font-mono); font-weight: 800; color: white; text-shadow: 0 4px 20px rgba(0,0,0,0.8); position: relative; }
+        .top3-score { font-size: 6.5rem; font-family: var(--font-mono); font-weight: 800; color: white; text-shadow: 0 4px 20px rgba(0,0,0,0.5); position: relative; }
         .top3-score .update-glow { width: 120%; height: 120%; filter: blur(40px); }
 
-        /* --- ALL STATS SCENE --- */
+        /* --- ALL STATS SCENE (Perfect Absolute Center) --- */
         .all-stats-container {
             position: relative; width: 100%; height: 100%; margin: 0 auto;
-            /* Visually centered nicely */
         }
         .stat-card {
             position: absolute; 
-            background: rgba(30, 41, 59, 0.6); /* Semi-transparent Slate */
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
+            background: #18181b; border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px; padding: 24px; display: flex; flex-direction: column;
-            overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             width: 320px; height: 180px;
             transition: top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .stat-card-name { font-size: 1.4rem; font-weight: 700; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-        .stat-card-total { font-size: 3rem; font-weight: 800; font-family: var(--font-mono); color: white; line-height: 1; z-index: 1; position: relative; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
+        .stat-card-name { font-size: 1.4rem; font-weight: 700; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+        .stat-card-total { font-size: 3rem; font-weight: 800; font-family: var(--font-mono); color: white; line-height: 1; z-index: 1; position: relative; }
         .stat-card-total .update-glow { width: 150%; height: 150%; filter: blur(30px); }
         .stat-breakdown { display: flex; gap: 12px; margin-top: auto; }
-        .stat-badge-mini { flex: 1; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; border: 1px solid rgba(255,255,255,0.05); }
-        .stat-label { font-size: 0.75rem; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .stat-badge-mini { flex: 1; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
         .stat-val { font-size: 1.3rem; font-weight: 700; font-family: var(--font-mono); color: white; margin-top: 4px; }
 
         /* --- PARLIAMENT TUBE GRAPH --- */
         .coalition-container {
-            width: 80%; max-width: 1400px; display: flex; flex-direction: column; align-items: center; margin-top: -40px;
+            width: 80%; max-width: 1400px; display: flex; flex-direction: column; align-items: center;
         }
         .coalition-bar-wrapper {
-            position: relative; width: 100%; height: 80px; background: rgba(0,0,0,0.5); border-radius: 40px; 
-            overflow: hidden; margin-bottom: 40px; box-shadow: 0 0 40px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.15);
+            position: relative; width: 100%; height: 80px; background: #222; border-radius: 40px; 
+            overflow: hidden; margin-bottom: 40px; box-shadow: 0 0 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
             display: flex;
         }
         .coalition-segment { height: 100%; transition: width 0.5s ease-out; position: relative; }
@@ -305,25 +283,24 @@
         
         .majority-line {
             position: absolute; left: 50%; top: -10px; bottom: -10px; width: 2px; background: white;
-            z-index: 10; box-shadow: 0 0 20px white;
+            z-index: 10; box-shadow: 0 0 15px white;
         }
         .majority-label {
-            position: absolute; left: 50%; top: -45px; transform: translateX(-50%);
+            position: absolute; left: 50%; top: -40px; transform: translateX(-50%);
             background: white; color: black; padding: 4px 12px; border-radius: 20px; 
-            font-weight: 800; font-size: 1.1rem; font-family: var(--font-mono); box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            font-weight: 800; font-size: 1rem; font-family: var(--font-mono);
         }
 
         .coalition-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; }
-        .legend-item { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.08); padding: 10px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.05); }
-        .legend-name { font-weight: 600; font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-        .legend-val { font-family: var(--font-mono); color: #cbd5e1; font-weight: 700; font-size: 1.2rem; }
+        .legend-item { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px 20px; border-radius: 30px; }
+        .legend-name { font-weight: 600; font-size: 1.2rem; }
+        .legend-val { font-family: var(--font-mono); color: var(--text-muted); font-weight: 700; font-size: 1.2rem; }
 
-        /* --- TICKER --- */
+        /* --- TICKER & PROGRESS BAR --- */
         .ticker-bar {
             position: absolute; bottom: 0; width: 100%; height: 60px; background: #000; 
             border-top: 2px solid var(--accent);
             display: flex; align-items: center; z-index: 100; overflow: hidden;
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.8); /* Shadow to separate from content */
         }
         .ticker-anim { 
             white-space: nowrap; position: absolute;
@@ -336,16 +313,15 @@
         /* Independent Progress Bar (Floating Bottom Left) */
         .progress-float {
             position: absolute; bottom: 80px; left: 40px; z-index: 110;
-            background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.15);
             padding: 10px 15px; border-radius: 8px; width: 280px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
         }
         .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .progress-label { font-size: 0.8rem; color: #cbd5e1; letter-spacing: 2px; font-weight: 700; }
+        .progress-label { font-size: 0.8rem; color: #aaa; letter-spacing: 2px; font-weight: 700; }
         .progress-pct { font-family: var(--font-mono); font-weight: 700; color: var(--progress-color); font-size: 1.1rem; }
         
-        .progress-track { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+        .progress-track { width: 100%; height: 8px; background: #333; border-radius: 4px; overflow: hidden; }
         .progress-fill { height: 100%; background: var(--progress-color); width: 0%; transition: width 0.5s ease-out; box-shadow: 0 0 15px var(--progress-color); }
 
     </style>
@@ -357,14 +333,14 @@
         <header class="dir-header">
             <div class="logo-text">ELECTION<span class="logo-accent">OS</span> V4</div>
             <div class="flex items-center gap-4">
-                <div id="d-clock" class="font-mono" style="color:#94a3b8; font-size:0.9rem; margin-right:30px;">00:00:00</div>
+                <div id="d-clock" class="font-mono" style="color:#71717a; font-size:0.9rem; margin-right:30px;">00:00:00</div>
                 <button onclick="openOnAir()" style="background:var(--text-main); color:black; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer; font-family:var(--font-ui);">เปิดจอ ON-AIR</button>
             </div>
         </header>
 
         <aside class="dir-sidebar">
             <div>
-                <label style="color:#94a3b8; font-size:0.75rem; font-weight:700; text-transform:uppercase; display:block; margin-bottom:12px;">SCENE CONTROL</label>
+                <label style="color:#71717a; font-size:0.75rem; font-weight:700; text-transform:uppercase; display:block; margin-bottom:12px;">SCENE CONTROL</label>
                 <button class="scene-btn active" onclick="setScene('dashboard')" data-s="dashboard">DASHBOARD (MAIN)</button>
                 <button class="scene-btn" onclick="setScene('top3')" data-s="top3">TOP 3 FOCUS</button>
                 <button class="scene-btn" onclick="setScene('all_stats')" data-s="all_stats">ALL PARTIES BREAKDOWN</button>
@@ -381,8 +357,8 @@
                     </div>
                 </div>
 
-                <label style="color:#94a3b8; font-size:0.75rem; font-weight:700; text-transform:uppercase; display:block; margin-bottom:12px;">TICKER (ตัววิ่ง)</label>
-                <textarea id="ticker-temp-input" placeholder="พิมพ์ข้อความที่นี่..." style="width:100%; background:#020617; border:1px solid var(--border); color:white; padding:12px; border-radius:12px; height:80px; font-family:'Prompt'; outline:none; resize:none; font-size:0.9rem;"></textarea>
+                <label style="color:#71717a; font-size:0.75rem; font-weight:700; text-transform:uppercase; display:block; margin-bottom:12px;">TICKER (ตัววิ่ง)</label>
+                <textarea id="ticker-temp-input" placeholder="พิมพ์ข้อความที่นี่..." style="width:100%; background:var(--bg-input); border:1px solid var(--border); color:white; padding:12px; border-radius:12px; height:80px; font-family:'Prompt'; outline:none; resize:none; font-size:0.9rem;"></textarea>
                 <button onclick="submitTicker()" class="btn-update-ticker">ส่งข้อความขึ้นจอ</button>
             </div>
         </aside>
@@ -410,7 +386,7 @@
         <div class="bg-grid"></div>
         <header class="oa-header">
             <div style="background:var(--danger); color:white; padding:6px 16px; font-weight:800; font-size:0.9rem; border-radius:4px; letter-spacing:1px; box-shadow:0 0 20px rgba(239,68,68,0.5);">LIVE RESULTS</div>
-            <div id="oa-clock" class="font-mono" style="font-size:2.2rem; font-weight:800; text-shadow:0 0 10px rgba(255,255,255,0.5);">18:00:00</div>
+            <div id="oa-clock" class="font-mono" style="font-size:2.2rem; font-weight:800;">18:00:00</div>
         </header>
 
         <!-- Scene 1: Dashboard -->
@@ -447,7 +423,7 @@
         <!-- Scene 4: Parliament Tube -->
         <div id="scene-coalition" class="scene">
             <div class="coalition-container">
-                <h2 style="font-family:var(--font-ui); font-size:3rem; margin-bottom:40px; font-weight:400; letter-spacing:2px; text-align:center; text-shadow:0 4px 10px rgba(0,0,0,0.5);">PARLIAMENT COMPOSITION</h2>
+                <h2 style="font-family:var(--font-ui); font-size:3rem; margin-bottom:40px; font-weight:400; letter-spacing:2px; text-align:center;">PARLIAMENT COMPOSITION</h2>
                 <div class="coalition-bar-wrapper">
                     <div class="majority-line"></div>
                     <div class="majority-label">250</div>
@@ -469,7 +445,7 @@
         </div>
 
         <div class="ticker-bar">
-            <div style="background:var(--accent); color:white; height:100%; padding:0 35px; display:flex; align-items:center; font-weight:800; font-size:1.1rem; letter-spacing:1px; z-index:10; position:relative; box-shadow: 5px 0 15px rgba(0,0,0,0.5);">UPDATE</div>
+            <div style="background:var(--accent); color:white; height:100%; padding:0 35px; display:flex; align-items:center; font-weight:800; font-size:1.1rem; letter-spacing:1px; z-index:10; position:relative;">UPDATE</div>
             <div style="position:relative; width:100%; height:100%; overflow:hidden;">
                 <div id="oa-ticker" class="ticker-anim">...</div>
             </div>
@@ -837,3 +813,4 @@
     </script>
 </body>
 </html>
+
