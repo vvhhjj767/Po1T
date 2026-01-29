@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ElectionOS V3 Ultra - Broadcast Suite</title>
+    <title>ElectionOS V4 - Silent Director</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,17 +14,12 @@
         :root {
             --bg-deep: #050505;
             --bg-panel: #111111;
-            --glass-panel: rgba(20, 20, 30, 0.7);
-            --border: rgba(255, 255, 255, 0.1);
-            --border-glow: rgba(59, 130, 246, 0.5);
-            
+            --border: rgba(255, 255, 255, 0.15);
             --accent: #3b82f6;
-            --accent-glow: #60a5fa;
             --danger: #ef4444;
             --success: #10b981;
-            --warning: #f59e0b;
             --text-main: #ffffff;
-            --text-muted: #64748b;
+            --text-muted: #94a3b8;
 
             --font-ui: 'Inter', 'Sarabun', sans-serif;
             --font-display: 'Oswald', 'Sarabun', sans-serif;
@@ -41,35 +36,19 @@
             overflow: hidden;
         }
 
-        /* --- UTILITIES --- */
         .hidden { display: none !important; }
         .flex { display: flex; }
         .flex-col { flex-direction: column; }
         .items-center { align-items: center; }
         .justify-between { justify-content: space-between; }
-        .justify-center { justify-content: center; }
         .gap-2 { gap: 0.5rem; }
-        .gap-4 { gap: 1rem; }
         .w-full { width: 100%; }
-        .text-accent { color: var(--accent); }
-        .text-danger { color: var(--danger); }
-        
-        /* --- ANIMATIONS --- */
-        @keyframes scanline {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-        }
-        .crt-overlay {
-            position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:900;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
-            background-size: 100% 4px;
-        }
 
-        /* --- DIRECTOR VIEW DESIGN --- */
+        /* --- DIRECTOR VIEW RE-DESIGN --- */
         #director-app {
             display: grid;
-            grid-template-columns: 350px 1fr;
-            grid-template-rows: 70px 1fr;
+            grid-template-columns: 320px 1fr;
+            grid-template-rows: 64px 1fr;
             height: 100vh;
             background: #0f172a;
         }
@@ -88,7 +67,6 @@
             background: #0b1121;
             border-right: 1px solid var(--border);
             padding: 20px;
-            overflow-y: auto;
             display: flex; flex-direction: column; gap: 24px;
         }
 
@@ -96,61 +74,51 @@
             background: #1e293b;
             padding: 30px;
             overflow-y: auto;
-            position: relative;
         }
 
-        /* Director Controls */
-        .control-group-title {
-            font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 12px; display: block;
-        }
-
+        /* New Button Style */
         .scene-btn {
-            width: 100%; padding: 14px 20px; text-align: left; background: #1e293b; color: #94a3b8; border: 1px solid transparent;
-            margin-bottom: 8px; border-radius: 6px; transition: all 0.2s; font-weight: 600; display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 12px; text-align: left; background: #1e293b; color: #94a3b8; 
+            border: 1px solid transparent; margin-bottom: 8px; border-radius: 6px; font-weight: 600; cursor: pointer;
         }
         .scene-btn:hover { background: #334155; color: white; }
-        .scene-btn.active { 
-            background: var(--accent); color: white; border-color: var(--accent-glow);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
-        }
-        .scene-btn.active::after { content: '● LIVE'; font-size: 0.6rem; color: white; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
+        .scene-btn.active { background: var(--accent); color: white; box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); }
 
-        /* Director Sliders & Inputs */
-        input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
-        textarea {
-            width: 100%; background: #020617; border: 1px solid var(--border); color: #e2e8f0; padding: 12px; border-radius: 6px;
-            font-family: var(--font-ui); font-size: 0.9rem; resize: none; height: 80px; transition: border 0.3s;
-        }
-        textarea:focus { outline: none; border-color: var(--accent); }
-
-        /* Party Editor Table */
+        /* RE-DESIGNED PARTY ROW (ปุ่มแยกออกจากช่องเลข) */
         .party-row {
-            display: grid; grid-template-columns: 40px 1.5fr 140px 140px 50px 40px; gap: 12px; align-items: center;
-            background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid transparent;
-        }
-        .party-row:hover { border-color: var(--border); background: #1a2438; }
-
-        .num-control {
-            display: flex; align-items: center; background: #020617; border-radius: 6px; border: 1px solid var(--border); overflow: hidden;
-        }
-        .num-btn {
-            width: 36px; height: 36px; background: #1e293b; border: none; color: white; cursor: pointer; font-weight: bold; transition: 0.1s;
-        }
-        .num-btn:hover { background: var(--accent); }
-        .num-btn:active { transform: scale(0.9); }
-        .num-val {
-            flex: 1; text-align: center; background: transparent; border: none; color: white; font-family: var(--font-mono); font-weight: 700;
+            display: grid; 
+            grid-template-columns: 40px 1.5fr 160px 160px 40px 40px; 
+            gap: 15px; align-items: center;
+            background: #0f172a; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border);
         }
 
-        /* --- ON-AIR VIEW DESIGN --- */
+        .input-group {
+            display: flex; align-items: center; gap: 5px;
+        }
+
+        .btn-qty {
+            width: 36px; height: 36px;
+            background: #334155; border: 1px solid var(--border); border-radius: 4px;
+            color: white; font-weight: bold; cursor: pointer; font-size: 1.2rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-qty:hover { background: var(--accent); border-color: var(--accent); }
+        .btn-qty:active { transform: scale(0.95); }
+
+        .input-qty {
+            width: 60px; height: 36px;
+            background: #020617; border: 1px solid var(--border); border-radius: 4px;
+            color: white; text-align: center; font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem;
+        }
+        .input-qty:focus { outline: 2px solid var(--accent); }
+
+        /* --- ON-AIR VIEW --- */
         #on-air-app {
             position: relative; width: 100vw; height: 100vh;
             background: radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 80%);
             overflow: hidden;
         }
-
-        /* Background Grid */
+        
         .bg-grid {
             position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
             background-image: 
@@ -158,79 +126,49 @@
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 60px 60px;
             transform: perspective(500px) rotateX(20deg);
-            animation: gridMove 60s linear infinite;
             z-index: 0; pointer-events: none;
         }
-        @keyframes gridMove { 0% { transform: perspective(500px) rotateX(20deg) translateY(0); } 100% { transform: perspective(500px) rotateX(20deg) translateY(60px); } }
 
-        /* Broadcast Header */
         .oa-header {
-            position: absolute; top: 0; left: 0; width: 100%; height: 110px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100px;
             display: flex; justify-content: space-between; align-items: center; padding: 0 60px; z-index: 100;
         }
-        .oa-logo { font-family: var(--font-display); font-size: 2.2rem; font-weight: 700; letter-spacing: 2px; text-shadow: 0 0 20px rgba(59, 130, 246, 0.6); }
-        .oa-live-badge { 
-            background: var(--danger); color: white; padding: 4px 12px; font-weight: 800; font-size: 0.9rem; letter-spacing: 2px; border-radius: 2px;
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.6); margin-right: 20px;
-        }
 
-        /* Scene Container */
-        .scene-container {
-            position: absolute; top: 110px; bottom: 80px; left: 0; width: 100%;
-            display: flex; align-items: center; justify-content: center; z-index: 10;
-        }
         .scene {
-            position: absolute; width: 100%; height: 100%; opacity: 0; pointer-events: none;
-            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-            transform: scale(0.95) translateY(20px); filter: blur(10px);
+            position: absolute; top: 100px; bottom: 80px; left: 0; width: 100%;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s;
         }
-        .scene.active {
-            opacity: 1; pointer-events: auto; transform: scale(1) translateY(0); filter: blur(0);
-        }
+        .scene.active { opacity: 1; pointer-events: auto; }
 
-        /* SCENE: DASHBOARD */
+        /* DASHBOARD LAYOUT */
         .dash-layout {
-            display: grid; grid-template-columns: 1fr 500px; gap: 60px; max-width: 1600px; width: 90%; height: 80%; align-items: center;
+            display: grid; grid-template-columns: 1fr 500px; gap: 60px; width: 90%; max-width: 1600px; align-items: center;
         }
-        .party-bar-container { display: flex; flex-direction: column; gap: 15px; }
+
         .party-bar {
-            background: rgba(255,255,255,0.05); border-left: 12px solid #ccc; height: 80px; display: flex; align-items: center; padding: 0 30px;
-            justify-content: space-between; border-radius: 0 8px 8px 0; backdrop-filter: blur(5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2); transform: translateX(-50px); opacity: 0;
+            background: rgba(255,255,255,0.05); border-left: 10px solid #ccc; height: 70px; 
+            display: flex; align-items: center; padding: 0 25px; justify-content: space-between; 
+            margin-bottom: 15px; border-radius: 0 6px 6px 0;
+            opacity: 0; transform: translateX(-30px); transition: all 0.5s;
         }
-        .party-bar .p-name { font-size: 2rem; font-weight: 600; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .party-bar .p-seats { font-family: var(--font-mono); font-size: 3.5rem; font-weight: 800; }
+        .party-bar.show { opacity: 1; transform: translateX(0); }
 
-        /* SCENE: HEMICYCLE */
-        .hemi-wrapper { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; flex-direction: column; }
-        .hemi-stats {
-            position: absolute; bottom: 10%; text-align: center;
+        .hemi-center-group {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
         }
-        .hemi-total { font-family: var(--font-mono); font-size: 8rem; font-weight: 800; line-height: 0.9; text-shadow: 0 0 40px rgba(255,255,255,0.2); }
-        .hemi-label { font-size: 1.5rem; text-transform: uppercase; letter-spacing: 8px; color: var(--accent); font-weight: 700; }
-
-        /* SCENE: COALITION */
-        .coalition-card {
-            background: rgba(0,0,0,0.6); border: 1px solid var(--border); padding: 60px; border-radius: 24px;
-            backdrop-filter: blur(20px); text-align: center; max-width: 1200px; width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-        }
+        
+        /* Stats Styles */
+        .big-number { font-family: var(--font-mono); font-size: 7rem; font-weight: 800; line-height: 1; color: white; text-shadow: 0 0 30px rgba(255,255,255,0.2); }
+        .label-text { font-size: 1.2rem; letter-spacing: 4px; color: var(--text-muted); font-weight: 700; margin-top: 10px; }
 
         /* Ticker */
         .ticker-bar {
-            position: absolute; bottom: 0; width: 100%; height: 70px; background: #000; border-top: 4px solid var(--accent);
+            position: absolute; bottom: 0; width: 100%; height: 60px; background: #000; border-top: 3px solid var(--accent);
             display: flex; align-items: center; z-index: 100;
         }
-        .ticker-head {
-            background: var(--accent); height: 100%; display: flex; align-items: center; padding: 0 40px;
-            font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: #000;
-        }
-        .ticker-content {
-            flex: 1; overflow: hidden; white-space: nowrap; font-size: 1.8rem; font-weight: 400; color: white; padding-left: 20px;
-        }
-        .ticker-anim { display: inline-block; animation: tick 30s linear infinite; }
-        @keyframes tick { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
+        .ticker-anim { white-space: nowrap; animation: tick 25s linear infinite; color: white; font-size: 1.5rem; padding-left: 100%; }
+        @keyframes tick { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
     </style>
 </head>
@@ -238,151 +176,83 @@
 
     <div id="director-app">
         <header class="dir-header">
-            <div class="flex items-center gap-2">
-                <div style="width:20px; height:20px; background:var(--danger); border-radius:50%; box-shadow:0 0 10px var(--danger);"></div>
-                <h1 style="font-family: var(--font-display); font-size: 1.5rem;">ELECTION<span class="text-accent">OS</span> V3</h1>
-            </div>
-            <div class="flex items-center gap-4">
-                <div id="d-clock" class="font-mono text-xl" style="color:var(--text-muted)">--:--:--</div>
-                <button onclick="openOnAir()" style="background:var(--accent); color:white; border:none; padding:10px 20px; border-radius:4px; font-weight:700; cursor:pointer;">LAUNCH ON-AIR ↗</button>
+            <h1 style="font-family:var(--font-display); font-size:1.4rem;">ELECTION<span style="color:var(--accent)">OS</span> V4</h1>
+            <div class="flex gap-4 items-center">
+                <div id="d-clock" class="font-mono text-muted">00:00:00</div>
+                <button onclick="openOnAir()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:4px; font-weight:700; cursor:pointer;">OPEN ON-AIR</button>
             </div>
         </header>
 
         <aside class="dir-sidebar">
             <div>
-                <span class="control-group-title">Live Scenes</span>
-                <button class="scene-btn active" onclick="setScene('dashboard')" data-s="dashboard">
-                    <span>OVERVIEW DASHBOARD</span>
-                </button>
-                <button class="scene-btn" onclick="setScene('hemicycle')" data-s="hemicycle">
-                    <span>FULL PARLIAMENT</span>
-                </button>
-                <button class="scene-btn" onclick="setScene('coalition')" data-s="coalition">
-                    <span>COALITION BUILDER</span>
-                </button>
-                <button class="scene-btn" onclick="setScene('compare')" data-s="compare">
-                    <span>HEAD-TO-HEAD</span>
-                </button>
+                <label style="color:#64748b; font-size:0.8rem; font-weight:700; text-transform:uppercase;">Scene Control</label>
+                <button class="scene-btn active" onclick="setScene('dashboard')" data-s="dashboard">DASHBOARD (MAIN)</button>
+                <button class="scene-btn" onclick="setScene('coalition')" data-s="coalition">COALITION BUILDER</button>
             </div>
-
-            <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:8px;">
-                <span class="control-group-title">Counting Progress</span>
-                <input type="range" id="prog-slider" min="0" max="100" oninput="updateProgress(this.value)">
-                <div class="flex justify-between mt-2 font-mono font-bold text-accent">
-                    <span id="prog-disp">0%</span>
-                    <span>REPORTED</span>
-                </div>
-            </div>
-
+            
             <div>
-                <span class="control-group-title">News Ticker</span>
-                <textarea id="ticker-input" oninput="updateTicker(this.value)" placeholder="Type breaking news here..."></textarea>
+                <label style="color:#64748b; font-size:0.8rem; font-weight:700; text-transform:uppercase;">Ticker Message</label>
+                <textarea id="ticker-input" oninput="updateTicker(this.value)" style="width:100%; background:#020617; border:1px solid var(--border); color:white; padding:10px; margin-top:5px; border-radius:6px; height:80px;"></textarea>
             </div>
         </aside>
 
         <main class="dir-main">
             <div class="flex justify-between items-end mb-4">
-                <h2 class="text-xl font-bold">Party Data Management</h2>
-                <div class="font-mono text-sm text-muted">TOTAL SEATS: <span class="text-white" id="total-seats-chk">0</span>/500</div>
+                <h2 style="font-weight:700; font-size:1.2rem;">Party Seats Management</h2>
+                <div class="font-mono" style="color:var(--accent)">TOTAL: <span id="dir-total">0</span> / 500</div>
             </div>
-            
             <div id="party-list"></div>
-            
-            <button onclick="addParty()" style="width:100%; padding:15px; background:transparent; border:2px dashed var(--border); color:var(--text-muted); margin-top:15px; cursor:pointer; border-radius:8px;">+ ADD NEW PARTY</button>
+            <button onclick="addParty()" style="width:100%; padding:15px; border:2px dashed var(--border); background:transparent; color:#64748b; border-radius:8px; cursor:pointer; margin-top:10px;">+ ADD PARTY</button>
         </main>
     </div>
 
     <div id="on-air-app" class="hidden">
         <div class="bg-grid"></div>
-        <div class="crt-overlay"></div>
-
+        
         <header class="oa-header">
-            <div class="flex items-center">
-                <span class="oa-live-badge">LIVE</span>
-                <span class="oa-logo">ELECTION<span class="text-accent">OS</span></span>
-            </div>
-            <div id="oa-clock" class="font-mono" style="font-size:2.5rem; font-weight:700;">18:00:00</div>
+            <div style="background:var(--danger); color:white; padding:4px 10px; font-weight:800; font-size:0.9rem; border-radius:2px;">LIVE</div>
+            <div id="oa-clock" class="font-mono" style="font-size:2rem; font-weight:700;">18:00:00</div>
         </header>
 
-        <div class="scene-container">
-            
-            <div id="scene-dashboard" class="scene active">
-                <div class="dash-layout">
-                    <div id="dash-bars" class="party-bar-container">
-                        </div>
-                    <div class="flex flex-col items-center">
-                        <canvas id="mini-hemi" width="500" height="300"></canvas>
-                        <div style="margin-top:20px; text-align:center;">
-                            <div id="oa-prog-big" class="font-mono text-accent" style="font-size:6rem; font-weight:800; line-height:1;">0%</div>
-                            <div style="letter-spacing:5px; font-weight:700; color:var(--text-muted);">COUNT COMPLETED</div>
-                        </div>
+        <div id="scene-dashboard" class="scene active">
+            <div class="dash-layout">
+                <div id="dash-bars" class="flex flex-col w-full"></div>
+                
+                <div class="hemi-center-group">
+                    <canvas id="dash-hemi" width="500" height="280"></canvas>
+                    
+                    <div style="text-align:center; margin-top:20px;">
+                        <div id="oa-total-display" class="big-number">0</div>
+                        <div class="label-text">SEATS COUNTED / 500</div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div id="scene-hemicycle" class="scene">
-                <div class="hemi-wrapper">
-                    <canvas id="main-hemi" width="1200" height="700"></canvas>
-                    <div class="hemi-stats">
-                        <div class="hemi-total rolling-num" id="hemi-total-disp">500</div>
-                        <div class="hemi-label">PARLIAMENT MEMBERS</div>
-                    </div>
+        <div id="scene-coalition" class="scene">
+            <div style="text-align:center;">
+                <h2 style="font-family:var(--font-display); font-size:3.5rem; margin-bottom:30px;">GOVERNMENT FORMATION</h2>
+                <div style="font-size:6rem; font-weight:800; font-family:var(--font-mono); color:white;">
+                    <span id="coa-val">0</span> <span style="font-size:2.5rem; color:#64748b;">/ 500</span>
                 </div>
+                <div id="coa-status" style="font-size:1.5rem; letter-spacing:3px; font-weight:700; color:var(--danger); margin-top:20px;">THRESHOLD: 251</div>
             </div>
-
-            <div id="scene-coalition" class="scene">
-                <div class="flex items-center justify-center h-full">
-                    <div class="coalition-card">
-                        <h2 class="font-display" style="font-size:4rem; margin-bottom:40px;">GOVERNMENT FORMATION</h2>
-                        <div class="flex justify-center items-end gap-4 mb-8">
-                            <span id="coa-count" class="font-mono text-accent" style="font-size:8rem; font-weight:800; line-height:0.8;">0</span>
-                            <span class="text-muted font-bold text-2xl mb-4">/ 500</span>
-                        </div>
-                        <div id="coa-bar-wrapper" style="height:40px; background:#333; border-radius:20px; overflow:hidden; position:relative; margin-bottom:20px;">
-                            <div style="position:absolute; left:50%; top:0; bottom:0; width:4px; background:white; z-index:10;"></div>
-                            <div id="coa-bar" style="height:100%; width:0%; background:var(--success); transition:width 1s cubic-bezier(0.22, 1, 0.36, 1);"></div>
-                        </div>
-                        <div id="coa-status" class="text-2xl font-bold tracking-widest text-danger">NEED 251 FOR MAJORITY</div>
-                    </div>
-                </div>
-            </div>
-
         </div>
 
         <div class="ticker-bar">
-            <div class="ticker-head">BREAKING NEWS</div>
-            <div class="ticker-content">
-                <div id="oa-ticker-text" class="ticker-anim">ElectionOS V3 System Online - Waiting for data feed...</div>
-            </div>
+            <div style="background:var(--accent); color:black; height:100%; padding:0 30px; display:flex; align-items:center; font-weight:800; font-family:var(--font-display);">UPDATE</div>
+            <div style="flex:1; overflow:hidden;"><div id="oa-ticker" class="ticker-anim">ElectionOS System Ready...</div></div>
         </div>
     </div>
 
     <script>
-        // Simple synth for UI sounds
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playBeep(freq = 800, type = 'sine', duration = 0.1) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.value = freq;
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
-            osc.stop(audioCtx.currentTime + duration);
-        }
-    </script>
-
-    <script>
-        const STORE_KEY = 'elec_os_v3_ultra';
+        const STORAGE_KEY = 'election_os_v4_silent';
         const isDirector = !location.search.includes('mode=onair');
 
-        // Initial State
-        let state = JSON.parse(localStorage.getItem(STORE_KEY)) || {
+        // Initial Data
+        let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
             scene: 'dashboard',
-            progress: 0,
-            ticker: 'Counting in progress across the nation...',
+            ticker: 'Waiting for official results...',
             parties: [
                 { id: 'p1', name: 'FUTURE FORWARD', color: '#f97316', const: 0, list: 0, coal: true },
                 { id: 'p2', name: 'PEOPLE PARTY', color: '#ef4444', const: 0, list: 0, coal: false },
@@ -391,320 +261,239 @@
             ]
         };
 
-        // --- CORE FUNCTIONS ---
         function init() {
             if (isDirector) {
                 document.getElementById('on-air-app').remove();
                 renderDirector();
-                setInterval(updateClockDir, 1000);
+                setInterval(() => document.getElementById('d-clock').innerText = new Date().toLocaleTimeString(), 1000);
             } else {
                 document.getElementById('director-app').remove();
                 document.getElementById('on-air-app').classList.remove('hidden');
-                initCanvas();
-                loopRender(); // Start Animation Loop
-                setInterval(updateClockOA, 1000);
                 
-                // Listener for updates
+                initParticles(); // Setup canvas dots
+                loopRender();    // Start animation loop
+                
                 window.addEventListener('storage', (e) => {
-                    if (e.key === STORE_KEY) {
-                        const oldState = JSON.parse(JSON.stringify(state));
+                    if (e.key === STORAGE_KEY) {
                         state = JSON.parse(e.newValue);
-                        handleStateChange(oldState, state);
+                        updateOnAir();
                     }
                 });
-                handleStateChange({}, state); // First load
+                updateOnAir(); // First load
+                setInterval(() => document.getElementById('oa-clock').innerText = new Date().toLocaleTimeString(), 1000);
             }
         }
 
         function save() {
-            localStorage.setItem(STORE_KEY, JSON.stringify(state));
-            if(isDirector) {
-                renderDirector(); // Re-render logic 
-                playBeep(1200, 'triangle', 0.05); // Feedback sound
-            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            if(isDirector) renderDirector();
         }
 
-        // --- DIRECTOR LOGIC ---
+        // --- DIRECTOR FUNCTIONS ---
         function renderDirector() {
-            // Scene Buttons
-            document.querySelectorAll('.scene-btn').forEach(b => {
-                b.classList.toggle('active', b.dataset.s === state.scene);
-            });
-
-            // Progress & Ticker
-            document.getElementById('prog-slider').value = state.progress;
-            document.getElementById('prog-disp').innerText = state.progress + "%";
+            // Scene Toggle
+            document.querySelectorAll('.scene-btn').forEach(b => b.classList.toggle('active', b.dataset.s === state.scene));
             document.getElementById('ticker-input').value = state.ticker;
 
-            // Party List
             const list = document.getElementById('party-list');
             list.innerHTML = '';
-            let totalSeats = 0;
+            let total = 0;
 
-            // Sort by Total Seats desc
-            [...state.parties].sort((a,b) => (b.const+b.list) - (a.const+a.list)).forEach(p => {
-                const total = p.const + p.list;
-                totalSeats += total;
-                const div = document.createElement('div');
-                div.className = 'party-row';
-                div.innerHTML = `
-                    <input type="color" value="${p.color}" onchange="modParty('${p.id}', 'color', this.value)" style="width:30px; height:30px; border:none; background:none; cursor:pointer;">
-                    <input type="text" value="${p.name}" onchange="modParty('${p.id}', 'name', this.value)" style="background:transparent; border:none; color:white; font-weight:600; width:100%;">
+            // Sort parties by seats
+            const sorted = [...state.parties].sort((a,b) => (b.const+b.list) - (a.const+a.list));
+
+            sorted.forEach(p => {
+                const pTotal = p.const + p.list;
+                total += pTotal;
+                
+                const row = document.createElement('div');
+                row.className = 'party-row';
+                row.innerHTML = `
+                    <input type="color" value="${p.color}" onchange="mod('${p.id}','color',this.value)" style="width:30px; height:30px; border:none; background:none; cursor:pointer;">
                     
-                    <div class="num-control">
-                        <button class="num-btn" onclick="adj('${p.id}', 'const', -1)">-</button>
-                        <input class="num-val" value="${p.const}" readonly>
-                        <button class="num-btn" onclick="adj('${p.id}', 'const', 1)">+</button>
+                    <input type="text" value="${p.name}" onchange="mod('${p.id}','name',this.value)" style="background:transparent; border:none; color:white; font-weight:700; width:100%;">
+                    
+                    <div class="input-group">
+                        <button class="btn-qty" onclick="adj('${p.id}', 'const', -1)">-</button>
+                        <input class="input-qty" value="${p.const}" readonly>
+                        <button class="btn-qty" onclick="adj('${p.id}', 'const', 1)">+</button>
                     </div>
 
-                    <div class="num-control">
-                        <button class="num-btn" onclick="adj('${p.id}', 'list', -1)">-</button>
-                        <input class="num-val" value="${p.list}" readonly>
-                        <button class="num-btn" onclick="adj('${p.id}', 'list', 1)">+</button>
+                    <div class="input-group">
+                        <button class="btn-qty" onclick="adj('${p.id}', 'list', -1)">-</button>
+                        <input class="input-qty" value="${p.list}" readonly>
+                        <button class="btn-qty" onclick="adj('${p.id}', 'list', 1)">+</button>
                     </div>
 
-                    <div class="flex justify-center">
-                        <input type="checkbox" ${p.coal ? 'checked' : ''} onchange="modParty('${p.id}', 'coal', this.checked)" style="width:18px; height:18px; accent-color:var(--success);">
+                    <div class="flex items-center justify-center">
+                        <input type="checkbox" ${p.coal?'checked':''} onchange="mod('${p.id}','coal',this.checked)" style="width:18px; height:18px;">
                     </div>
 
-                    <button onclick="delParty('${p.id}')" style="background:transparent; border:none; color:#64748b; font-size:1.2rem; cursor:pointer;">&times;</button>
+                    <button onclick="del('${p.id}')" style="background:transparent; border:none; color:#475569; font-size:1.5rem; cursor:pointer;">×</button>
                 `;
-                list.appendChild(div);
+                list.appendChild(row);
             });
-            document.getElementById('total-seats-chk').innerText = totalSeats;
+
+            document.getElementById('dir-total').innerText = total;
         }
 
         function setScene(s) { state.scene = s; save(); }
-        function updateProgress(v) { state.progress = v; save(); }
         function updateTicker(v) { state.ticker = v; save(); }
-        function modParty(id, k, v) { state.parties.find(x=>x.id===id)[k] = v; save(); }
-        function adj(id, k, d) { 
+        function mod(id,k,v) { state.parties.find(x=>x.id===id)[k]=v; save(); }
+        function adj(id,k,d) { 
             const p = state.parties.find(x=>x.id===id);
-            p[k] = Math.max(0, p[k] + d);
+            p[k] = Math.max(0, p[k]+d);
             save();
         }
-        function addParty() { state.parties.push({ id: Date.now().toString(), name:'NEW PARTY', color:'#888', const:0, list:0, coal:false }); save(); }
-        function delParty(id) { state.parties = state.parties.filter(x=>x.id !== id); save(); }
-        
-        function updateClockDir() { document.getElementById('d-clock').innerText = new Date().toLocaleTimeString('th-TH'); }
-        function openOnAir() { window.open(location.href + '?mode=onair', 'ElectionOS_Air', 'width=1920,height=1080'); }
+        function addParty() { state.parties.push({id:Date.now().toString(), name:'NEW PARTY', color:'#666', const:0, list:0, coal:false}); save(); }
+        function del(id) { state.parties = state.parties.filter(x=>x.id!==id); save(); }
+        function openOnAir() { window.open(location.href + '?mode=onair', 'ElectionOS_Air', 'width=1280,height=720'); }
 
-
-        // --- ON-AIR ANIMATION LOGIC ---
-        // We use a particle system for the hemicycle to make it "fly"
+        // --- ON-AIR LOGIC ---
+        // Particle System for 500 dots
         let particles = [];
         const TOTAL_SEATS = 500;
-        let targetSeatsMap = []; // Maps index 0-499 to a color
         
-        function initCanvas() {
-            // Initialize particles
+        function initParticles() {
+            // Pre-calculate 500 positions in a semi-circle
+            const rows = 12;
+            const cx = 250; 
+            const cy = 260; // Bottom center of canvas
+            const maxRad = 220;
+            
+            let pIndex = 0;
+            // Generate dots from center outward or left-to-right? 
+            // Standard parliament diagrams fill usually left-to-right blocks.
+            // Let's generate simple arch rows first.
+            
+            let tempPos = [];
+            for(let r=0; r<rows; r++) {
+                const radius = maxRad - (r * 18);
+                const arcLen = Math.PI * radius;
+                const count = Math.ceil(arcLen / 14); // Spacing
+                for(let i=0; i<count; i++) {
+                    const angle = Math.PI - (i / (count-1)) * Math.PI;
+                    tempPos.push({
+                        x: cx + radius * Math.cos(angle),
+                        y: cy + radius * Math.sin(angle),
+                        angle: angle // Store angle for sorting left-to-right
+                    });
+                }
+            }
+            // Sort by angle (Left to Right) to fill parties correctly
+            tempPos.sort((a,b) => b.angle - a.angle);
+            
+            // Trim to exactly 500 or just use what we have (should be close)
+            // We'll create exactly 500 particles based on these positions.
             for(let i=0; i<TOTAL_SEATS; i++) {
+                const pos = tempPos[i] || {x:cx, y:cy};
                 particles.push({
-                    x: 0, y: 0, // Current pos
-                    tx: 0, ty: 0, // Target pos
-                    c: '#333', // Current Color
-                    tc: '#333', // Target Color
-                    s: 0 // Speed offset
+                    x: pos.x, y: pos.y, // Current
+                    tx: pos.x, ty: pos.y, // Target (static for now)
+                    c: '#333333', // Current Color
+                    tc: '#333333' // Target Color
                 });
             }
         }
 
-        function handleStateChange(oldS, newS) {
-            // Switch Scenes
+        function updateOnAir() {
+            // Scene Switching
             document.querySelectorAll('.scene').forEach(el => el.classList.remove('active'));
-            const activeScene = document.getElementById(`scene-${newS.scene}`);
-            if(activeScene) activeScene.classList.add('active');
+            const s = document.getElementById('scene-'+state.scene);
+            if(s) s.classList.add('active');
 
-            // Update Ticker
-            document.getElementById('oa-ticker-text').innerText = newS.ticker;
+            document.getElementById('oa-ticker').innerText = state.ticker;
 
-            // Update Progress
-            animateValue(document.getElementById('oa-prog-big'), oldS.progress||0, newS.progress, 1000);
-
-            // Update Dashboard Bars
-            if (newS.scene === 'dashboard') updateDashboardBars(newS.parties);
-
-            // Update Coalition
-            if (newS.scene === 'coalition') updateCoalition(newS.parties);
-
-            // Recalculate Particle Targets
-            updateParticleTargets(newS.parties);
-        }
-
-        function updateDashboardBars(parties) {
-            const container = document.getElementById('dash-bars');
-            container.innerHTML = '';
-            const sorted = [...parties].sort((a,b) => (b.const+b.list) - (a.const+a.list)).slice(0, 5); // Top 5
+            // --- DASHBOARD UPDATE ---
+            const dashList = document.getElementById('dash-bars');
+            dashList.innerHTML = '';
             
-            sorted.forEach((p, i) => {
-                const total = p.const + p.list;
+            const sorted = [...state.parties].sort((a,b) => (b.const+b.list) - (a.const+a.list));
+            let totalCount = 0;
+
+            // Update Bars
+            sorted.slice(0,5).forEach((p, i) => {
+                const pt = p.const + p.list;
+                totalCount += pt;
+                
                 const el = document.createElement('div');
-                el.className = 'party-bar';
+                el.className = 'party-bar show'; // Add animation class
                 el.style.borderLeftColor = p.color;
-                el.style.animation = `slideIn 0.5s cubic-bezier(0.2,1,0.3,1) forwards ${i*0.1}s`;
+                el.style.transitionDelay = (i*0.1)+'s';
                 el.innerHTML = `
-                    <div class="p-name" style="color:${p.color}">${p.name}</div>
-                    <div class="p-seats">${total}</div>
+                    <div style="font-size:1.8rem; font-weight:600; color:${p.color}">${p.name}</div>
+                    <div style="font-size:2.5rem; font-weight:800; font-family:var(--font-mono)">${pt}</div>
                 `;
-                container.appendChild(el);
+                dashList.appendChild(el);
             });
-        }
 
-        function updateCoalition(parties) {
-            const coalP = parties.filter(p => p.coal);
-            const sum = coalP.reduce((a,b) => a + b.const + b.list, 0);
-            const elCount = document.getElementById('coa-count');
-            const elBar = document.getElementById('coa-bar');
-            const elStat = document.getElementById('coa-status');
-            
-            animateValue(elCount, parseInt(elCount.innerText), sum, 1000);
-            
-            const pct = (sum / 500) * 100;
-            elBar.style.width = pct + '%';
-            
-            if (sum >= 251) {
-                elStat.innerText = "GOVERNMENT FORMED";
-                elStat.className = "text-2xl font-bold tracking-widest text-success";
-                elBar.style.background = "var(--success)";
-            } else {
-                elStat.innerText = "NEED " + (251 - sum) + " MORE SEATS";
-                elStat.className = "text-2xl font-bold tracking-widest text-danger";
-                elBar.style.background = "var(--danger)";
-            }
-        }
+            // Update Big Number (Total Count)
+            const numEl = document.getElementById('oa-total-display');
+            animateNumber(numEl, parseInt(numEl.innerText), totalCount);
 
-        // Logic to map parties to Hemicycle dots (Left-Right ideology or simple grouped)
-        // For simplicity, we just fill by sorted order
-        function updateParticleTargets(parties) {
-            // Sort parties somehow (e.g., largest first, or by ID)
-            const sorted = [...parties].sort((a,b) => (b.const+b.list) - (a.const+a.list));
-            let currentIndex = 0;
-            
-            // Assign colors
+            // Update Hemicycle Colors
+            let pIdx = 0;
             sorted.forEach(p => {
-                const count = p.const + p.list;
-                for(let i=0; i<count; i++) {
-                    if (currentIndex < TOTAL_SEATS) {
-                        particles[currentIndex].tc = p.color;
-                        currentIndex++;
+                const seats = p.const + p.list;
+                for(let k=0; k<seats; k++) {
+                    if(pIdx < TOTAL_SEATS) {
+                        particles[pIdx].tc = p.color;
+                        pIdx++;
                     }
                 }
             });
-            // Fill rest with grey
-            for(let i=currentIndex; i<TOTAL_SEATS; i++) {
-                particles[i].tc = '#333';
+            // Fill remaining with grey
+            for(let k=pIdx; k<TOTAL_SEATS; k++) {
+                particles[k].tc = '#333333';
             }
 
-            // Calculate Grid Positions (Hemicycle Math)
-            const rows = 12;
-            const w = 1200; 
-            const h = 700;
-            const cx = w/2; 
-            const cy = h - 50;
-            
-            // Re-calculate layout for 500 dots
-            // We use a simple concentric arch algorithm
-            let dotIter = 0;
-            // Pre-calculate structure to match index 0 to a specific x,y
-            // We want index 0 to be left-most or center? Let's do simple fill.
-            
-            // Simple approach: generate all positions first, then assign
-            let positions = [];
-            for (let r=0; r<rows; r++) {
-                const rad = (w*0.45) - (r * 35);
-                const arcLen = Math.PI * rad;
-                const count = Math.floor(arcLen / 20); // spacing
-                for(let j=0; j<count; j++) {
-                    const angle = Math.PI - (j / (count-1)) * Math.PI;
-                    positions.push({
-                        x: cx + rad * Math.cos(angle),
-                        y: cy + rad * Math.sin(angle)
-                    });
-                }
-            }
-            // Trim or limit positions
-            // Just map particle[i] to positions[i]
-            for(let i=0; i<TOTAL_SEATS; i++) {
-                if (positions[i]) {
-                    particles[i].tx = positions[i].x;
-                    particles[i].ty = positions[i].y;
-                    // Add some random speed variance for organic feel
-                    particles[i].s = 0.05 + Math.random() * 0.05; 
+            // --- COALITION UPDATE ---
+            if(state.scene === 'coalition') {
+                const coalSum = state.parties.filter(p=>p.coal).reduce((a,b)=>a+b.const+b.list, 0);
+                const coaEl = document.getElementById('coa-val');
+                animateNumber(coaEl, parseInt(coaEl.innerText), coalSum);
+                
+                const st = document.getElementById('coa-status');
+                if(coalSum >= 251) {
+                    st.innerText = "MAJORITY FORMED";
+                    st.style.color = "var(--success)";
+                } else {
+                    st.innerText = `NEED ${251-coalSum} MORE`;
+                    st.style.color = "var(--danger)";
                 }
             }
         }
 
         function loopRender() {
-            if (state.scene === 'hemicycle' || state.scene === 'dashboard') {
-                const cvs = state.scene === 'hemicycle' ? document.getElementById('main-hemi') : document.getElementById('mini-hemi');
-                if (cvs) {
-                    const ctx = cvs.getContext('2d');
-                    const w = cvs.width;
-                    const h = cvs.height;
-                    ctx.clearRect(0,0,w,h);
-                    
-                    // Update and Draw Particles
-                    particles.forEach(p => {
-                        // Lerp Position
-                        // If scene is mini, scale target
-                        let tx = p.tx; 
-                        let ty = p.ty;
-                        let r = 6;
-                        
-                        if (state.scene === 'dashboard') {
-                            tx = (p.tx / 1200) * 500;
-                            ty = (p.ty / 700) * 300;
-                            r = 3;
-                        }
+            // Draw Dashboard Hemicycle
+            if(state.scene === 'dashboard') {
+                const canvas = document.getElementById('dash-hemi');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0,0, canvas.width, canvas.height);
 
-                        // Ease Position
-                        p.x += (tx - p.x) * p.s;
-                        p.y += (ty - p.y) * p.s;
+                particles.forEach(p => {
+                    // Simple color lerp approach: if close, snap.
+                    if(p.c !== p.tc) p.c = p.tc; 
 
-                        // Ease Color (Simple RGB lerp is hard, just switch if close)
-                        // Or just assign directly for now to save perf
-                        const fill = p.tc; 
-
-                        // Draw
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, r, 0, Math.PI*2);
-                        ctx.fillStyle = fill;
-                        // Add glow if colored
-                        if (fill !== '#333') {
-                            ctx.shadowBlur = 10;
-                            ctx.shadowColor = fill;
-                        } else {
-                            ctx.shadowBlur = 0;
-                        }
-                        ctx.fill();
-                        ctx.shadowBlur = 0; // Reset
-                    });
-                }
+                    ctx.fillStyle = p.c;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 3.5, 0, Math.PI*2); // Dot size
+                    ctx.fill();
+                });
             }
             requestAnimationFrame(loopRender);
         }
 
-        function animateValue(obj, start, end, duration) {
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                obj.innerHTML = Math.floor(progress * (end - start) + start) + (obj.id.includes('prog')?'%':'');
-                if (progress < 1) window.requestAnimationFrame(step);
-            };
-            window.requestAnimationFrame(step);
+        function animateNumber(el, start, end) {
+            if(start === end) return;
+            let current = start;
+            const step = end > start ? 1 : -1;
+            const timer = setInterval(() => {
+                current += step;
+                el.innerText = current;
+                if(current === end) clearInterval(timer);
+            }, 5); // Fast counter
         }
-
-        function updateClockOA() {
-            document.getElementById('oa-clock').innerText = new Date().toLocaleTimeString('th-TH');
-        }
-
-        // CSS Inject for animation
-        const style = document.createElement('style');
-        style.innerHTML = `
-            @keyframes slideIn { from { transform: translateX(-50px); opacity:0; } to { transform: translateX(0); opacity:1; } }
-        `;
-        document.head.appendChild(style);
 
         init();
     </script>
