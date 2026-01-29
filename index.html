@@ -313,18 +313,18 @@
         }
         .top3-score .update-glow { width: 120%; height: 120%; filter: blur(40px); }
 
-        /* --- ALL STATS SCENE (BALANCED FLEXBOX) --- */
+        /* --- ALL STATS SCENE (BALANCED CENTER) --- */
         .all-stats-container {
             width: 95%; max-width: 1700px; height: 80%; overflow-y: auto; padding: 20px;
-            /* Flexbox for centering logic */
+            /* Flexbox for centering */
             display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start; gap: 20px;
         }
         .stat-card {
             background: #18181b; border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px; padding: 24px; display: flex; flex-direction: column;
             position: relative; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            /* Fixed width range for balance */
-            flex: 1 1 320px; max-width: 400px; 
+            /* Fixed width for uniformity */
+            flex: 0 1 320px; 
         }
         .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .stat-card-name { font-size: 1.4rem; font-weight: 700; color: white; }
@@ -428,9 +428,7 @@
             <div class="dash-layout">
                 <div id="dash-bars"></div>
                 <div class="hemi-wrapper" style="position:relative;">
-                    <!-- Increased size for Hemicycle -->
                     <canvas id="dash-hemi" width="900" height="460"></canvas>
-                    <!-- Floating Text inside the arch -->
                     <div class="hemi-info">
                         <div id="oa-total-display" class="big-number">0</div>
                         <div class="big-label">รวม ส.ส.</div>
@@ -448,11 +446,10 @@
             </div>
         </div>
 
-        <!-- Scene 3: All Stats (Flexbox Centered) -->
+        <!-- Scene 3: All Stats -->
         <div id="scene-all_stats" class="scene">
             <div class="flex-col items-center w-full" style="height:100%;">
                  <h2 style="font-family:var(--font-ui); font-size:2.5rem; margin-bottom:20px; font-weight:700; color:white; text-shadow:0 4px 10px rgba(0,0,0,0.5);">สรุปผลคะแนนอย่างไม่เป็นทางการ</h2>
-                 <!-- Changed ID to use flex container -->
                  <div id="all-stats-list" class="all-stats-container"></div>
             </div>
         </div>
@@ -486,7 +483,7 @@
         const broadcast = new BroadcastChannel(CHANNEL_NAME);
         const MAX_CONST = 400; 
         const MAX_LIST = 100;
-        const TOTAL_SEATS = MAX_CONST + MAX_LIST;
+        const TOTAL_SEATS = 500; // MUST be 500 for geometry
 
         let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
             scene: 'dashboard',
@@ -662,38 +659,37 @@
 
         // --- ON-AIR LOGIC ---
         function initParticles() {
-            const cx = 450; const cy = 400; // Center Bottom
-            // Balanced Distribution for ~500 dots using standard Parliament Geometry
-            // We use Concentric Circles starting from inner to outer
-            const innerR = 140; 
-            const outerR = 380;
-            const bands = 12; // Number of rows
-            let tempPoints = [];
+            const cx = 450; 
+            const cy = 430; 
+            const innerR = 140;
+            const outerR = 400;
+            
+            // Hardcoded rows for exactly 500 dots (Symmetrical)
+            const rowCounts = [29, 32, 35, 37, 39, 41, 43, 45, 47, 49, 51, 52];
+            const bands = rowCounts.length;
+            
+            particles = [];
             
             for (let i = 0; i < bands; i++) {
                 const r = innerR + (outerR - innerR) * (i / (bands - 1));
-                const arcLength = Math.PI * r;
-                // Density control: constant arc length per dot
-                const dotsInRow = Math.floor(arcLength / 18); 
+                const count = rowCounts[i];
                 
-                for (let j = 0; j < dotsInRow; j++) {
-                    const angle = Math.PI - (Math.PI * j / (dotsInRow - 1));
-                    tempPoints.push({
+                for (let j = 0; j < count; j++) {
+                    // Spread from PI (Left) to 0 (Right)
+                    const angle = Math.PI - (Math.PI * j / (count - 1));
+                    
+                    particles.push({
                         x: cx + r * Math.cos(angle),
                         y: cy - r * Math.sin(angle),
-                        angle: angle
+                        angle: angle, // For sorting
+                        c: '#333333',
+                        tc: '#333333'
                     });
                 }
             }
-            // Sort by angle (Left to Right)
-            tempPoints.sort((a,b) => b.angle - a.angle);
             
-            particles = [];
-            for(let i=0; i<TOTAL_SEATS; i++) {
-                // Ensure we don't run out of points, fallback to center
-                const p = tempPoints[i] || {x:cx, y:cy}; 
-                particles.push({ x: p.x, y: p.y, c: '#222', tc: '#222' });
-            }
+            // Critical: Sort by angle to fill Left-to-Right
+            particles.sort((a,b) => b.angle - a.angle);
         }
 
         function updateOnAir(sceneChanged = false) {
@@ -766,7 +762,7 @@
                 });
             }
 
-            // Scene 3: All Stats (Updated to Flexbox)
+            // Scene 3: All Stats
             if(state.scene === 'all_stats') {
                 const list = document.getElementById('all-stats-list');
                 if(sceneChanged) {
