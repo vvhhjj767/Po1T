@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ElectionOS V4 - Silent Director</title>
+    <title>ElectionOS V4 - Silent Director (Custom Layout)</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=Oswald:wght@400;600;700&family=Sarabun:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* --- CORE VARIABLES --- */
+        /* --- ตัวแปรหลัก --- */
         :root {
             --bg-deep: #050505;
             --bg-panel: #111111;
@@ -44,7 +44,7 @@
         .gap-2 { gap: 0.5rem; }
         .w-full { width: 100%; }
 
-        /* --- DIRECTOR VIEW RE-DESIGN --- */
+        /* --- DIRECTOR VIEW --- */
         #director-app {
             display: grid;
             grid-template-columns: 320px 1fr;
@@ -59,7 +59,6 @@
             border-bottom: 1px solid var(--border);
             padding: 0 24px;
             display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
             z-index: 10;
         }
 
@@ -76,41 +75,34 @@
             overflow-y: auto;
         }
 
-        /* New Button Style */
         .scene-btn {
             width: 100%; padding: 12px; text-align: left; background: #1e293b; color: #94a3b8; 
             border: 1px solid transparent; margin-bottom: 8px; border-radius: 6px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s;
         }
         .scene-btn:hover { background: #334155; color: white; }
-        .scene-btn.active { background: var(--accent); color: white; box-shadow: 0 0 10px rgba(59, 130, 246, 0.4); }
+        .scene-btn.active { background: var(--accent); color: white; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
 
-        /* RE-DESIGNED PARTY ROW (ปุ่มแยกออกจากช่องเลข) */
         .party-row {
             display: grid; 
-            grid-template-columns: 40px 1.5fr 160px 160px 40px 40px; 
-            gap: 15px; align-items: center;
-            background: #0f172a; padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border);
+            grid-template-columns: 40px 1.5fr 140px 140px 40px 40px; 
+            gap: 12px; align-items: center;
+            background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border);
         }
 
-        .input-group {
-            display: flex; align-items: center; gap: 5px;
-        }
-
+        .input-group { display: flex; align-items: center; gap: 4px; }
         .btn-qty {
-            width: 36px; height: 36px;
+            width: 32px; height: 32px;
             background: #334155; border: 1px solid var(--border); border-radius: 4px;
-            color: white; font-weight: bold; cursor: pointer; font-size: 1.2rem;
-            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: bold; cursor: pointer;
         }
-        .btn-qty:hover { background: var(--accent); border-color: var(--accent); }
-        .btn-qty:active { transform: scale(0.95); }
+        .btn-qty:hover { background: var(--accent); }
 
         .input-qty {
-            width: 60px; height: 36px;
+            width: 50px; height: 32px;
             background: #020617; border: 1px solid var(--border); border-radius: 4px;
-            color: white; text-align: center; font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem;
+            color: white; text-align: center; font-family: var(--font-mono); font-weight: 700;
         }
-        .input-qty:focus { outline: 2px solid var(--accent); }
 
         /* --- ON-AIR VIEW --- */
         #on-air-app {
@@ -122,156 +114,193 @@
         .bg-grid {
             position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
             background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            transform: perspective(500px) rotateX(20deg);
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 80px 80px;
+            transform: perspective(1000px) rotateX(25deg);
             z-index: 0; pointer-events: none;
         }
 
         .oa-header {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100px;
-            display: flex; justify-content: space-between; align-items: center; padding: 0 60px; z-index: 100;
+            position: absolute; top: 0; left: 0; width: 100%; height: 80px;
+            display: flex; justify-content: space-between; align-items: center; padding: 0 50px; z-index: 100;
         }
 
         .scene {
-            position: absolute; top: 100px; bottom: 80px; left: 0; width: 100%;
+            position: absolute; top: 80px; bottom: 80px; left: 0; width: 100%;
             display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.5s;
+            opacity: 0; transform: translateY(20px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            pointer-events: none;
         }
-        .scene.active { opacity: 1; pointer-events: auto; }
+        .scene.active { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
-        /* DASHBOARD LAYOUT */
+        /* DASHBOARD */
         .dash-layout {
-            display: grid; grid-template-columns: 1fr 500px; gap: 60px; width: 90%; max-width: 1600px; align-items: center;
+            display: grid; grid-template-columns: 1fr 600px; gap: 40px; width: 92%; max-width: 1700px; align-items: center;
         }
-
         .party-bar {
-            background: rgba(255,255,255,0.05); border-left: 10px solid #ccc; height: 70px; 
-            display: flex; align-items: center; padding: 0 25px; justify-content: space-between; 
-            margin-bottom: 15px; border-radius: 0 6px 6px 0;
-            opacity: 0; transform: translateX(-30px); transition: all 0.5s;
+            background: rgba(255,255,255,0.05); border-left: 10px solid #ccc; height: 60px; 
+            display: flex; align-items: center; padding: 0 20px; justify-content: space-between; 
+            margin-bottom: 12px; border-radius: 0 4px 4px 0;
+            opacity: 0; transform: translateX(-40px); transition: all 0.5s;
         }
         .party-bar.show { opacity: 1; transform: translateX(0); }
 
-        .hemi-center-group {
-            display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
+        /* TOP 3 FOCUS SCENE */
+        .top3-container {
+            display: flex; align-items: flex-end; justify-content: center; gap: 40px; width: 90%; height: 80%;
         }
+        .top3-card {
+            flex: 1; display: flex; flex-direction: column; align-items: center; border-radius: 12px 12px 0 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(0,0,0,0.4) 100%);
+            border: 1px solid var(--border); border-bottom: none; position: relative;
+            transition: all 0.5s; overflow: hidden;
+        }
+        .top3-card.rank-1 { height: 100%; }
+        .top3-card.rank-2 { height: 85%; }
+        .top3-card.rank-3 { height: 75%; }
         
-        /* Stats Styles */
-        .big-number { font-family: var(--font-mono); font-size: 7rem; font-weight: 800; line-height: 1; color: white; text-shadow: 0 0 30px rgba(255,255,255,0.2); }
-        .label-text { font-size: 1.2rem; letter-spacing: 4px; color: var(--text-muted); font-weight: 700; margin-top: 10px; }
+        .top3-info { padding: 30px; text-align: center; width: 100%; }
+        .top3-rank { font-size: 1.2rem; font-weight: 800; color: var(--accent); margin-bottom: 10px; }
+        .top3-name { font-family: var(--font-display); font-size: 2.8rem; line-height: 1.1; margin-bottom: 20px; text-transform: uppercase; }
+        .top3-seats { font-family: var(--font-mono); font-size: 6rem; font-weight: 800; }
+        .top3-bar { width: 100%; height: 15px; background: #ccc; position: absolute; bottom: 0; left: 0; }
 
-        /* Ticker */
+        /* HEMICYCLE */
+        .hemi-group { position: relative; display: flex; flex-direction: column; align-items: center; }
+        #dash-hemi { filter: drop-shadow(0 0 20px rgba(255,255,255,0.1)); }
+
+        .big-number { font-family: var(--font-mono); font-size: 6rem; font-weight: 800; line-height: 1; color: white; }
+        .label-text { font-size: 1rem; letter-spacing: 3px; color: var(--text-muted); font-weight: 700; margin-top: 5px; }
+
+        /* TICKER */
         .ticker-bar {
-            position: absolute; bottom: 0; width: 100%; height: 60px; background: #000; border-top: 3px solid var(--accent);
+            position: absolute; bottom: 0; width: 100%; height: 60px; background: #000; border-top: 2px solid var(--accent);
             display: flex; align-items: center; z-index: 100;
         }
-        .ticker-anim { white-space: nowrap; animation: tick 25s linear infinite; color: white; font-size: 1.5rem; padding-left: 100%; }
+        .ticker-tag { background: var(--accent); color: black; height: 100%; padding: 0 25px; display: flex; align-items: center; font-weight: 800; font-family: var(--font-display); }
+        .ticker-scroll { flex: 1; overflow: hidden; }
+        .ticker-content { white-space: nowrap; animation: tick 30s linear infinite; color: white; font-size: 1.3rem; padding-left: 100%; }
         @keyframes tick { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
     </style>
 </head>
 <body>
 
+    <!-- DIRECTOR INTERFACE -->
     <div id="director-app">
         <header class="dir-header">
-            <h1 style="font-family:var(--font-display); font-size:1.4rem;">ELECTION<span style="color:var(--accent)">OS</span> V4</h1>
+            <h1 style="font-family:var(--font-display); font-size:1.4rem; letter-spacing:1px;">ELECTION<span style="color:var(--accent)">OS</span> V4</h1>
             <div class="flex gap-4 items-center">
-                <div id="d-clock" class="font-mono text-muted">00:00:00</div>
-                <button onclick="openOnAir()" style="background:var(--accent); color:white; border:none; padding:8px 16px; border-radius:4px; font-weight:700; cursor:pointer;">OPEN ON-AIR</button>
+                <div id="d-clock" class="font-mono text-muted" style="margin-right:20px;">00:00:00</div>
+                <button onclick="openOnAir()" style="background:var(--accent); color:white; border:none; padding:8px 20px; border-radius:4px; font-weight:700; cursor:pointer;">เปีดจอ ON-AIR</button>
             </div>
         </header>
 
         <aside class="dir-sidebar">
             <div>
-                <label style="color:#64748b; font-size:0.8rem; font-weight:700; text-transform:uppercase;">Scene Control</label>
+                <label style="color:#64748b; font-size:0.75rem; font-weight:800; text-transform:uppercase; display:block; margin-bottom:10px;">Scene Control</label>
                 <button class="scene-btn active" onclick="setScene('dashboard')" data-s="dashboard">DASHBOARD (MAIN)</button>
+                <button class="scene-btn" onclick="setScene('top3')" data-s="top3">TOP 3 FOCUS</button>
                 <button class="scene-btn" onclick="setScene('coalition')" data-s="coalition">COALITION BUILDER</button>
             </div>
             
             <div>
-                <label style="color:#64748b; font-size:0.8rem; font-weight:700; text-transform:uppercase;">Ticker Message</label>
-                <textarea id="ticker-input" oninput="updateTicker(this.value)" style="width:100%; background:#020617; border:1px solid var(--border); color:white; padding:10px; margin-top:5px; border-radius:6px; height:80px;"></textarea>
+                <label style="color:#64748b; font-size:0.75rem; font-weight:800; text-transform:uppercase; display:block; margin-bottom:10px;">Ticker Message</label>
+                <textarea id="ticker-input" oninput="updateTicker(this.value)" placeholder="ใส่ข้อความวิ่งตรงนี้..." style="width:100%; background:#020617; border:1px solid var(--border); color:white; padding:12px; border-radius:6px; height:100px; font-family:'Sarabun'; outline:none;"></textarea>
             </div>
         </aside>
 
         <main class="dir-main">
             <div class="flex justify-between items-end mb-4">
-                <h2 style="font-weight:700; font-size:1.2rem;">Party Seats Management</h2>
-                <div class="font-mono" style="color:var(--accent)">TOTAL: <span id="dir-total">0</span> / 500</div>
+                <h2 style="font-weight:700; font-size:1.2rem;">การจัดการคะแนนพรรค</h2>
+                <div class="font-mono" style="color:var(--accent); font-weight:700;">นับแล้ว: <span id="dir-total">0</span> / 500 ที่นั่ง</div>
             </div>
             <div id="party-list"></div>
-            <button onclick="addParty()" style="width:100%; padding:15px; border:2px dashed var(--border); background:transparent; color:#64748b; border-radius:8px; cursor:pointer; margin-top:10px;">+ ADD PARTY</button>
+            <button onclick="addParty()" style="width:100%; padding:15px; border:2px dashed var(--border); background:rgba(255,255,255,0.02); color:#94a3b8; border-radius:8px; cursor:pointer; margin-top:10px; font-weight:600;">+ เพิ่มพรรคการเมือง</button>
         </main>
     </div>
 
+    <!-- ON-AIR INTERFACE -->
     <div id="on-air-app" class="hidden">
         <div class="bg-grid"></div>
         
         <header class="oa-header">
-            <div style="background:var(--danger); color:white; padding:4px 10px; font-weight:800; font-size:0.9rem; border-radius:2px;">LIVE</div>
-            <div id="oa-clock" class="font-mono" style="font-size:2rem; font-weight:700;">18:00:00</div>
+            <div style="background:var(--danger); color:white; padding:4px 12px; font-weight:800; font-size:0.85rem; border-radius:2px; letter-spacing:1px;">LIVE</div>
+            <div id="oa-clock" class="font-mono" style="font-size:1.8rem; font-weight:700;">18:00:00</div>
         </header>
 
+        <!-- Scene: Dashboard -->
         <div id="scene-dashboard" class="scene active">
             <div class="dash-layout">
                 <div id="dash-bars" class="flex flex-col w-full"></div>
                 
-                <div class="hemi-center-group">
-                    <canvas id="dash-hemi" width="500" height="280"></canvas>
-                    
-                    <div style="text-align:center; margin-top:20px;">
+                <div class="hemi-group">
+                    <canvas id="dash-hemi" width="600" height="320"></canvas>
+                    <div style="text-align:center; position: absolute; bottom: 0;">
                         <div id="oa-total-display" class="big-number">0</div>
-                        <div class="label-text">SEATS COUNTED / 500</div>
+                        <div class="label-text">รวมที่นั่ง ส.ส. / 500</div>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Scene: Top 3 Focus -->
+        <div id="scene-top3" class="scene">
+            <div id="top3-list" class="top3-container">
+                <!-- เจนเนอเรทจาก JS -->
+            </div>
+        </div>
+
+        <!-- Scene: Coalition -->
         <div id="scene-coalition" class="scene">
             <div style="text-align:center;">
-                <h2 style="font-family:var(--font-display); font-size:3.5rem; margin-bottom:30px;">GOVERNMENT FORMATION</h2>
-                <div style="font-size:6rem; font-weight:800; font-family:var(--font-mono); color:white;">
+                <h2 style="font-family:var(--font-display); font-size:3rem; margin-bottom:20px; letter-spacing:2px;">GOVERNMENT FORMATION</h2>
+                <div style="font-size:7rem; font-weight:800; font-family:var(--font-mono); color:white; line-height:1;">
                     <span id="coa-val">0</span> <span style="font-size:2.5rem; color:#64748b;">/ 500</span>
                 </div>
-                <div id="coa-status" style="font-size:1.5rem; letter-spacing:3px; font-weight:700; color:var(--danger); margin-top:20px;">THRESHOLD: 251</div>
+                <div id="coa-status" style="font-size:1.6rem; letter-spacing:4px; font-weight:700; color:var(--danger); margin-top:20px;">เสียงข้างมาก: 251</div>
             </div>
         </div>
 
         <div class="ticker-bar">
-            <div style="background:var(--accent); color:black; height:100%; padding:0 30px; display:flex; align-items:center; font-weight:800; font-family:var(--font-display);">UPDATE</div>
-            <div style="flex:1; overflow:hidden;"><div id="oa-ticker" class="ticker-anim">ElectionOS System Ready...</div></div>
+            <div class="ticker-tag">LATEST UPDATE</div>
+            <div class="ticker-scroll"><div id="oa-ticker" class="ticker-content">...</div></div>
         </div>
     </div>
 
     <script>
-        const STORAGE_KEY = 'election_os_v4_silent';
+        const STORAGE_KEY = 'election_v4_pro';
         const isDirector = !location.search.includes('mode=onair');
+        const TOTAL_SEATS = 500;
 
-        // Initial Data
         let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
             scene: 'dashboard',
-            ticker: 'Waiting for official results...',
+            ticker: 'ระบบ ElectionOS V4 พร้อมรายงานผลการเลือกตั้งอย่างเป็นทางการ...',
             parties: [
-                { id: 'p1', name: 'FUTURE FORWARD', color: '#f97316', const: 0, list: 0, coal: true },
-                { id: 'p2', name: 'PEOPLE PARTY', color: '#ef4444', const: 0, list: 0, coal: false },
-                { id: 'p3', name: 'LIBERAL DEMS', color: '#3b82f6', const: 0, list: 0, coal: true },
-                { id: 'p4', name: 'PRIDE FRONT', color: '#a855f7', const: 0, list: 0, coal: false },
+                { id: 'p1', name: 'ก้าวไกล', color: '#f97316', const: 110, list: 30, coal: true },
+                { id: 'p2', name: 'เพื่อไทย', color: '#ef4444', const: 100, list: 25, coal: true },
+                { id: 'p3', name: 'ภูมิใจไทย', color: '#3b82f6', const: 60, list: 10, coal: false },
+                { id: 'p4', name: 'พลังประชารัฐ', color: '#1e3a8a', const: 35, list: 5, coal: false },
+                { id: 'p5', name: 'รวมไทยสร้างชาติ', color: '#dc2626', const: 20, list: 5, coal: false },
             ]
         };
 
+        let particles = [];
+
         function init() {
             if (isDirector) {
-                document.getElementById('on-air-app').remove();
+                const oa = document.getElementById('on-air-app');
+                if(oa) oa.remove();
                 renderDirector();
                 setInterval(() => document.getElementById('d-clock').innerText = new Date().toLocaleTimeString(), 1000);
             } else {
-                document.getElementById('director-app').remove();
+                const dir = document.getElementById('director-app');
+                if(dir) dir.remove();
                 document.getElementById('on-air-app').classList.remove('hidden');
                 
-                initParticles(); // Setup canvas dots
-                loopRender();    // Start animation loop
+                initParticles(); 
+                loopRender();    
                 
                 window.addEventListener('storage', (e) => {
                     if (e.key === STORAGE_KEY) {
@@ -279,7 +308,7 @@
                         updateOnAir();
                     }
                 });
-                updateOnAir(); // First load
+                updateOnAir(); 
                 setInterval(() => document.getElementById('oa-clock').innerText = new Date().toLocaleTimeString(), 1000);
             }
         }
@@ -289,9 +318,8 @@
             if(isDirector) renderDirector();
         }
 
-        // --- DIRECTOR FUNCTIONS ---
+        // --- DIRECTOR LOGIC ---
         function renderDirector() {
-            // Scene Toggle
             document.querySelectorAll('.scene-btn').forEach(b => b.classList.toggle('active', b.dataset.s === state.scene));
             document.getElementById('ticker-input').value = state.ticker;
 
@@ -299,7 +327,6 @@
             list.innerHTML = '';
             let total = 0;
 
-            // Sort parties by seats
             const sorted = [...state.parties].sort((a,b) => (b.const+b.list) - (a.const+a.list));
 
             sorted.forEach(p => {
@@ -309,31 +336,25 @@
                 const row = document.createElement('div');
                 row.className = 'party-row';
                 row.innerHTML = `
-                    <input type="color" value="${p.color}" onchange="mod('${p.id}','color',this.value)" style="width:30px; height:30px; border:none; background:none; cursor:pointer;">
-                    
-                    <input type="text" value="${p.name}" onchange="mod('${p.id}','name',this.value)" style="background:transparent; border:none; color:white; font-weight:700; width:100%;">
-                    
+                    <input type="color" value="${p.color}" onchange="mod('${p.id}','color',this.value)" style="width:28px; height:28px; border:none; background:none; cursor:pointer;">
+                    <input type="text" value="${p.name}" onchange="mod('${p.id}','name',this.value)" style="background:transparent; border:none; color:white; font-weight:700; width:100%; outline:none;">
                     <div class="input-group">
                         <button class="btn-qty" onclick="adj('${p.id}', 'const', -1)">-</button>
                         <input class="input-qty" value="${p.const}" readonly>
                         <button class="btn-qty" onclick="adj('${p.id}', 'const', 1)">+</button>
                     </div>
-
                     <div class="input-group">
                         <button class="btn-qty" onclick="adj('${p.id}', 'list', -1)">-</button>
                         <input class="input-qty" value="${p.list}" readonly>
                         <button class="btn-qty" onclick="adj('${p.id}', 'list', 1)">+</button>
                     </div>
-
                     <div class="flex items-center justify-center">
-                        <input type="checkbox" ${p.coal?'checked':''} onchange="mod('${p.id}','coal',this.checked)" style="width:18px; height:18px;">
+                        <input type="checkbox" ${p.coal?'checked':''} onchange="mod('${p.id}','coal',this.checked)" style="width:16px; height:16px;">
                     </div>
-
-                    <button onclick="del('${p.id}')" style="background:transparent; border:none; color:#475569; font-size:1.5rem; cursor:pointer;">×</button>
+                    <button onclick="del('${p.id}')" style="background:transparent; border:none; color:#475569; font-size:1.4rem; cursor:pointer;">&times;</button>
                 `;
                 list.appendChild(row);
             });
-
             document.getElementById('dir-total').innerText = total;
         }
 
@@ -345,93 +366,122 @@
             p[k] = Math.max(0, p[k]+d);
             save();
         }
-        function addParty() { state.parties.push({id:Date.now().toString(), name:'NEW PARTY', color:'#666', const:0, list:0, coal:false}); save(); }
+        function addParty() { state.parties.push({id:Date.now().toString(), name:'พรรคใหม่', color:'#666', const:0, list:0, coal:false}); save(); }
         function del(id) { state.parties = state.parties.filter(x=>x.id!==id); save(); }
-        function openOnAir() { window.open(location.href + '?mode=onair', 'ElectionOS_Air', 'width=1280,height=720'); }
+        function openOnAir() { window.open(location.href + '?mode=onair', 'ElectionOS_Air', 'width=1920,height=1080'); }
 
         // --- ON-AIR LOGIC ---
-        // Particle System for 500 dots
-        let particles = [];
-        const TOTAL_SEATS = 500;
-        
         function initParticles() {
-            // Pre-calculate 500 positions in a semi-circle
+            // คำนวณตำแหน่งจุดแบบครึ่งวงกลม (Concentric Arches)
             const rows = 12;
-            const cx = 250; 
-            const cy = 260; // Bottom center of canvas
-            const maxRad = 220;
+            const cx = 300; 
+            const cy = 280; 
+            const innerR = 100;
+            const outerR = 260;
             
-            let pIndex = 0;
-            // Generate dots from center outward or left-to-right? 
-            // Standard parliament diagrams fill usually left-to-right blocks.
-            // Let's generate simple arch rows first.
-            
-            let tempPos = [];
-            for(let r=0; r<rows; r++) {
-                const radius = maxRad - (r * 18);
-                const arcLen = Math.PI * radius;
-                const count = Math.ceil(arcLen / 14); // Spacing
-                for(let i=0; i<count; i++) {
-                    const angle = Math.PI - (i / (count-1)) * Math.PI;
-                    tempPos.push({
+            let posArray = [];
+            for (let r = 0; r < rows; r++) {
+                const radius = innerR + (r * (outerR - innerR) / (rows - 1));
+                const arcLength = Math.PI * radius;
+                const dotCount = Math.floor(arcLength / 14); // ระยะห่างจุด
+                
+                for (let i = 0; i < dotCount; i++) {
+                    const angle = Math.PI - (i / (dotCount - 1)) * Math.PI;
+                    posArray.push({
                         x: cx + radius * Math.cos(angle),
-                        y: cy + radius * Math.sin(angle),
-                        angle: angle // Store angle for sorting left-to-right
+                        y: cy - radius * Math.sin(angle),
+                        angle: angle
                     });
                 }
             }
-            // Sort by angle (Left to Right) to fill parties correctly
-            tempPos.sort((a,b) => b.angle - a.angle);
+
+            // จัดเรียงจุดจากซ้ายไปขวา (ตามมุม)
+            posArray.sort((a, b) => b.angle - a.angle);
             
-            // Trim to exactly 500 or just use what we have (should be close)
-            // We'll create exactly 500 particles based on these positions.
-            for(let i=0; i<TOTAL_SEATS; i++) {
-                const pos = tempPos[i] || {x:cx, y:cy};
+            // นำมาเก็บในพาร์ทิเคิล 500 ตัว
+            for (let i = 0; i < TOTAL_SEATS; i++) {
+                const p = posArray[i] || { x: cx, y: cy };
                 particles.push({
-                    x: pos.x, y: pos.y, // Current
-                    tx: pos.x, ty: pos.y, // Target (static for now)
-                    c: '#333333', // Current Color
-                    tc: '#333333' // Target Color
+                    x: p.x, y: p.y,
+                    c: '#222', tc: '#222'
                 });
             }
         }
 
         function updateOnAir() {
-            // Scene Switching
             document.querySelectorAll('.scene').forEach(el => el.classList.remove('active'));
             const s = document.getElementById('scene-'+state.scene);
             if(s) s.classList.add('active');
 
             document.getElementById('oa-ticker').innerText = state.ticker;
 
-            // --- DASHBOARD UPDATE ---
-            const dashList = document.getElementById('dash-bars');
-            dashList.innerHTML = '';
-            
             const sorted = [...state.parties].sort((a,b) => (b.const+b.list) - (a.const+a.list));
-            let totalCount = 0;
+            let currentTotal = 0;
 
-            // Update Bars
-            sorted.slice(0,5).forEach((p, i) => {
-                const pt = p.const + p.list;
-                totalCount += pt;
-                
-                const el = document.createElement('div');
-                el.className = 'party-bar show'; // Add animation class
-                el.style.borderLeftColor = p.color;
-                el.style.transitionDelay = (i*0.1)+'s';
-                el.innerHTML = `
-                    <div style="font-size:1.8rem; font-weight:600; color:${p.color}">${p.name}</div>
-                    <div style="font-size:2.5rem; font-weight:800; font-family:var(--font-mono)">${pt}</div>
+            // --- DASHBOARD UPDATE ---
+            const dashBars = document.getElementById('dash-bars');
+            dashBars.innerHTML = '';
+            sorted.slice(0, 7).forEach((p, i) => {
+                const val = p.const + p.list;
+                currentTotal += val;
+                const bar = document.createElement('div');
+                bar.className = 'party-bar show';
+                bar.style.borderLeftColor = p.color;
+                bar.style.transitionDelay = (i * 0.05) + 's';
+                bar.innerHTML = `
+                    <div style="font-size:1.4rem; font-weight:700; color:${p.color}">${p.name}</div>
+                    <div style="font-size:2rem; font-weight:800; font-family:var(--font-mono)">${val}</div>
                 `;
-                dashList.appendChild(el);
+                dashBars.appendChild(bar);
             });
+            const mainTotalEl = document.getElementById('oa-total-display');
+            animateNumber(mainTotalEl, parseInt(mainTotalEl.innerText), sorted.reduce((a,b)=>a+b.const+b.list, 0));
 
-            // Update Big Number (Total Count)
-            const numEl = document.getElementById('oa-total-display');
-            animateNumber(numEl, parseInt(numEl.innerText), totalCount);
+            // --- TOP 3 FOCUS UPDATE ---
+            if(state.scene === 'top3') {
+                const top3List = document.getElementById('top3-list');
+                top3List.innerHTML = '';
+                // เรียงใหม่เป็น: 2, 1, 3 เพื่อให้แชมป์อยู่ตรงกลาง
+                const top3Data = [
+                    { data: sorted[1], rank: 2, cls: 'rank-2' },
+                    { data: sorted[0], rank: 1, cls: 'rank-1' },
+                    { data: sorted[2], rank: 3, cls: 'rank-3' }
+                ];
 
-            // Update Hemicycle Colors
+                top3Data.forEach(item => {
+                    if(!item.data) return;
+                    const p = item.data;
+                    const card = document.createElement('div');
+                    card.className = `top3-card ${item.cls}`;
+                    card.innerHTML = `
+                        <div class="top3-info">
+                            <div class="top3-rank">อันดับที่ ${item.rank}</div>
+                            <div class="top3-name" style="color:${p.color}">${p.name}</div>
+                            <div class="top3-seats">${p.const + p.list}</div>
+                            <div style="font-weight:700; opacity:0.5; letter-spacing:2px;">SEATS</div>
+                        </div>
+                        <div class="top3-bar" style="background:${p.color}"></div>
+                    `;
+                    top3List.appendChild(card);
+                });
+            }
+
+            // --- COALITION UPDATE ---
+            if(state.scene === 'coalition') {
+                const coalSum = state.parties.filter(p=>p.coal).reduce((a,b)=>a+b.const+b.list, 0);
+                const coaEl = document.getElementById('coa-val');
+                animateNumber(coaEl, parseInt(coaEl.innerText), coalSum);
+                const st = document.getElementById('coa-status');
+                if(coalSum >= 251) {
+                    st.innerText = "จัดตั้งรัฐบาลได้ (Majority)";
+                    st.style.color = "var(--success)";
+                } else {
+                    st.innerText = `ขาดอีก ${251-coalSum} ที่นั่ง`;
+                    st.style.color = "var(--danger)";
+                }
+            }
+
+            // Update Hemicycle Target Colors
             let pIdx = 0;
             sorted.forEach(p => {
                 const seats = p.const + p.list;
@@ -442,42 +492,21 @@
                     }
                 }
             });
-            // Fill remaining with grey
-            for(let k=pIdx; k<TOTAL_SEATS; k++) {
-                particles[k].tc = '#333333';
-            }
-
-            // --- COALITION UPDATE ---
-            if(state.scene === 'coalition') {
-                const coalSum = state.parties.filter(p=>p.coal).reduce((a,b)=>a+b.const+b.list, 0);
-                const coaEl = document.getElementById('coa-val');
-                animateNumber(coaEl, parseInt(coaEl.innerText), coalSum);
-                
-                const st = document.getElementById('coa-status');
-                if(coalSum >= 251) {
-                    st.innerText = "MAJORITY FORMED";
-                    st.style.color = "var(--success)";
-                } else {
-                    st.innerText = `NEED ${251-coalSum} MORE`;
-                    st.style.color = "var(--danger)";
-                }
-            }
+            for(let k=pIdx; k<TOTAL_SEATS; k++) particles[k].tc = '#222';
         }
 
         function loopRender() {
-            // Draw Dashboard Hemicycle
             if(state.scene === 'dashboard') {
                 const canvas = document.getElementById('dash-hemi');
                 const ctx = canvas.getContext('2d');
-                ctx.clearRect(0,0, canvas.width, canvas.height);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 particles.forEach(p => {
-                    // Simple color lerp approach: if close, snap.
-                    if(p.c !== p.tc) p.c = p.tc; 
-
+                    // Smooth color transition
+                    p.c = p.tc; 
                     ctx.fillStyle = p.c;
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, 3.5, 0, Math.PI*2); // Dot size
+                    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
                     ctx.fill();
                 });
             }
@@ -488,11 +517,13 @@
             if(start === end) return;
             let current = start;
             const step = end > start ? 1 : -1;
+            const diff = Math.abs(end - start);
+            const speed = diff > 50 ? 5 : 20;
             const timer = setInterval(() => {
                 current += step;
                 el.innerText = current;
                 if(current === end) clearInterval(timer);
-            }, 5); // Fast counter
+            }, speed);
         }
 
         init();
