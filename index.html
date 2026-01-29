@@ -206,6 +206,7 @@
         /* --- DASHBOARD REDESIGN --- */
         .dash-layout { 
             display: grid; 
+            /* Balanced 45/55 Split */
             grid-template-columns: 45% 55%; 
             width: 90%; max-width: 1800px; height: 100%; align-items: center; 
             margin: 0 auto;
@@ -228,6 +229,7 @@
             opacity: 0; transform: translateX(-50px);
         }
         
+        /* Entrance Animation only applies when this class is present */
         .scene.active .party-bar.entrance {
             animation: slideIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
@@ -241,7 +243,7 @@
             position: relative; z-index: 2; transition: transform 0.2s;
         }
 
-        /* --- SHARED GLOW EFFECT --- */
+        /* --- GLOW EFFECT (SHARED) --- */
         .update-glow {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 100%; height: 100%; border-radius: 50%;
@@ -256,6 +258,7 @@
             100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
         }
 
+        /* Hemicycle */
         .hemi-wrapper {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             opacity: 0; transform: scale(0.9); height: 100%;
@@ -266,8 +269,9 @@
         }
         @keyframes scaleIn { to { opacity: 1; transform: scale(1); } }
         
-        #dash-hemi { max-width: 100%; height: auto; filter: drop-shadow(0 0 20px rgba(0,0,0,0.3)); }
-        .big-number { font-family: var(--font-mono); font-size: 9rem; font-weight: 800; line-height: 0.9; color: white; text-shadow: 0 0 60px rgba(255,255,255,0.1); margin-top: 20px; }
+        /* Increased Canvas Size for Balance */
+        #dash-hemi { max-width: 100%; height: auto; filter: drop-shadow(0 0 25px rgba(0,0,0,0.4)); }
+        .big-number { font-family: var(--font-mono); font-size: 9rem; font-weight: 800; line-height: 0.9; color: white; text-shadow: 0 0 60px rgba(255,255,255,0.15); margin-top: 15px; }
         
         /* --- TOP 3 PODIUM --- */
         .top3-container { 
@@ -290,6 +294,7 @@
         .top3-card.rank-2 { height: 75%; border-top: 6px solid #9ca3af; z-index: 2; }
         .top3-card.rank-3 { height: 60%; border-top: 6px solid #b45309; z-index: 1; }
 
+        /* Animation class logic */
         .scene.active .top3-card.entrance { animation: cardSlideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
         .scene.active .top3-card.rank-1.entrance { animation-delay: 0.2s; } 
         .scene.active .top3-card.rank-2.entrance { animation-delay: 0.1s; } 
@@ -415,6 +420,7 @@
             <div class="dash-layout">
                 <div id="dash-bars"></div>
                 <div class="hemi-wrapper">
+                    <!-- Adjusted Size for Better Balance -->
                     <canvas id="dash-hemi" width="900" height="460"></canvas>
                     <div style="text-align:center;">
                         <div id="oa-total-display" class="big-number">0</div>
@@ -464,7 +470,7 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'election_v4_full_pro';
+        const STORAGE_KEY = 'election_v4_full_balanced';
         const CHANNEL_NAME = 'election_os_channel';
         const isDirector = !location.search.includes('mode=onair');
         
@@ -514,7 +520,7 @@
                     const sceneChanged = newState.scene !== currentScene;
                     currentScene = newState.scene;
 
-                    // Calculate score changes before updating state
+                    // Calculate changes
                     const changes = [];
                     newState.parties.forEach(p => {
                         const newScore = p.const + p.list;
@@ -525,14 +531,13 @@
                         previousScores[p.id] = newScore;
                     });
                     
-                    // Trigger Glow for Coalition if Coalition Total increased
                     const oldCoal = state.parties.filter(p=>p.coal).reduce((a,b)=>a+b.const+b.list, 0);
                     const newCoal = newState.parties.filter(p=>p.coal).reduce((a,b)=>a+b.const+b.list, 0);
                     
                     state = newState;
                     updateOnAir(sceneChanged);
 
-                    // Apply effects after DOM update
+                    // Apply effects
                     setTimeout(() => {
                         changes.forEach(c => triggerUpdateEffect(c.id, c.color));
                         if(newCoal > oldCoal && state.scene === 'coalition') {
@@ -552,7 +557,6 @@
         }
         
         function triggerUpdateEffect(partyId, color) {
-            // Dashboard Bar Glow
             const barVal = document.querySelector(`#bar-${partyId} .bar-val`);
             if(barVal) {
                 barVal.style.setProperty('--glow-color', color);
@@ -560,7 +564,6 @@
                 void barVal.offsetWidth;
                 barVal.classList.add('updating');
             }
-            // All Stats Glow
             const statVal = document.getElementById(`stat-total-${partyId}`);
             if(statVal) {
                 statVal.style.setProperty('--glow-color', color);
@@ -568,7 +571,6 @@
                 void statVal.offsetWidth;
                 statVal.classList.add('updating');
             }
-            // Top 3 Glow
             const top3Val = document.getElementById(`top3-val-${partyId}`);
             if(top3Val) {
                 const container = top3Val.closest('.top3-score');
@@ -597,17 +599,11 @@
             const totalConst = state.parties.reduce((sum, p) => sum + p.const, 0);
             const totalList = state.parties.reduce((sum, p) => sum + p.list, 0);
 
-            const statConst = document.getElementById('stat-const');
-            statConst.innerText = `เขต: ${totalConst}/${MAX_CONST}`;
-            statConst.classList.toggle('full', totalConst >= MAX_CONST);
-
-            const statList = document.getElementById('stat-list');
-            statList.innerText = `บัญชี: ${totalList}/${MAX_LIST}`;
-            statList.classList.toggle('full', totalList >= MAX_LIST);
+            document.getElementById('stat-const').innerText = `เขต: ${totalConst}/${MAX_CONST}`;
+            document.getElementById('stat-list').innerText = `บัญชี: ${totalList}/${MAX_LIST}`;
 
             const list = document.getElementById('party-list');
             list.innerHTML = '';
-            
             const sorted = [...state.parties].sort((a,b) => (b.const+b.list) - (a.const+a.list));
 
             sorted.forEach(p => {
@@ -616,24 +612,9 @@
                 row.innerHTML = `
                     <input type="color" value="${p.color}" onchange="mod('${p.id}','color',this.value)" style="width:24px; height:24px; border:none; background:none; cursor:pointer; padding:0; border-radius:50%;">
                     <div class="party-name" title="${p.name}">${p.name}</div>
-                    
-                    <div class="control-pill">
-                        <div class="control-label">เขต</div>
-                        <button class="btn-circle" onclick="adj('${p.id}', 'const', -1)">-</button>
-                        <input class="input-num" value="${p.const}" readonly>
-                        <button class="btn-circle" onclick="adj('${p.id}', 'const', 1)">+</button>
-                    </div>
-
-                    <div class="control-pill">
-                        <div class="control-label">บัญชี</div>
-                        <button class="btn-circle" onclick="adj('${p.id}', 'list', -1)">-</button>
-                        <input class="input-num" value="${p.list}" readonly>
-                        <button class="btn-circle" onclick="adj('${p.id}', 'list', 1)">+</button>
-                    </div>
-
-                    <div class="flex items-center justify-center">
-                        <input type="checkbox" class="checkbox-custom" ${p.coal?'checked':''} onchange="mod('${p.id}','coal',this.checked)" title="พรรคร่วมรัฐบาล">
-                    </div>
+                    <div class="control-pill"><div class="control-label">เขต</div><button class="btn-circle" onclick="adj('${p.id}', 'const', -1)">-</button><input class="input-num" value="${p.const}" readonly><button class="btn-circle" onclick="adj('${p.id}', 'const', 1)">+</button></div>
+                    <div class="control-pill"><div class="control-label">บัญชี</div><button class="btn-circle" onclick="adj('${p.id}', 'list', -1)">-</button><input class="input-num" value="${p.list}" readonly><button class="btn-circle" onclick="adj('${p.id}', 'list', 1)">+</button></div>
+                    <div class="flex items-center justify-center"><input type="checkbox" class="checkbox-custom" ${p.coal?'checked':''} onchange="mod('${p.id}','coal',this.checked)" title="พรรคร่วมรัฐบาล"></div>
                     <button class="btn-del" onclick="del('${p.id}')">&times;</button>
                 `;
                 list.appendChild(row);
@@ -645,13 +626,8 @@
             state.ticker = document.getElementById('ticker-temp-input').value;
             save();
             const btn = document.querySelector('.btn-update-ticker');
-            const originalText = btn.innerText;
-            btn.innerText = "ส่งข้อความแล้ว!";
-            btn.style.background = "#fff"; btn.style.color = "#000";
-            setTimeout(() => {
-                btn.innerText = originalText;
-                btn.style.background = "var(--success)"; btn.style.color = "white";
-            }, 1000);
+            btn.innerText = "ส่งข้อความแล้ว!"; btn.style.background = "#fff"; btn.style.color = "#000";
+            setTimeout(() => { btn.innerText = "ส่งข้อความขึ้นจอ"; btn.style.background = "var(--success)"; btn.style.color = "white"; }, 1000);
         }
 
         function mod(id,k,v) { state.parties.find(x=>x.id===id)[k]=v; save(); }
@@ -681,19 +657,32 @@
 
         // --- ON-AIR LOGIC ---
         function initParticles() {
-            const rows = 12; const cx = 450; const cy = 420; const innerR = 150; const outerR = 400;
-            let posArray = [];
-            for (let r = 0; r < rows; r++) {
-                const radius = innerR + (r * (outerR - innerR) / (rows - 1));
-                const count = Math.floor((Math.PI * radius) / 16); 
-                for (let i = 0; i < count; i++) {
-                    const angle = Math.PI - (i / (count - 1)) * Math.PI;
-                    posArray.push({ x: cx + radius * Math.cos(angle), y: cy - radius * Math.sin(angle), angle: angle });
-                }
+            const cx = 450; const cy = 420; // Canvas Center Bottom
+            // Balanced Distribution Logic for 500 dots in arch
+            let tempPoints = [];
+            // Generate denser points and pick 500
+            for (let r = 0; r < 13; r++) { 
+                 const rad = 140 + r * 20; // Radius steps
+                 const arc = Math.PI * rad;
+                 const n = Math.round(arc / 16); // Spacing factor
+                 for(let i=0; i<n; i++) {
+                     const ang = Math.PI - (i / (n - 1)) * Math.PI; // PI to 0
+                     tempPoints.push({
+                         x: cx + rad * Math.cos(ang),
+                         y: cy - rad * Math.sin(ang),
+                         angle: ang
+                     });
+                 }
             }
-            posArray.sort((a, b) => b.angle - a.angle);
-            for (let i = 0; i < TOTAL_SEATS; i++) {
-                const p = posArray[i] || { x: cx, y: cy };
+            // Sort by angle (Left to Right)
+            tempPoints.sort((a,b) => b.angle - a.angle);
+            
+            // Map to exactly 500 particles
+            particles = [];
+            for(let i=0; i<TOTAL_SEATS; i++) {
+                // Use modulus or scaling if counts don't match, but this method gives ~500 naturally.
+                // We just take the first 500 sorted by angle to fill neatly.
+                const p = tempPoints[i] || {x:cx, y:cy}; 
                 particles.push({ x: p.x, y: p.y, c: '#222', tc: '#222' });
             }
         }
@@ -709,7 +698,6 @@
             // Scene 1: Dashboard
             if(state.scene === 'dashboard') {
                 const dashBars = document.getElementById('dash-bars'); 
-                
                 if(sceneChanged) {
                     dashBars.innerHTML = '';
                     sorted.slice(0, 10).forEach((p, i) => {
@@ -718,14 +706,10 @@
                         bar.id = `bar-${p.id}`; 
                         bar.className = 'party-bar entrance';
                         bar.style.animationDelay = (i * 0.05) + 's'; 
-                        
                         bar.innerHTML = `
                             <div class="party-bar-indicator" style="background-color: ${p.color};"></div>
                             <div class="bar-name">${p.name}</div>
-                            <div class="bar-val">
-                                ${val}
-                                <div class="update-glow"></div>
-                            </div>
+                            <div class="bar-val">${val}<div class="update-glow"></div></div>
                         `;
                         dashBars.appendChild(bar);
                     });
@@ -734,56 +718,41 @@
                         let bar = document.getElementById(`bar-${p.id}`);
                         if(!bar) return; 
                         const valEl = bar.querySelector('.bar-val');
-                        // Update text node ONLY, keeping glow element
-                        if(valEl.childNodes[0].nodeType === 3) {
-                             valEl.childNodes[0].nodeValue = (p.const + p.list) + "\n"; 
-                        }
+                        if(valEl.childNodes[0].nodeType === 3) valEl.childNodes[0].nodeValue = (p.const + p.list) + "\n"; 
                     });
                 }
                 const totalVal = sorted.reduce((a,b)=>a+b.const+b.list, 0);
                 animateNumber(document.getElementById('oa-total-display'), parseInt(document.getElementById('oa-total-display').innerText), totalVal);
             }
 
-            // Scene 2: Top 3 (With Diffing)
+            // Scene 2: Top 3
             if(state.scene === 'top3') {
-                // We do NOT clear innerHTML. We update slots.
                 const map = [
                     { data: sorted[1], rank: 2, id: 'top3-slot-rank2' },
                     { data: sorted[0], rank: 1, id: 'top3-slot-rank1' },
                     { data: sorted[2], rank: 3, id: 'top3-slot-rank3' }
                 ];
-                
                 map.forEach(item => {
                     const slot = document.getElementById(item.id);
                     if(sceneChanged) {
-                        // Reset animations on scene change
                         slot.classList.remove('entrance');
                         void slot.offsetWidth;
                         slot.classList.add('entrance');
                     }
-                    
                     if(item.data) {
-                        // Update Content
                         const p = item.data;
                         const total = p.const + p.list;
-                        // Use CSS var for border color to avoid style thrashing? Or inline.
-                        slot.style.borderTopColor = p.data ? p.color : 'transparent';
+                        slot.style.borderTopColor = p.color;
                         slot.style.boxShadow = `0 -10px 40px ${p.color}22`;
-                        
                         slot.innerHTML = `
                             <div style="padding:20px; text-align:center; width:100%;">
                                 <div style="font-size:1.4rem; font-weight:700; color:${item.rank===1?'#fbbf24':(item.rank===2?'#9ca3af':'#b45309')}; text-shadow:0 2px 10px rgba(0,0,0,0.5);">อันดับ ${item.rank}</div>
                                 <div style="font-size:2.8rem; line-height:1.2; font-weight:600; color:${p.color}; margin-top:10px; text-shadow:0 2px 10px rgba(0,0,0,0.5);">${p.name}</div>
-                                <div class="top3-score">
-                                    <span id="top3-val-${p.id}">${total}</span>
-                                    <div class="update-glow"></div>
-                                </div>
+                                <div class="top3-score"><span id="top3-val-${p.id}">${total}</span><div class="update-glow"></div></div>
                             </div>
                         `;
                     } else {
-                        slot.innerHTML = '';
-                        slot.style.borderTopColor = 'transparent';
-                        slot.style.boxShadow = 'none';
+                        slot.innerHTML = ''; slot.style.borderTopColor = 'transparent'; slot.style.boxShadow = 'none';
                     }
                 });
             }
@@ -796,23 +765,8 @@
                     sorted.forEach(p => {
                         grid.innerHTML += `
                             <div class="stat-card">
-                                <div class="stat-card-header">
-                                    <div class="stat-card-name" style="color:${p.color}">${p.name}</div>
-                                    <div id="stat-total-${p.id}" class="stat-card-total">
-                                        ${p.const + p.list}
-                                        <div class="update-glow"></div>
-                                    </div>
-                                </div>
-                                <div class="stat-breakdown">
-                                    <div class="stat-badge-mini">
-                                        <div class="stat-label">แบบแบ่งเขต</div>
-                                        <div class="stat-val">${p.const}</div>
-                                    </div>
-                                    <div class="stat-badge-mini">
-                                        <div class="stat-label">บัญชีรายชื่อ</div>
-                                        <div class="stat-val">${p.list}</div>
-                                    </div>
-                                </div>
+                                <div class="stat-card-header"><div class="stat-card-name" style="color:${p.color}">${p.name}</div><div id="stat-total-${p.id}" class="stat-card-total">${p.const + p.list}<div class="update-glow"></div></div></div>
+                                <div class="stat-breakdown"><div class="stat-badge-mini"><div class="stat-label">แบบแบ่งเขต</div><div class="stat-val">${p.const}</div></div><div class="stat-badge-mini"><div class="stat-label">บัญชีรายชื่อ</div><div class="stat-val">${p.list}</div></div></div>
                                 <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${p.color};"></div>
                             </div>
                         `;
@@ -820,9 +774,7 @@
                 } else {
                      sorted.forEach(p => {
                         const el = document.getElementById(`stat-total-${p.id}`);
-                        if(el && el.childNodes[0].nodeType === 3) {
-                             el.childNodes[0].nodeValue = (p.const + p.list) + "\n";
-                        }
+                        if(el && el.childNodes[0].nodeType === 3) el.childNodes[0].nodeValue = (p.const + p.list) + "\n";
                      });
                 }
             }
@@ -836,7 +788,7 @@
                 st.innerHTML = coalSum >= 251 ? `<span style="color:var(--success); text-shadow:0 0 20px rgba(16,185,129,0.5);">จัดตั้งรัฐบาลได้ (MAJORITY)</span>` : `ขาดอีก ${251-coalSum} ที่นั่ง`;
             }
 
-            // Particles
+            // Particles Color Update
             let pIdx = 0;
             sorted.forEach(p => {
                 for(let k=0; k<p.const+p.list; k++) { if(pIdx < TOTAL_SEATS) particles[pIdx++].tc = p.color; }
@@ -851,10 +803,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.clearRect(0, 0, 900, 460);
                     particles.forEach(p => { 
-                        ctx.fillStyle = p.tc; 
-                        ctx.beginPath(); 
-                        ctx.arc(p.x, p.y, 4, 0, Math.PI*2); 
-                        ctx.fill(); 
+                        ctx.fillStyle = p.tc; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); 
                     });
                 }
             }
