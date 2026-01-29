@@ -310,9 +310,9 @@
         }
         @keyframes marquee { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
-        /* Independent Progress Bar (Floating Bottom Left) */
+        /* Independent Progress Bar (Floating Bottom Right) */
         .progress-float {
-            position: absolute; bottom: 80px; left: 40px; z-index: 110;
+            position: absolute; bottom: 70px; right: 35px; z-index: 110;
             background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.15);
             padding: 10px 15px; border-radius: 8px; width: 280px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
@@ -415,7 +415,7 @@
         <!-- Scene 3: All Stats (Calculated Center Grid) -->
         <div id="scene-all_stats" class="scene">
             <div class="flex-col items-center w-full" style="height:100%;">
-                 <h2 style="font-family:var(--font-ui); font-size:2.5rem; margin-bottom:20px; font-weight:700; color:white; text-shadow:0 4px 10px rgba(0,0,0,0.5);">สรุปผลคะแนนอย่างไม่เป็นทางการ</h2>
+                 <h2 style="font-family:var(--font-ui); font-size:2.5rem; margin-bottom:20px; font-weight:700; color:white; text-shadow:0 4px 10px rgba(0,0,0,0.5);">ผลอย่างไม่เป็นทางการ</h2>
                  <div id="all-stats-list" class="all-stats-container"></div>
             </div>
         </div>
@@ -433,10 +433,10 @@
             </div>
         </div>
 
-        <!-- Progress Bar (Floating Bottom Left) -->
+        <!-- Progress Bar (Floating Bottom Right) -->
         <div class="progress-float">
             <div class="progress-header">
-                <span class="progress-label">COUNTED:</span>
+                <span class="progress-label">นัยคะแนนแล้ว:</span>
                 <span id="oa-progress-val" class="progress-pct">0%</span>
             </div>
             <div class="progress-track">
@@ -813,4 +813,3 @@
     </script>
 </body>
 </html>
-
