@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ElectionOS V4 - Pro Realtime</title>
+    <title>ElectionOS V4 - Professional Broadcast</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,7 +43,6 @@
         .flex-col { flex-direction: column; }
         .items-center { align-items: center; }
         .justify-between { justify-content: space-between; }
-        .gap-2 { gap: 0.5rem; }
         .w-full { width: 100%; }
 
         /* --- DIRECTOR LAYOUT --- */
@@ -171,7 +170,7 @@
         /* --- ON-AIR MOTION & STYLE --- */
         #on-air-app {
             position: relative; width: 100vw; height: 100vh;
-            background: radial-gradient(circle at 60% 60%, #1e1e24 0%, #050505 90%);
+            background: radial-gradient(circle at 50% 50%, #151518 0%, #000000 90%);
             overflow: hidden;
             font-family: var(--font-ui);
         }
@@ -181,7 +180,7 @@
                 linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
             background-size: 80px 80px;
-            transform: perspective(1000px) rotateX(25deg);
+            transform: perspective(1000px) rotateX(20deg);
             z-index: 0; pointer-events: none;
         }
         .oa-header {
@@ -189,145 +188,173 @@
             display: flex; justify-content: space-between; align-items: center; padding: 0 60px; z-index: 100;
         }
         
-        /* Scene Container & Transitions */
+        /* Scene Container */
         .scene {
             position: absolute; top: 90px; bottom: 70px; left: 0; width: 100%;
             display: flex; align-items: center; justify-content: center;
             opacity: 0; 
-            transform: scale(1.05); /* Slight zoom out effect on exit */
-            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+            transform: scale(1.02); 
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
             pointer-events: none;
         }
         .scene.active { 
             opacity: 1; 
             transform: scale(1); 
             pointer-events: auto;
-            transition-delay: 0.1s;
         }
 
-        /* --- DASHBOARD REDESIGN --- */
+        /* --- DASHBOARD REDESIGN (BALANCED) --- */
         .dash-layout { 
-            display: grid; grid-template-columns: 1.2fr 550px; 
-            gap: 60px; width: 92%; max-width: 1800px; height: 80%; align-items: center; 
+            display: grid; 
+            /* ปรับสัดส่วนให้สมดุลขึ้น: กราฟแท่ง 1.5ส่วน - ว่าง 0.2ส่วน - วงกลม 1.3ส่วน */
+            grid-template-columns: 500px 1fr 500px; 
+            width: 85%; max-width: 1400px; height: 100%; align-items: center; 
+            margin: 0 auto;
         }
         
-        /* Party Bars Animation Wrapper */
+        /* Container for Bars */
         #dash-bars {
-            display: flex; flex-direction: column; width: 100%; gap: 8px;
-            perspective: 1000px; /* For 3D rotation effect */
+            display: flex; flex-direction: column; width: 100%; gap: 10px;
+            perspective: 1000px;
         }
 
         .party-bar {
             position: relative;
-            height: 56px; 
-            display: flex; align-items: center; padding: 0 24px; justify-content: space-between; 
-            border-radius: 6px; 
-            /* Initial State for Animation */
-            opacity: 0; 
-            transform: translateX(-50px) rotateY(-10deg);
-            transform-origin: left center;
-            transition: all 0.3s;
+            height: 64px; 
+            display: flex; align-items: center; padding: 0 20px; justify-content: space-between; 
+            border-radius: 4px;
+            background: linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+            /* Initial state for animation */
+            opacity: 0; transform: translateX(-50px);
         }
         
-        /* FLASH EFFECT ANIMATION */
-        @keyframes flashEffect {
-            0% { filter: brightness(1); transform: scale(1); }
-            50% { filter: brightness(2.5) contrast(1.2); transform: scale(1.02); box-shadow: 0 0 20px rgba(255,255,255,0.5); }
-            100% { filter: brightness(1); transform: scale(1); }
-        }
-        .party-bar.flash {
-            animation: flashEffect 0.5s ease-out;
-            z-index: 10;
-        }
-
-        /* Active State Animation */
-        .scene.active .party-bar {
-            animation: barEntrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-
-        @keyframes barEntrance {
-            to { opacity: 1; transform: translateX(0) rotateY(0); }
-        }
-
-        /* Dynamic Party Background */
-        .party-bar-bg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            border-radius: 6px; z-index: -1;
-            /* Gradient Mask to fade out right side */
-            mask-image: linear-gradient(to right, black 60%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to right, black 60%, transparent 100%);
+        /* Slide Entrance - Works via .scene.active cascade */
+        .scene.active .party-bar.entrance {
+            animation: slideIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
         
-        /* Text Styles */
-        .bar-name { font-size: 1.4rem; font-weight: 700; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-        .bar-val { font-size: 2rem; font-weight: 800; font-family: var(--font-mono); color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
 
-        /* Hemicycle Animation */
+        .party-bar-indicator {
+            position: absolute; left: 0; top: 0; bottom: 0; width: 6px; border-radius: 4px 0 0 4px;
+        }
+        
+        .bar-name { font-size: 1.6rem; font-weight: 700; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); padding-left: 15px; }
+        
+        /* ตัวเลขคะแนน */
+        .bar-val { 
+            font-size: 2.4rem; font-weight: 800; font-family: var(--font-mono); color: white; 
+            position: relative; z-index: 2; transition: transform 0.2s;
+        }
+
+        /* Shadow Glow Effect for Update */
+        .update-glow {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 100%; height: 100%; border-radius: 50%;
+            background: var(--glow-color);
+            filter: blur(20px); opacity: 0; z-index: -1;
+        }
+        .bar-val.updating .update-glow {
+            animation: glowPulse 0.8s ease-out;
+        }
+
+        @keyframes glowPulse {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.5); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
+        }
+
+        /* Hemicycle Wrapper */
         .hemi-wrapper {
-            position: relative; display: flex; flex-direction: column; align-items: center;
-            opacity: 0; transform: scale(0.8);
+            grid-column: 3;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; transform: translateX(50px);
         }
         .scene.active .hemi-wrapper {
-            animation: popIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-            animation-delay: 0.3s;
+            animation: slideInLeft 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            animation-delay: 0.2s;
         }
-        @keyframes popIn { to { opacity: 1; transform: scale(1); } }
+        @keyframes slideInLeft { to { opacity: 1; transform: translateX(0); } }
 
-        .big-number { font-family: var(--font-mono); font-size: 7.5rem; font-weight: 800; line-height: 0.9; color: white; text-shadow: 0 0 50px rgba(255,255,255,0.15); }
+        .big-number { font-family: var(--font-mono); font-size: 8rem; font-weight: 800; line-height: 0.9; color: white; text-shadow: 0 0 50px rgba(255,255,255,0.1); }
         
-        /* --- TOP 3 --- */
-        .top3-container { display: flex; align-items: flex-end; justify-content: center; gap: 40px; height: 75%; width: 90%; }
+        /* --- TOP 3 PODIUM --- */
+        .top3-container { 
+            display: flex; align-items: flex-end; justify-content: center; 
+            gap: 30px; height: 75%; width: 90%; 
+        }
         .top3-card {
             flex: 1; 
-            background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0.6) 100%);
-            border: 1px solid rgba(255,255,255,0.1); border-bottom: none; border-radius: 24px 24px 0 0;
-            display: flex; flex-direction: column; align-items: center; position: relative;
-            backdrop-filter: blur(12px);
+            background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0.8) 100%);
+            border: 1px solid rgba(255,255,255,0.15); border-bottom: none; 
+            border-radius: 20px 20px 0 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            position: relative;
+            backdrop-filter: blur(20px);
             opacity: 0; transform: translateY(100px);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
+            padding-top: 40px;
         }
-        .scene.active .top3-card { animation: cardSlideUp 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        .scene.active .top3-card:nth-child(2) { animation-delay: 0.1s; } /* Rank 1 */
-        .scene.active .top3-card:nth-child(1) { animation-delay: 0.2s; } /* Rank 2 */
-        .scene.active .top3-card:nth-child(3) { animation-delay: 0.3s; } /* Rank 3 */
+        .top3-card.rank-1 { height: 95%; border-top: 6px solid #fbbf24; z-index: 3; }
+        .top3-card.rank-2 { height: 75%; border-top: 6px solid #9ca3af; z-index: 2; }
+        .top3-card.rank-3 { height: 60%; border-top: 6px solid #b45309; z-index: 1; }
+
+        .scene.active .top3-card { animation: cardSlideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        .scene.active .top3-card.rank-1 { animation-delay: 0.2s; } 
+        .scene.active .top3-card.rank-2 { animation-delay: 0.1s; } 
+        .scene.active .top3-card.rank-3 { animation-delay: 0.3s; }
 
         @keyframes cardSlideUp { to { opacity: 1; transform: translateY(0); } }
 
         /* --- ALL STATS SCENE --- */
         .all-stats-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px; width: 90%; max-width: 1600px; height: 80%; overflow-y: auto;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px; width: 95%; max-width: 1700px; height: 80%; overflow-y: auto;
             padding: 20px;
         }
         .stat-card {
             background: #18181b; border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px; padding: 20px; display: flex; flex-direction: column;
+            border-radius: 12px; padding: 24px; display: flex; flex-direction: column;
             position: relative; overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
-        .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .stat-card-name { font-size: 1.2rem; font-weight: 700; color: white; }
-        .stat-card-total { font-size: 2.5rem; font-weight: 800; font-family: var(--font-mono); color: white; line-height: 1; }
+        .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .stat-card-name { font-size: 1.4rem; font-weight: 700; color: white; }
+        .stat-card-total { font-size: 3rem; font-weight: 800; font-family: var(--font-mono); color: white; line-height: 1; position: relative; }
         
-        .stat-breakdown { display: flex; gap: 10px; margin-top: auto; }
+        .stat-breakdown { display: flex; gap: 12px; margin-top: auto; }
         .stat-badge-mini {
-            flex: 1; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px;
+            flex: 1; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;
             display: flex; flex-direction: column; align-items: center;
         }
-        .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-        .stat-val { font-size: 1.2rem; font-weight: 700; font-family: var(--font-mono); color: white; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .stat-val { font-size: 1.3rem; font-weight: 700; font-family: var(--font-mono); color: white; margin-top: 4px; }
 
         /* --- COALITION --- */
         .coalition-wrapper { text-align: center; opacity: 0; transform: scale(1.2); filter: blur(10px); }
         .scene.active .coalition-wrapper { animation: focusIn 0.8s ease-out forwards; }
         @keyframes focusIn { to { opacity: 1; transform: scale(1); filter: blur(0); } }
 
-        /* Ticker */
+        /* --- TICKER (MARQUEE) --- */
         .ticker-bar {
             position: absolute; bottom: 0; width: 100%; height: 60px; background: #000; 
             border-top: 2px solid var(--accent);
-            display: flex; align-items: center; z-index: 100;
+            display: flex; align-items: center; z-index: 100; overflow: hidden;
         }
-        .ticker-anim { white-space: nowrap; animation: tick 35s linear infinite; color: white; font-size: 1.4rem; padding-left: 100%; font-weight: 400; }
-        @keyframes tick { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        .ticker-anim { 
+            white-space: nowrap; 
+            position: absolute;
+            color: white; font-size: 1.4rem; font-weight: 400;
+            animation: marquee 30s linear infinite; 
+            padding-left: 0; /* reset */
+            will-change: transform;
+        }
+        
+        /* Animation: Start from right edge (100vw), end at left edge (-100% of element width) */
+        @keyframes marquee {
+            0% { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
 
     </style>
 </head>
@@ -387,16 +414,21 @@
             <div id="oa-clock" class="font-mono" style="font-size:2.2rem; font-weight:800;">18:00:00</div>
         </header>
 
-        <!-- Scene 1: Dashboard -->
+        <!-- Scene 1: Dashboard (Balanced) -->
         <div id="scene-dashboard" class="scene active">
             <div class="dash-layout">
+                <!-- Left: Bars -->
                 <div id="dash-bars"></div>
                 
+                <!-- Center: Spacer (Auto) -->
+                <div></div>
+
+                <!-- Right: Hemicycle -->
                 <div class="hemi-wrapper">
                     <canvas id="dash-hemi" width="600" height="320"></canvas>
-                    <div style="text-align:center; margin-top:20px;">
+                    <div style="text-align:center; margin-top:10px;">
                         <div id="oa-total-display" class="big-number">0</div>
-                        <div style="font-size:1.2rem; letter-spacing:6px; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:5px;">Total Seats</div>
+                        <div style="font-size:1.2rem; letter-spacing:6px; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-top:0px;">Total Seats</div>
                     </div>
                 </div>
             </div>
@@ -407,7 +439,7 @@
             <div id="top3-list" class="top3-container"></div>
         </div>
 
-        <!-- Scene 3: All Stats (New) -->
+        <!-- Scene 3: All Stats -->
         <div id="scene-all_stats" class="scene">
             <div class="flex-col items-center w-full" style="height:100%;">
                  <h2 style="font-family:var(--font-ui); font-size:2.5rem; margin-bottom:20px; font-weight:700; color:white; text-shadow:0 4px 10px rgba(0,0,0,0.5);">สรุปผลคะแนนอย่างไม่เป็นทางการ</h2>
@@ -426,20 +458,21 @@
             </div>
         </div>
 
+        <!-- Full Width Ticker -->
         <div class="ticker-bar">
-            <div style="background:var(--accent); color:white; height:100%; padding:0 35px; display:flex; align-items:center; font-weight:800; font-size:1.1rem; letter-spacing:1px;">UPDATE</div>
-            <div style="flex:1; overflow:hidden;"><div id="oa-ticker" class="ticker-anim">...</div></div>
+            <div style="background:var(--accent); color:white; height:100%; padding:0 35px; display:flex; align-items:center; font-weight:800; font-size:1.1rem; letter-spacing:1px; z-index:10; position:relative;">UPDATE</div>
+            <div style="position:relative; width:100%; height:100%; overflow:hidden;">
+                <div id="oa-ticker" class="ticker-anim">...</div>
+            </div>
         </div>
     </div>
 
     <script>
-        const STORAGE_KEY = 'election_v4_realtime';
+        const STORAGE_KEY = 'election_v4_pro_final';
         const CHANNEL_NAME = 'election_os_channel';
         const isDirector = !location.search.includes('mode=onair');
         
-        // --- REALTIME SYNC ---
         const broadcast = new BroadcastChannel(CHANNEL_NAME);
-
         const MAX_CONST = 400; 
         const MAX_LIST = 100;
         const TOTAL_SEATS = MAX_CONST + MAX_LIST;
@@ -458,8 +491,9 @@
             ]
         };
         
-        let previousScores = {}; // To track changes for flash effect
+        let previousScores = {}; 
         let particles = [];
+        let currentScene = state.scene;
 
         function init() {
             if (isDirector) {
@@ -470,29 +504,29 @@
                 document.getElementById('director-app').remove();
                 document.getElementById('on-air-app').classList.remove('hidden');
                 
-                // Initialize Previous Scores
                 state.parties.forEach(p => previousScores[p.id] = p.const + p.list);
 
                 initParticles(); 
                 loopRender();    
-                updateOnAir(); 
+                updateOnAir(true); // First force render
                 
-                // Listener for Broadcast Sync
                 broadcast.onmessage = (event) => {
-                    // Check for score increases
                     const newState = event.data;
+                    const sceneChanged = newState.scene !== currentScene;
+                    currentScene = newState.scene;
+
+                    // Detect Score Changes for Effects
                     newState.parties.forEach(p => {
                         const newScore = p.const + p.list;
                         const oldScore = previousScores[p.id] || 0;
                         if(newScore > oldScore) {
-                            // Trigger Flash
-                            triggerFlash(p.id);
+                            triggerUpdateEffect(p.id, p.color);
                         }
                         previousScores[p.id] = newScore;
                     });
 
                     state = newState;
-                    updateOnAir();
+                    updateOnAir(sceneChanged);
                 };
 
                 setInterval(() => document.getElementById('oa-clock').innerText = new Date().toLocaleTimeString('th-TH'), 1000);
@@ -500,22 +534,29 @@
         }
 
         function save() {
-            // Save to local storage (persistence)
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-            // Send to On-Air (Realtime)
             broadcast.postMessage(state);
-            
             if(isDirector) renderDirector(false);
         }
         
-        function triggerFlash(partyId) {
-            // Wait for DOM update
+        function triggerUpdateEffect(partyId, color) {
+            // Wait for DOM
             setTimeout(() => {
-                const el = document.getElementById(`bar-${partyId}`);
-                if(el) {
-                    el.classList.remove('flash');
-                    void el.offsetWidth; // trigger reflow
-                    el.classList.add('flash');
+                // Dashboard Glow
+                const barVal = document.querySelector(`#bar-${partyId} .bar-val`);
+                if(barVal) {
+                    barVal.style.setProperty('--glow-color', color);
+                    barVal.classList.remove('updating');
+                    void barVal.offsetWidth;
+                    barVal.classList.add('updating');
+                }
+                // All Stats Glow
+                const statVal = document.getElementById(`stat-total-${partyId}`);
+                if(statVal) {
+                    statVal.style.setProperty('--flash-color', color);
+                    statVal.classList.remove('flash');
+                    void statVal.offsetWidth;
+                    statVal.classList.add('flash');
                 }
             }, 50);
         }
@@ -546,7 +587,6 @@
                 row.className = 'party-card';
                 row.innerHTML = `
                     <input type="color" value="${p.color}" onchange="mod('${p.id}','color',this.value)" style="width:24px; height:24px; border:none; background:none; cursor:pointer; padding:0; border-radius:50%;">
-                    
                     <div class="party-name" title="${p.name}">${p.name}</div>
                     
                     <div class="control-pill">
@@ -566,7 +606,6 @@
                     <div class="flex items-center justify-center">
                         <input type="checkbox" class="checkbox-custom" ${p.coal?'checked':''} onchange="mod('${p.id}','coal',this.checked)" title="พรรคร่วมรัฐบาล">
                     </div>
-
                     <button class="btn-del" onclick="del('${p.id}')">&times;</button>
                 `;
                 list.appendChild(row);
@@ -588,7 +627,6 @@
         }
 
         function mod(id,k,v) { state.parties.find(x=>x.id===id)[k]=v; save(); }
-        
         function adj(id, k, d) { 
             const p = state.parties.find(x=>x.id===id);
             if (d > 0) {
@@ -599,7 +637,6 @@
             p[k] = Math.max(0, p[k]+d);
             save();
         }
-        
         function addParty() { 
             const name = prompt("กรุณากรอกชื่อพรรคการเมืองใหม่:");
             if(name && name.trim() !== "") {
@@ -607,7 +644,6 @@
                 save(); 
             }
         }
-        
         function del(id) { 
             if(confirm("ยืนยันที่จะลบพรรคนี้ออกจากระบบ?")) {
                 state.parties = state.parties.filter(x=>x.id!==id); save(); 
@@ -634,7 +670,7 @@
             }
         }
 
-        function updateOnAir() {
+        function updateOnAir(sceneChanged = false) {
             document.querySelectorAll('.scene').forEach(el => el.classList.remove('active'));
             const s = document.getElementById('scene-'+state.scene);
             if(s) s.classList.add('active');
@@ -642,76 +678,95 @@
             document.getElementById('oa-ticker').innerText = state.ticker;
             const sorted = [...state.parties].sort((a,b) => (b.const+b.list) - (a.const+a.list));
 
-            // Scene 1: Dashboard
+            // Scene 1: Dashboard (Balanced & Diff Update)
             if(state.scene === 'dashboard') {
                 const dashBars = document.getElementById('dash-bars'); 
-                // Only rebuild if not already built or count changed to preserve animation state (simple diff)
-                // For simplicity here, we rebuild but match IDs to allow Flash effect targeting
-                dashBars.innerHTML = '';
                 
-                sorted.slice(0, 10).forEach((p, i) => {
-                    const val = p.const + p.list;
-                    const bar = document.createElement('div'); 
-                    bar.id = `bar-${p.id}`; // Crucial for flash effect
-                    bar.className = 'party-bar';
-                    bar.style.animationDelay = (i * 0.08) + 's'; 
-                    
-                    bar.innerHTML = `
-                        <div class="party-bar-bg" style="background: linear-gradient(90deg, ${p.color}44 0%, ${p.color}11 100%); border-left: 6px solid ${p.color};"></div>
-                        <div class="bar-name">${p.name}</div>
-                        <div class="bar-val">${val}</div>
-                    `;
-                    dashBars.appendChild(bar);
-                });
+                // Only clear if scene changed to reset animations, otherwise update in place
+                if(sceneChanged) {
+                    dashBars.innerHTML = '';
+                    sorted.slice(0, 6).forEach((p, i) => {
+                        const val = p.const + p.list;
+                        const bar = document.createElement('div'); 
+                        bar.id = `bar-${p.id}`; 
+                        bar.className = 'party-bar entrance'; // Add entrance animation class
+                        bar.style.animationDelay = (i * 0.1) + 's'; 
+                        
+                        bar.innerHTML = `
+                            <div class="party-bar-indicator" style="background-color: ${p.color};"></div>
+                            <div class="bar-name">${p.name}</div>
+                            <div class="bar-val">
+                                ${val}
+                                <div class="update-glow"></div>
+                            </div>
+                        `;
+                        dashBars.appendChild(bar);
+                    });
+                } else {
+                    // Update Values Only (No Animation Re-run)
+                    sorted.slice(0, 6).forEach(p => {
+                        let bar = document.getElementById(`bar-${p.id}`);
+                        if(!bar) return; // Should handle new top parties differently in real app, but ok for now
+                        const valEl = bar.querySelector('.bar-val');
+                        // Update number text node only, keeping glow div
+                        valEl.childNodes[0].nodeValue = p.const + p.list + "\n"; // Preserve spacing
+                    });
+                }
+
                 const totalVal = sorted.reduce((a,b)=>a+b.const+b.list, 0);
                 animateNumber(document.getElementById('oa-total-display'), parseInt(document.getElementById('oa-total-display').innerText), totalVal);
             }
 
-            // Scene 2: Top 3
+            // Other Scenes (Simple Re-render for now)
             if(state.scene === 'top3') {
                 const list = document.getElementById('top3-list'); list.innerHTML = '';
                 [{d:sorted[1],r:2,c:'rank-2'}, {d:sorted[0],r:1,c:'rank-1'}, {d:sorted[2],r:3,c:'rank-3'}].forEach(item => {
                     if(!item.d) return;
                     list.innerHTML += `
-                        <div class="top3-card ${item.c}" style="border-top-color:${item.d.color}">
-                            <div style="padding:40px; text-align:center; width:100%;">
-                                <div style="font-size:1.4rem; font-weight:700; color:${item.c==='rank-1'?'#10b981':(item.c==='rank-2'?'#3b82f6':'#ef4444')}; margin-bottom:10px;">อันดับ ${item.r}</div>
-                                <div style="font-size:3rem; line-height:1.2; font-weight:600; color:${item.d.color}; margin-bottom:20px;">${item.d.name}</div>
-                                <div style="font-size:7rem; font-family:var(--font-mono); font-weight:800;">${item.d.const + item.d.list}</div>
+                        <div class="top3-card ${item.c}" style="border-top-color:${item.d.color}; box-shadow: 0 -10px 40px ${item.d.color}22;">
+                            <div style="padding:20px; text-align:center; width:100%;">
+                                <div style="font-size:1.4rem; font-weight:700; color:${item.c==='rank-1'?'#fbbf24':(item.c==='rank-2'?'#9ca3af':'#b45309')}; text-shadow:0 2px 10px rgba(0,0,0,0.5);">อันดับ ${item.r}</div>
+                                <div style="font-size:2.8rem; line-height:1.2; font-weight:600; color:${item.d.color}; margin-top:10px; text-shadow:0 2px 10px rgba(0,0,0,0.5);">${item.d.name}</div>
+                                <div style="font-size:6.5rem; font-family:var(--font-mono); font-weight:800; color:white; text-shadow:0 4px 20px rgba(0,0,0,0.5);">${item.d.const + item.d.list}</div>
                             </div>
-                            <div style="width:100%; height:12px; background:${item.d.color}; position:absolute; bottom:0; box-shadow: 0 0 20px ${item.d.color};"></div>
                         </div>`;
                 });
             }
 
-            // Scene 3: All Stats (New)
             if(state.scene === 'all_stats') {
                 const grid = document.getElementById('all-stats-list');
-                grid.innerHTML = '';
-                sorted.forEach(p => {
-                    grid.innerHTML += `
-                        <div class="stat-card">
-                            <div class="stat-card-header">
-                                <div class="stat-card-name" style="color:${p.color}">${p.name}</div>
-                                <div class="stat-card-total">${p.const + p.list}</div>
-                            </div>
-                            <div class="stat-breakdown">
-                                <div class="stat-badge-mini">
-                                    <div class="stat-label">แบบแบ่งเขต</div>
-                                    <div class="stat-val">${p.const}</div>
+                // Rebuild only if scene changed or just update numbers
+                if(sceneChanged) {
+                    grid.innerHTML = '';
+                    sorted.forEach(p => {
+                        grid.innerHTML += `
+                            <div class="stat-card">
+                                <div class="stat-card-header">
+                                    <div class="stat-card-name" style="color:${p.color}">${p.name}</div>
+                                    <div id="stat-total-${p.id}" class="stat-card-total">${p.const + p.list}</div>
                                 </div>
-                                <div class="stat-badge-mini">
-                                    <div class="stat-label">บัญชีรายชื่อ</div>
-                                    <div class="stat-val">${p.list}</div>
+                                <div class="stat-breakdown">
+                                    <div class="stat-badge-mini">
+                                        <div class="stat-label">แบบแบ่งเขต</div>
+                                        <div class="stat-val">${p.const}</div>
+                                    </div>
+                                    <div class="stat-badge-mini">
+                                        <div class="stat-label">บัญชีรายชื่อ</div>
+                                        <div class="stat-val">${p.list}</div>
+                                    </div>
                                 </div>
+                                <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${p.color};"></div>
                             </div>
-                            <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${p.color};"></div>
-                        </div>
-                    `;
-                });
+                        `;
+                    });
+                } else {
+                     sorted.forEach(p => {
+                        const el = document.getElementById(`stat-total-${p.id}`);
+                        if(el) el.innerText = p.const + p.list;
+                     });
+                }
             }
 
-            // Scene 4: Coalition
             if(state.scene === 'coalition') {
                 const coalSum = state.parties.filter(p=>p.coal).reduce((a,b)=>a+b.const+b.list, 0);
                 const el = document.getElementById('coa-val');
