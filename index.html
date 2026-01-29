@@ -203,17 +203,15 @@
             pointer-events: auto;
         }
 
-        /* --- DASHBOARD REDESIGN (BALANCED & FULL) --- */
+        /* --- DASHBOARD REDESIGN --- */
         .dash-layout { 
             display: grid; 
-            /* Split 45% List, 55% Hemicycle to fill space better */
             grid-template-columns: 45% 55%; 
             width: 90%; max-width: 1800px; height: 100%; align-items: center; 
             margin: 0 auto;
             gap: 50px;
         }
         
-        /* Container for Bars */
         #dash-bars {
             display: flex; flex-direction: column; width: 100%; gap: 12px;
             perspective: 1000px;
@@ -222,12 +220,11 @@
 
         .party-bar {
             position: relative;
-            height: 58px; /* Slightly smaller to fit 10 items comfortably */
+            height: 58px; 
             display: flex; align-items: center; padding: 0 20px; justify-content: space-between; 
             border-radius: 6px;
             background: linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%);
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            /* Initial state for animation */
             opacity: 0; transform: translateX(-50px);
         }
         
@@ -236,10 +233,7 @@
         }
         @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
 
-        .party-bar-indicator {
-            position: absolute; left: 0; top: 0; bottom: 0; width: 8px; border-radius: 4px 0 0 4px;
-        }
-        
+        .party-bar-indicator { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; border-radius: 4px 0 0 4px; }
         .bar-name { font-size: 1.6rem; font-weight: 600; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); padding-left: 20px; }
         
         .bar-val { 
@@ -247,47 +241,32 @@
             position: relative; z-index: 2; transition: transform 0.2s;
         }
 
-        /* Shadow Glow Effect for Update */
+        /* --- SHARED GLOW EFFECT --- */
         .update-glow {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 100%; height: 100%; border-radius: 50%;
             background: var(--glow-color);
-            filter: blur(25px); opacity: 0; z-index: -1;
+            filter: blur(25px); opacity: 0; z-index: -1; pointer-events: none;
         }
-        .bar-val.updating .update-glow {
-            animation: glowPulse 0.8s ease-out;
-        }
-
-        /* Also apply glow to All Stats */
-        .stat-card-total { position: relative; transition: transform 0.2s; }
-        .stat-card-total .update-glow { width: 150%; height: 150%; filter: blur(30px); }
-        .stat-card-total.updating .update-glow { animation: glowPulse 0.8s ease-out; }
+        .updating .update-glow { animation: glowPulse 0.8s ease-out; }
 
         @keyframes glowPulse {
             0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-            50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.2); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+            50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.5); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
         }
 
-        /* Hemicycle Wrapper */
         .hemi-wrapper {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            opacity: 0; transform: scale(0.9);
-            height: 100%;
+            opacity: 0; transform: scale(0.9); height: 100%;
         }
         .scene.active .hemi-wrapper {
             animation: scaleIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
             animation-delay: 0.2s;
         }
         @keyframes scaleIn { to { opacity: 1; transform: scale(1); } }
-
-        /* Larger Canvas */
-        #dash-hemi {
-            max-width: 100%;
-            height: auto;
-            filter: drop-shadow(0 0 20px rgba(0,0,0,0.3));
-        }
-
+        
+        #dash-hemi { max-width: 100%; height: auto; filter: drop-shadow(0 0 20px rgba(0,0,0,0.3)); }
         .big-number { font-family: var(--font-mono); font-size: 9rem; font-weight: 800; line-height: 0.9; color: white; text-shadow: 0 0 60px rgba(255,255,255,0.1); margin-top: 20px; }
         
         /* --- TOP 3 PODIUM --- */
@@ -305,34 +284,42 @@
             backdrop-filter: blur(20px);
             opacity: 0; transform: translateY(100px);
             box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
-            padding-top: 40px;
+            padding-top: 40px; transition: all 0.5s;
         }
         .top3-card.rank-1 { height: 95%; border-top: 6px solid #fbbf24; z-index: 3; }
         .top3-card.rank-2 { height: 75%; border-top: 6px solid #9ca3af; z-index: 2; }
         .top3-card.rank-3 { height: 60%; border-top: 6px solid #b45309; z-index: 1; }
 
-        .scene.active .top3-card { animation: cardSlideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        .scene.active .top3-card.rank-1 { animation-delay: 0.2s; } 
-        .scene.active .top3-card.rank-2 { animation-delay: 0.1s; } 
-        .scene.active .top3-card.rank-3 { animation-delay: 0.3s; }
+        .scene.active .top3-card.entrance { animation: cardSlideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        .scene.active .top3-card.rank-1.entrance { animation-delay: 0.2s; } 
+        .scene.active .top3-card.rank-2.entrance { animation-delay: 0.1s; } 
+        .scene.active .top3-card.rank-3.entrance { animation-delay: 0.3s; }
 
         @keyframes cardSlideUp { to { opacity: 1; transform: translateY(0); } }
+
+        .top3-score { 
+            font-size: 6.5rem; font-family: var(--font-mono); font-weight: 800; color: white; 
+            text-shadow: 0 4px 20px rgba(0,0,0,0.5); position: relative;
+        }
+        .top3-score .update-glow { width: 120%; height: 120%; filter: blur(40px); }
 
         /* --- ALL STATS SCENE --- */
         .all-stats-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 20px; width: 95%; max-width: 1700px; height: 80%; overflow-y: auto;
-            padding: 20px;
+            gap: 20px; width: 95%; max-width: 1700px; height: 80%; overflow-y: auto; padding: 20px;
         }
         .stat-card {
             background: #18181b; border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px; padding: 24px; display: flex; flex-direction: column;
-            position: relative; overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .stat-card-name { font-size: 1.4rem; font-weight: 700; color: white; }
-        .stat-card-total { font-size: 3rem; font-weight: 800; font-family: var(--font-mono); color: white; line-height: 1; z-index: 1; }
+        
+        .stat-card-total { 
+            font-size: 3rem; font-weight: 800; font-family: var(--font-mono); color: white; line-height: 1; z-index: 1; position: relative;
+        }
+        .stat-card-total .update-glow { width: 150%; height: 150%; filter: blur(30px); }
         
         .stat-breakdown { display: flex; gap: 12px; margin-top: auto; }
         .stat-badge-mini {
@@ -346,6 +333,9 @@
         .coalition-wrapper { text-align: center; opacity: 0; transform: scale(1.2); filter: blur(10px); }
         .scene.active .coalition-wrapper { animation: focusIn 0.8s ease-out forwards; }
         @keyframes focusIn { to { opacity: 1; transform: scale(1); filter: blur(0); } }
+        
+        .coalition-num { position: relative; display: inline-block; }
+        .coalition-num .update-glow { width: 100%; height: 100%; filter: blur(50px); }
 
         /* --- TICKER (MARQUEE) --- */
         .ticker-bar {
@@ -354,21 +344,16 @@
             display: flex; align-items: center; z-index: 100; overflow: hidden;
         }
         .ticker-anim { 
-            white-space: nowrap; 
-            position: absolute;
-            color: white; font-size: 1.8rem; font-weight: 400; /* Increased font size */
-            animation: marquee 25s linear infinite; 
-            padding-left: 0; 
+            white-space: nowrap; position: absolute;
+            color: white; font-size: 1.8rem; font-weight: 400;
+            animation: marquee 25s linear infinite; padding-left: 0; 
             will-change: transform;
-            height: 100%; display: flex; align-items: center; /* Center Vertically */
-            padding-top: 4px; /* Optical center for Thai font */
+            height: 100%; display: flex; align-items: center; padding-top: 4px;
         }
-        
         @keyframes marquee {
             0% { transform: translateX(100vw); }
             100% { transform: translateX(-100%); }
         }
-
     </style>
 </head>
 <body>
@@ -410,9 +395,7 @@
                     <div id="stat-list" class="stat-badge">บัญชี: 0/100</div>
                 </div>
             </div>
-            
             <div id="party-list" class="party-list-container"></div>
-            
             <button onclick="addParty()" style="width:100%; padding:14px; border:2px dashed var(--border); background:rgba(255,255,255,0.02); color:var(--text-muted); border-radius:12px; cursor:pointer; margin-top:16px; font-weight:600; font-family:var(--font-ui); transition:all 0.2s;">
                 + เพิ่มพรรคการเมืองใหม่
             </button>
@@ -427,15 +410,11 @@
             <div id="oa-clock" class="font-mono" style="font-size:2.2rem; font-weight:800;">18:00:00</div>
         </header>
 
-        <!-- Scene 1: Dashboard (Balanced & Full) -->
+        <!-- Scene 1: Dashboard -->
         <div id="scene-dashboard" class="scene active">
             <div class="dash-layout">
-                <!-- Left: List of 10 -->
                 <div id="dash-bars"></div>
-                
-                <!-- Right: Large Hemicycle -->
                 <div class="hemi-wrapper">
-                    <!-- Increased size for Hemicycle -->
                     <canvas id="dash-hemi" width="900" height="460"></canvas>
                     <div style="text-align:center;">
                         <div id="oa-total-display" class="big-number">0</div>
@@ -447,7 +426,12 @@
 
         <!-- Scene 2: Top 3 -->
         <div id="scene-top3" class="scene">
-            <div id="top3-list" class="top3-container"></div>
+            <div id="top3-list" class="top3-container">
+                <!-- Static Slots for Diffing Logic -->
+                <div id="top3-slot-rank2" class="top3-card rank-2 entrance"></div>
+                <div id="top3-slot-rank1" class="top3-card rank-1 entrance"></div>
+                <div id="top3-slot-rank3" class="top3-card rank-3 entrance"></div>
+            </div>
         </div>
 
         <!-- Scene 3: All Stats -->
@@ -462,14 +446,15 @@
         <div id="scene-coalition" class="scene">
             <div class="coalition-wrapper">
                 <h2 style="font-family:var(--font-ui); font-size:3.5rem; margin-bottom:20px; font-weight:400; letter-spacing:2px;">GOVERNMENT FORMATION</h2>
-                <div style="font-size:9rem; font-weight:800; font-family:var(--font-mono); color:white; line-height:1;">
-                    <span id="coa-val">0</span> <span style="font-size:3.5rem; color:#64748b;">/ 500</span>
+                <div class="coalition-num">
+                    <span id="coa-val" style="font-size:9rem; font-weight:800; font-family:var(--font-mono); color:white; line-height:1;">0</span>
+                    <div class="update-glow"></div>
                 </div>
+                <span style="font-size:3.5rem; color:#64748b; font-weight:800; font-family:var(--font-mono);">/ 500</span>
                 <div id="coa-status" style="font-size:2rem; font-weight:700; color:var(--danger); margin-top:30px; letter-spacing:1px;">THRESHOLD: 251</div>
             </div>
         </div>
 
-        <!-- Full Width Ticker -->
         <div class="ticker-bar">
             <div style="background:var(--accent); color:white; height:100%; padding:0 35px; display:flex; align-items:center; font-weight:800; font-size:1.1rem; letter-spacing:1px; z-index:10; position:relative;">UPDATE</div>
             <div style="position:relative; width:100%; height:100%; overflow:hidden;">
@@ -479,7 +464,7 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'election_v4_pro_final';
+        const STORAGE_KEY = 'election_v4_full_pro';
         const CHANNEL_NAME = 'election_os_channel';
         const isDirector = !location.search.includes('mode=onair');
         
@@ -529,17 +514,31 @@
                     const sceneChanged = newState.scene !== currentScene;
                     currentScene = newState.scene;
 
+                    // Calculate score changes before updating state
+                    const changes = [];
                     newState.parties.forEach(p => {
                         const newScore = p.const + p.list;
                         const oldScore = previousScores[p.id] || 0;
                         if(newScore > oldScore) {
-                            triggerUpdateEffect(p.id, p.color);
+                            changes.push({ id: p.id, color: p.color });
                         }
                         previousScores[p.id] = newScore;
                     });
-
+                    
+                    // Trigger Glow for Coalition if Coalition Total increased
+                    const oldCoal = state.parties.filter(p=>p.coal).reduce((a,b)=>a+b.const+b.list, 0);
+                    const newCoal = newState.parties.filter(p=>p.coal).reduce((a,b)=>a+b.const+b.list, 0);
+                    
                     state = newState;
                     updateOnAir(sceneChanged);
+
+                    // Apply effects after DOM update
+                    setTimeout(() => {
+                        changes.forEach(c => triggerUpdateEffect(c.id, c.color));
+                        if(newCoal > oldCoal && state.scene === 'coalition') {
+                            triggerCoalitionGlow('var(--success)');
+                        }
+                    }, 50);
                 };
 
                 setInterval(() => document.getElementById('oa-clock').innerText = new Date().toLocaleTimeString('th-TH'), 1000);
@@ -553,24 +552,41 @@
         }
         
         function triggerUpdateEffect(partyId, color) {
-            setTimeout(() => {
-                // Dashboard Glow
-                const barVal = document.querySelector(`#bar-${partyId} .bar-val`);
-                if(barVal) {
-                    barVal.style.setProperty('--glow-color', color);
-                    barVal.classList.remove('updating');
-                    void barVal.offsetWidth;
-                    barVal.classList.add('updating');
-                }
-                // All Stats Glow
-                const statVal = document.getElementById(`stat-total-${partyId}`);
-                if(statVal) {
-                    statVal.style.setProperty('--glow-color', color);
-                    statVal.classList.remove('updating');
-                    void statVal.offsetWidth;
-                    statVal.classList.add('updating');
-                }
-            }, 50);
+            // Dashboard Bar Glow
+            const barVal = document.querySelector(`#bar-${partyId} .bar-val`);
+            if(barVal) {
+                barVal.style.setProperty('--glow-color', color);
+                barVal.classList.remove('updating');
+                void barVal.offsetWidth;
+                barVal.classList.add('updating');
+            }
+            // All Stats Glow
+            const statVal = document.getElementById(`stat-total-${partyId}`);
+            if(statVal) {
+                statVal.style.setProperty('--glow-color', color);
+                statVal.classList.remove('updating');
+                void statVal.offsetWidth;
+                statVal.classList.add('updating');
+            }
+            // Top 3 Glow
+            const top3Val = document.getElementById(`top3-val-${partyId}`);
+            if(top3Val) {
+                const container = top3Val.closest('.top3-score');
+                container.style.setProperty('--glow-color', color);
+                container.classList.remove('updating');
+                void container.offsetWidth;
+                container.classList.add('updating');
+            }
+        }
+
+        function triggerCoalitionGlow(color) {
+            const coaCont = document.querySelector('.coalition-num');
+            if(coaCont) {
+                coaCont.style.setProperty('--glow-color', color);
+                coaCont.classList.remove('updating');
+                void coaCont.offsetWidth;
+                coaCont.classList.add('updating');
+            }
         }
 
         // --- DIRECTOR LOGIC ---
@@ -665,12 +681,11 @@
 
         // --- ON-AIR LOGIC ---
         function initParticles() {
-            // New Canvas Size = 900x460. Center ~450, 420.
             const rows = 12; const cx = 450; const cy = 420; const innerR = 150; const outerR = 400;
             let posArray = [];
             for (let r = 0; r < rows; r++) {
                 const radius = innerR + (r * (outerR - innerR) / (rows - 1));
-                const count = Math.floor((Math.PI * radius) / 16); // Spacing adjustment
+                const count = Math.floor((Math.PI * radius) / 16); 
                 for (let i = 0; i < count; i++) {
                     const angle = Math.PI - (i / (count - 1)) * Math.PI;
                     posArray.push({ x: cx + radius * Math.cos(angle), y: cy - radius * Math.sin(angle), angle: angle });
@@ -695,7 +710,6 @@
             if(state.scene === 'dashboard') {
                 const dashBars = document.getElementById('dash-bars'); 
                 
-                // Show Top 10
                 if(sceneChanged) {
                     dashBars.innerHTML = '';
                     sorted.slice(0, 10).forEach((p, i) => {
@@ -720,29 +734,61 @@
                         let bar = document.getElementById(`bar-${p.id}`);
                         if(!bar) return; 
                         const valEl = bar.querySelector('.bar-val');
-                        valEl.childNodes[0].nodeValue = p.const + p.list + "\n"; 
+                        // Update text node ONLY, keeping glow element
+                        if(valEl.childNodes[0].nodeType === 3) {
+                             valEl.childNodes[0].nodeValue = (p.const + p.list) + "\n"; 
+                        }
                     });
                 }
-
                 const totalVal = sorted.reduce((a,b)=>a+b.const+b.list, 0);
                 animateNumber(document.getElementById('oa-total-display'), parseInt(document.getElementById('oa-total-display').innerText), totalVal);
             }
 
+            // Scene 2: Top 3 (With Diffing)
             if(state.scene === 'top3') {
-                const list = document.getElementById('top3-list'); list.innerHTML = '';
-                [{d:sorted[1],r:2,c:'rank-2'}, {d:sorted[0],r:1,c:'rank-1'}, {d:sorted[2],r:3,c:'rank-3'}].forEach(item => {
-                    if(!item.d) return;
-                    list.innerHTML += `
-                        <div class="top3-card ${item.c}" style="border-top-color:${item.d.color}; box-shadow: 0 -10px 40px ${item.d.color}22;">
+                // We do NOT clear innerHTML. We update slots.
+                const map = [
+                    { data: sorted[1], rank: 2, id: 'top3-slot-rank2' },
+                    { data: sorted[0], rank: 1, id: 'top3-slot-rank1' },
+                    { data: sorted[2], rank: 3, id: 'top3-slot-rank3' }
+                ];
+                
+                map.forEach(item => {
+                    const slot = document.getElementById(item.id);
+                    if(sceneChanged) {
+                        // Reset animations on scene change
+                        slot.classList.remove('entrance');
+                        void slot.offsetWidth;
+                        slot.classList.add('entrance');
+                    }
+                    
+                    if(item.data) {
+                        // Update Content
+                        const p = item.data;
+                        const total = p.const + p.list;
+                        // Use CSS var for border color to avoid style thrashing? Or inline.
+                        slot.style.borderTopColor = p.data ? p.color : 'transparent';
+                        slot.style.boxShadow = `0 -10px 40px ${p.color}22`;
+                        
+                        slot.innerHTML = `
                             <div style="padding:20px; text-align:center; width:100%;">
-                                <div style="font-size:1.4rem; font-weight:700; color:${item.c==='rank-1'?'#fbbf24':(item.c==='rank-2'?'#9ca3af':'#b45309')}; text-shadow:0 2px 10px rgba(0,0,0,0.5);">อันดับ ${item.r}</div>
-                                <div style="font-size:2.8rem; line-height:1.2; font-weight:600; color:${item.d.color}; margin-top:10px; text-shadow:0 2px 10px rgba(0,0,0,0.5);">${item.d.name}</div>
-                                <div style="font-size:6.5rem; font-family:var(--font-mono); font-weight:800; color:white; text-shadow:0 4px 20px rgba(0,0,0,0.5);">${item.d.const + item.d.list}</div>
+                                <div style="font-size:1.4rem; font-weight:700; color:${item.rank===1?'#fbbf24':(item.rank===2?'#9ca3af':'#b45309')}; text-shadow:0 2px 10px rgba(0,0,0,0.5);">อันดับ ${item.rank}</div>
+                                <div style="font-size:2.8rem; line-height:1.2; font-weight:600; color:${p.color}; margin-top:10px; text-shadow:0 2px 10px rgba(0,0,0,0.5);">${p.name}</div>
+                                <div class="top3-score">
+                                    <span id="top3-val-${p.id}">${total}</span>
+                                    <div class="update-glow"></div>
+                                </div>
                             </div>
-                        </div>`;
+                        `;
+                    } else {
+                        slot.innerHTML = '';
+                        slot.style.borderTopColor = 'transparent';
+                        slot.style.boxShadow = 'none';
+                    }
                 });
             }
 
+            // Scene 3: All Stats
             if(state.scene === 'all_stats') {
                 const grid = document.getElementById('all-stats-list');
                 if(sceneChanged) {
@@ -774,11 +820,14 @@
                 } else {
                      sorted.forEach(p => {
                         const el = document.getElementById(`stat-total-${p.id}`);
-                        if(el) el.childNodes[0].nodeValue = p.const + p.list + "\n";
+                        if(el && el.childNodes[0].nodeType === 3) {
+                             el.childNodes[0].nodeValue = (p.const + p.list) + "\n";
+                        }
                      });
                 }
             }
 
+            // Scene 4: Coalition
             if(state.scene === 'coalition') {
                 const coalSum = state.parties.filter(p=>p.coal).reduce((a,b)=>a+b.const+b.list, 0);
                 const el = document.getElementById('coa-val');
