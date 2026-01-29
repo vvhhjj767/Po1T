@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ElectionOS V4 - Final Control</title>
+    <title>ElectionOS V4 - Final Broadcast</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -107,7 +107,7 @@
         .btn-update-ticker:hover { filter: brightness(1.1); transform: translateY(-1px); }
         .btn-update-ticker:active { transform: translateY(1px); }
 
-        /* Manual Progress Input (Sidebar Style) */
+        /* Manual Progress Input */
         .progress-control-box {
             background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid var(--border);
             display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
@@ -190,11 +190,13 @@
         }
         .scene.active { opacity: 1; transform: scale(1); pointer-events: auto; }
 
-        /* --- DASHBOARD REDESIGN --- */
+        /* --- DASHBOARD REDESIGN (Optically Balanced) --- */
         .dash-layout { 
             display: grid; grid-template-columns: 45% 55%; 
             width: 90%; max-width: 1800px; height: 100%; align-items: center; 
             margin: 0 auto; gap: 50px;
+            /* OPTICAL SHIFT UP: Lift content up by ~60px to avoid bottom-heavy look */
+            transform: translateY(-60px); 
         }
         
         #dash-bars { position: relative; width: 100%; height: 600px; }
@@ -223,11 +225,18 @@
         @keyframes glowPulse { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.5); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2); } }
 
         /* Hemicycle */
-        .hemi-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transform: scale(0.9); height: 100%; }
+        .hemi-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transform: scale(0.9); height: 100%; position: relative; }
         .scene.active .hemi-wrapper { animation: scaleIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: 0.2s; }
         @keyframes scaleIn { to { opacity: 1; transform: scale(1); } }
+        
         #dash-hemi { max-width: 100%; height: auto; filter: drop-shadow(0 0 25px rgba(0,0,0,0.4)); }
-        .hemi-info { position: absolute; bottom: 20px; text-align: center; }
+        
+        /* Adjusted Info Position: Tighter to Graphic (approx 1cm / 40px gap from graphic base) */
+        .hemi-info { 
+            position: absolute; 
+            bottom: 50px; /* Moved UP from 20px to be closer to the arch */
+            text-align: center; 
+        }
         .big-number { font-family: var(--font-mono); font-size: 8rem; font-weight: 800; line-height: 0.8; color: white; text-shadow: 0 0 60px rgba(255,255,255,0.15); }
         .big-label { font-size: 1.4rem; letter-spacing: 4px; color: var(--text-muted); font-weight: 600; margin-top: 10px; }
         
@@ -248,7 +257,7 @@
         .top3-score { font-size: 6.5rem; font-family: var(--font-mono); font-weight: 800; color: white; text-shadow: 0 4px 20px rgba(0,0,0,0.5); position: relative; }
         .top3-score .update-glow { width: 120%; height: 120%; filter: blur(40px); }
 
-        /* --- ALL STATS SCENE (Perfect Absolute Center) --- */
+        /* --- ALL STATS SCENE --- */
         .all-stats-container {
             position: relative; width: 100%; height: 100%; margin: 0 auto;
         }
@@ -280,17 +289,8 @@
         }
         .coalition-segment { height: 100%; transition: width 0.5s ease-out; position: relative; }
         .coalition-segment::after { content:''; position: absolute; right:0; top:0; height:100%; width:1px; background:rgba(0,0,0,0.3); }
-        
-        .majority-line {
-            position: absolute; left: 50%; top: -10px; bottom: -10px; width: 2px; background: white;
-            z-index: 10; box-shadow: 0 0 15px white;
-        }
-        .majority-label {
-            position: absolute; left: 50%; top: -40px; transform: translateX(-50%);
-            background: white; color: black; padding: 4px 12px; border-radius: 20px; 
-            font-weight: 800; font-size: 1rem; font-family: var(--font-mono);
-        }
-
+        .majority-line { position: absolute; left: 50%; top: -10px; bottom: -10px; width: 2px; background: white; z-index: 10; box-shadow: 0 0 15px white; }
+        .majority-label { position: absolute; left: 50%; top: -40px; transform: translateX(-50%); background: white; color: black; padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 1rem; font-family: var(--font-mono); }
         .coalition-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; }
         .legend-item { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px 20px; border-radius: 30px; }
         .legend-name { font-weight: 600; font-size: 1.2rem; }
@@ -303,14 +303,13 @@
             display: flex; align-items: center; z-index: 100; overflow: hidden;
         }
         .ticker-anim { 
-            white-space: nowrap; position: absolute;
-            color: white; font-size: 1.8rem; font-weight: 400;
+            white-space: nowrap; position: absolute; color: white; font-size: 1.8rem; font-weight: 400;
             animation: marquee 25s linear infinite; padding-left: 0; 
             will-change: transform; height: 100%; display: flex; align-items: center; padding-top: 4px;
         }
         @keyframes marquee { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
 
-        /* Independent Progress Bar (Floating Bottom Right) */
+        /* Independent Progress Bar (Bottom Right) */
         .progress-float {
             position: absolute; bottom: 70px; right: 35px; z-index: 110;
             background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.15);
@@ -320,7 +319,6 @@
         .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .progress-label { font-size: 0.8rem; color: #aaa; letter-spacing: 2px; font-weight: 700; }
         .progress-pct { font-family: var(--font-mono); font-weight: 700; color: var(--progress-color); font-size: 1.1rem; }
-        
         .progress-track { width: 100%; height: 8px; background: #333; border-radius: 4px; overflow: hidden; }
         .progress-fill { height: 100%; background: var(--progress-color); width: 0%; transition: width 0.5s ease-out; box-shadow: 0 0 15px var(--progress-color); }
 
@@ -348,7 +346,7 @@
             </div>
             
             <div style="margin-top:auto;">
-                <!-- Manual Progress Input (Moved Here) -->
+                <!-- Manual Progress Input -->
                 <div class="progress-control-box">
                     <span class="progress-label-dir">COUNTING PROGRESS</span>
                     <div class="progress-input-wrapper">
@@ -403,7 +401,7 @@
             </div>
         </div>
 
-        <!-- Scene 2: Top 3 (Calculated Center) -->
+        <!-- Scene 2: Top 3 -->
         <div id="scene-top3" class="scene">
             <div id="top3-list" class="top3-container">
                 <div id="top3-slot-rank2" class="top3-card rank-2 entrance"></div>
@@ -412,10 +410,10 @@
             </div>
         </div>
 
-        <!-- Scene 3: All Stats (Calculated Center Grid) -->
+        <!-- Scene 3: All Stats -->
         <div id="scene-all_stats" class="scene">
             <div class="flex-col items-center w-full" style="height:100%;">
-                 <h2 style="font-family:var(--font-ui); font-size:2.5rem; margin-bottom:20px; font-weight:700; color:white; text-shadow:0 4px 10px rgba(0,0,0,0.5);">ผลอย่างไม่เป็นทางการ</h2>
+                 <h2 style="font-family:var(--font-ui); font-size:2.5rem; margin-bottom:20px; font-weight:700; color:white; text-shadow:0 4px 10px rgba(0,0,0,0.5);">สรุปผลคะแนนอย่างไม่เป็นทางการ</h2>
                  <div id="all-stats-list" class="all-stats-container"></div>
             </div>
         </div>
@@ -436,7 +434,7 @@
         <!-- Progress Bar (Floating Bottom Right) -->
         <div class="progress-float">
             <div class="progress-header">
-                <span class="progress-label">นัยคะแนนแล้ว:</span>
+                <span class="progress-label">COUNTED:</span>
                 <span id="oa-progress-val" class="progress-pct">0%</span>
             </div>
             <div class="progress-track">
