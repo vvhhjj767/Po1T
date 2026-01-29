@@ -1,548 +1,557 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PO1 STABLE BROADCAST - FULL SCREEN</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;600;700&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Users, PieChart, BarChart3, LayoutGrid, Type, MonitorPlay, 
+  Settings2, Plus, Minus, AlertTriangle, CheckCircle2 
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PieChart as RePie, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
-    <style>
-        :root { --bg-dark: #0f172a; --glass: rgba(15, 23, 42, 0.95); --neon: #3b82f6; }
-        body { font-family: 'Anuphan', sans-serif; background-color: var(--bg-dark); color: white; overflow: hidden; margin: 0; padding: 0; }
-        .font-tech { font-family: 'Chakra Petch', sans-serif; }
+// --- TYPES & CONSTANTS ---
+const MAX_SEATS = 500;
+const MAX_CONST = 400;
+const MAX_PARTY = 100;
+
+type SceneType = 'TABLE' | 'HEMICYCLE' | 'TOP3' | 'DONUT' | 'GRID';
+
+interface Party {
+  id: string;
+  name: string;
+  color: string;
+  constituency: number;
+  partyList: number;
+}
+
+interface AppState {
+  parties: Party[];
+  activeScene: SceneType;
+  tickerText: string;
+  isTickerVisible: boolean;
+}
+
+// Initial Data Seed
+const INITIAL_STATE: AppState = {
+  parties: [
+    { id: '1', name: 'People’s Vision', color: '#F97316', constituency: 140, partyList: 25 },
+    { id: '2', name: 'National Pride', color: '#1D4ED8', constituency: 110, partyList: 20 },
+    { id: '3', name: 'Liberal Union', color: '#DC2626', constituency: 60, partyList: 15 },
+    { id: '4', name: 'Green Future', color: '#16A34A', constituency: 30, partyList: 5 },
+    { id: '5', name: 'Democratic Front', color: '#9333EA', constituency: 10, partyList: 2 },
+  ],
+  activeScene: 'HEMICYCLE',
+  tickerText: 'BREAKING NEWS: ELECTION RESULTS STARTING TO COME IN - VOTER TURNOUT ESTIMATED AT 75% - LIVE UPDATES...',
+  isTickerVisible: true,
+};
+
+// --- UTILS ---
+const getTotal = (p: Party) => p.constituency + p.partyList;
+const getAllocatedSeats = (parties: Party[]) => parties.reduce((sum, p) => sum + getTotal(p), 0);
+const formatNumber = (num: number) => num.toLocaleString();
+
+// --- COMPONENTS: ON-AIR VISUALS ---
+
+// 1. Score Table
+const SceneTable = ({ parties }: { parties: Party[] }) => {
+  const sorted = [...parties].sort((a, b) => getTotal(b) - getTotal(a));
+  
+  return (
+    <div className="w-full max-w-4xl mx-auto mt-10">
+      <div className="bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-700 overflow-hidden shadow-2xl">
+        <div className="grid grid-cols-12 bg-slate-800 p-4 font-bold text-slate-300 text-lg uppercase tracking-wider">
+          <div className="col-span-1">Rank</div>
+          <div className="col-span-5">Party</div>
+          <div className="col-span-2 text-center">Const.</div>
+          <div className="col-span-2 text-center">P-List</div>
+          <div className="col-span-2 text-right">Total</div>
+        </div>
+        <AnimatePresence>
+          {sorted.map((p, index) => (
+            <motion.div 
+              key={p.id}
+              layout
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-12 p-4 border-b border-slate-800 items-center text-2xl font-bold"
+            >
+              <div className="col-span-1 text-slate-500">#{index + 1}</div>
+              <div className="col-span-5 flex items-center gap-3">
+                <div className="w-6 h-6 rounded-full shadow-lg" style={{ backgroundColor: p.color }} />
+                <span className="text-white">{p.name}</span>
+              </div>
+              <div className="col-span-2 text-center text-slate-400 font-mono">{p.constituency}</div>
+              <div className="col-span-2 text-center text-slate-400 font-mono">{p.partyList}</div>
+              <div className="col-span-2 text-right text-4xl text-white font-mono" style={{ color: p.color }}>
+                {getTotal(p)}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+// 2. Hemicycle (Parliament Arch)
+const SceneHemicycle = ({ parties }: { parties: Party[] }) => {
+  // Sort for "Winner Center" visual or standard block? Let's do Standard Block by size for visual clarity
+  const sorted = [...parties].sort((a, b) => getTotal(b) - getTotal(a));
+  
+  // Create an array of 500 dots
+  const totalSeats = 500;
+  const dots = [];
+  
+  // Flatten seat allocation
+  let seatMap: string[] = [];
+  sorted.forEach(p => {
+    const count = getTotal(p);
+    for(let i=0; i<count; i++) seatMap.push(p.color);
+  });
+  // Fill rest with grey
+  while(seatMap.length < totalSeats) seatMap.push('#334155');
+
+  // Math for Arch
+  const rows = 12;
+  const seatsPerRow = [25, 30, 35, 38, 42, 45, 48, 50, 52, 55, 50, 30]; // Approximate distribution
+  // Or simpler: Polar coordinates loop
+  
+  // Let's use a simpler flex grid styled as an arch or pure CSS art
+  // For robustness, we render dots in absolute position using polar coords
+  
+  const generateHemicycle = () => {
+    const output = [];
+    const R = 400; // Radius
+    let currentSeatIndex = 0;
+
+    for (let r = 0; r < 10; r++) { // 10 rows
+      const rowRadius = 150 + (r * 35);
+      const circumference = Math.PI * rowRadius;
+      const seatsInRow = Math.floor(circumference / 18); // 18px gap per seat
+      const angleStep = Math.PI / (seatsInRow - 1);
+
+      for (let s = 0; s < seatsInRow; s++) {
+        if (currentSeatIndex >= 500) break;
         
-        /* UI Components */
-        .glass-panel { 
-            background: var(--glass); 
-            border: 1px solid rgba(255,255,255,0.1); 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6); 
-            backdrop-filter: blur(12px);
-        }
+        const angle = Math.PI - (s * angleStep); // Start from 180 (left) to 0 (right)
+        const x = rowRadius * Math.cos(angle);
+        const y = rowRadius * Math.sin(angle);
         
-        /* LOWER THIRD SPECIFIC */
-        .lower-third-container {
-            background: linear-gradient(0deg, rgba(15,23,42,1) 0%, rgba(30,41,59,0.95) 100%);
-            border-top: 3px solid var(--neon);
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
-        }
-
-        /* Animations */
-        .slide-up { animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(100px); }
-        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
-
-        .bar-fill { transition: width 1s cubic-bezier(0.25, 1, 0.5, 1); }
-        .dot-seat { transition: background-color 0.5s; }
-        
-        /* Ticker */
-        .ticker-wrap { width: 100%; overflow: hidden; white-space: nowrap; }
-        .ticker-track { display: inline-block; white-space: nowrap; padding-left: 100vw; animation: ticker 30s linear infinite; }
-        @keyframes ticker { 100% { transform: translate3d(-100%, 0, 0); } }
-
-        /* Background Modes */
-        body.transparent .bg-main { background: transparent !important; }
-        body.transparent .obs-hide { display: none !important; }
-        body.transparent .scene-bg { display: none !important; }
-        
-        body.green-screen .bg-main { background: #00b140 !important; }
-        body.green-screen .obs-hide { display: none !important; }
-        body.green-screen .scene-bg { display: none !important; }
-    </style>
-</head>
-<body>
-
-<div id="app" class="w-full h-full"></div>
-
-<script>
-    // ==========================================
-    // 1. CONFIGURATION
-    // ==========================================
-    const STORAGE_KEY = 'PO1_STABLE_V3_FULL';
-    const LIMITS = { zone: 400, list: 100 };
-
-    const DEFAULT_DATA = {
-        parties: [
-            { id: 'p1', name: 'พรรคประชาชน', color: '#FF9100', zone: 120, list: 30 },
-            { id: 'p2', name: 'เพื่อไทย', color: '#E60000', zone: 100, list: 25 },
-            { id: 'p3', name: 'ภูมิใจไทย', color: '#0033CC', zone: 50, list: 10 },
-            { id: 'p4', name: 'รทสช.', color: '#2C3E50', zone: 20, list: 5 },
-            { id: 'p5', name: 'ประชาธิปัตย์', color: '#00AEF0', zone: 10, list: 2 }
-        ],
-        scene: 'lower3',
-        ticker: 'รายงานสดผลการเลือกตั้ง 2569 : เกาะติดสถานการณ์ล่าสุดนับคะแนน...',
-        bg: 'dark'
-    };
-
-    function loadState() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_DATA));
-        } catch(e) {
-            return JSON.parse(JSON.stringify(DEFAULT_DATA));
-        }
+        output.push(
+          <motion.div
+            key={currentSeatIndex}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1, backgroundColor: seatMap[currentSeatIndex] || '#334155' }}
+            transition={{ delay: currentSeatIndex * 0.001 }} // Stagger animation
+            className="absolute w-3 h-3 rounded-full shadow-sm"
+            style={{
+              left: `calc(50% + ${x}px)`,
+              bottom: `${y}px`,
+              transform: 'translate(-50%, 50%)'
+            }}
+          />
+        );
+        currentSeatIndex++;
+      }
     }
-    
-    function saveState(s) { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+    return output;
+  };
 
-    let state = loadState();
-    let chartInstance = null;
+  return (
+    <div className="relative w-full h-[600px] flex items-end justify-center overflow-hidden">
+      <div className="absolute bottom-0 w-full h-[500px]">
+         {generateHemicycle()}
+      </div>
+      <div className="absolute bottom-10 text-center z-10">
+        <h2 className="text-xl text-slate-400 uppercase tracking-[0.2em] mb-2">Total Seats Filled</h2>
+        <div className="text-8xl font-black text-white tracking-tighter">
+          {getAllocatedSeats(parties)}<span className="text-4xl text-slate-600">/500</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-    // ==========================================
-    // 2. ROUTER
-    // ==========================================
-    const app = document.getElementById('app');
-    const params = new URLSearchParams(window.location.search);
-    const mode = params.get('mode');
+// 3. Top 3 Spotlight
+const SceneTop3 = ({ parties }: { parties: Party[] }) => {
+  const top3 = [...parties].sort((a, b) => getTotal(b) - getTotal(a)).slice(0, 3);
 
-    if (!mode) renderMenu();
-    else if (mode === 'control') initControl();
-    else if (mode === 'onair') initOnAir();
+  return (
+    <div className="flex items-center justify-center gap-8 h-full px-10">
+      {top3.map((p, idx) => {
+        const isFirst = idx === 0;
+        return (
+          <motion.div 
+            key={p.id}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.2 }}
+            className={`relative rounded-2xl p-8 flex flex-col items-center justify-between shadow-2xl border-t-4
+              ${isFirst ? 'w-96 h-[500px] bg-slate-800 z-10 scale-110 border-yellow-400' : 'w-80 h-[400px] bg-slate-900 border-slate-700 opacity-90'}
+            `}
+            style={{ borderColor: p.color }}
+          >
+             {isFirst && <div className="absolute -top-6 bg-yellow-500 text-black font-black px-4 py-1 rounded shadow-lg uppercase tracking-wider">Current Leader</div>}
+             
+             <div className="text-center mt-4">
+               <div className="text-8xl font-black text-white mb-2" style={{ color: p.color }}>{getTotal(p)}</div>
+               <div className="text-slate-400 uppercase tracking-widest text-sm">Seats Secured</div>
+             </div>
 
-    // ==========================================
-    // 3. MENU
-    // ==========================================
-    function renderMenu() {
-        app.innerHTML = `
-            <div class="h-screen w-screen flex items-center justify-center bg-slate-900">
-                <div class="bg-slate-800 p-12 rounded-2xl text-center max-w-2xl w-full border border-slate-700 shadow-2xl">
-                    <h1 class="text-6xl font-tech font-bold text-white mb-2">PO1 <span class="text-blue-500">FULL SCREEN</span></h1>
-                    <p class="text-slate-400 mb-10 text-sm uppercase tracking-widest">Broadcast Graphics System V3</p>
-                    <div class="grid grid-cols-2 gap-6">
-                        <button onclick="location.href='?mode=control'" class="h-32 bg-blue-900/50 border border-blue-500 rounded-xl hover:bg-blue-800 transition flex flex-col items-center justify-center group">
-                            <span class="text-4xl mb-2 group-hover:scale-110 transition">🎛️</span>
-                            <span class="font-bold text-white">CONTROL ROOM</span>
-                        </button>
-                        <button onclick="location.href='?mode=onair'" class="h-32 bg-red-900/50 border border-red-500 rounded-xl hover:bg-red-800 transition flex flex-col items-center justify-center group">
-                            <span class="text-4xl mb-2 group-hover:scale-110 transition">📺</span>
-                            <span class="font-bold text-white">ON-AIR DISPLAY</span>
-                        </button>
-                    </div>
+             <div className="w-full text-center">
+                <div className="w-20 h-20 mx-auto rounded-full mb-4 shadow-xl" style={{ backgroundColor: p.color }} />
+                <h3 className="text-3xl font-bold text-white leading-tight">{p.name}</h3>
+             </div>
+
+             <div className="w-full grid grid-cols-2 gap-2 text-sm text-slate-400 bg-black/20 p-3 rounded-lg">
+                <div className="text-center border-r border-slate-700">
+                  <div className="font-bold text-white">{p.constituency}</div>
+                  <div>District</div>
                 </div>
-            </div>`;
-    }
-
-    // ==========================================
-    // 4. CONTROL ROOM
-    // ==========================================
-    function initControl() {
-        document.title = "Control - PO1";
-        
-        function renderUI() {
-            const totalZone = state.parties.reduce((s, p) => s + p.zone, 0);
-            const totalList = state.parties.reduce((s, p) => s + p.list, 0);
-
-            app.innerHTML = `
-                <div class="flex h-screen bg-black text-white font-sans text-sm">
-                    <div class="w-80 bg-slate-900 border-r border-slate-700 flex flex-col z-20">
-                        <div class="p-6 border-b border-slate-700">
-                            <h2 class="font-bold text-xl text-white tracking-wide flex items-center gap-3">
-                                <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span> CONTROL
-                            </h2>
-                        </div>
-                        
-                        <div class="p-4 space-y-2 overflow-y-auto flex-1">
-                            <div class="text-[10px] text-slate-500 font-bold uppercase px-2 mb-1">SCENE SELECTION</div>
-                            ${[
-                                {id:'lower3', label:'📺 Lower Third', desc:'แถบล่าง (News Ticker)'},
-                                {id:'dashboard', label:'📊 Dashboard', desc:'ตารางคะแนนรวม'},
-                                {id:'parliament', label:'🏛️ Parliament', desc:'ผังที่นั่งสภา 500'},
-                                {id:'battle', label:'⚔️ Battle Gauge', desc:'รัฐบาล vs ฝ่ายค้าน'},
-                                {id:'chart', label:'🍩 Donut Chart', desc:'สัดส่วนเก้าอี้'},
-                                {id:'winner', label:'🏆 Winner', desc:'ประกาศชัยชนะ'}
-                            ].map(s => `
-                                <button onclick="setScene('${s.id}')" class="w-full text-left p-4 rounded-xl mb-1 border transition-all ${state.scene===s.id ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}">
-                                    <div class="font-bold text-base flex justify-between items-center">
-                                        ${s.label}
-                                        ${state.scene===s.id ? '<span class="text-[10px] bg-white text-blue-900 px-2 rounded-full font-bold">ON AIR</span>' : ''}
-                                    </div>
-                                    <div class="text-[10px] opacity-70 mt-1">${s.desc}</div>
-                                </button>
-                            `).join('')}
-                        </div>
-
-                        <div class="p-4 border-t border-slate-700 bg-slate-800">
-                            <div class="text-[10px] text-slate-400 font-bold uppercase mb-2">Background Key</div>
-                            <select onchange="setBg(this.value)" class="w-full bg-black border border-slate-600 rounded p-2 text-xs text-white mb-4">
-                                <option value="dark" ${state.bg==='dark'?'selected':''}>Standard (Dark)</option>
-                                <option value="green" ${state.bg==='green'?'selected':''}>Green Screen (Chroma)</option>
-                                <option value="transparent" ${state.bg==='transparent'?'selected':''}>Transparent (OBS)</option>
-                            </select>
-                            
-                            <div class="text-[10px] text-slate-400 font-bold uppercase mb-2">News Ticker</div>
-                            <div class="flex gap-2">
-                                <input id="ticker-input" class="flex-1 bg-black border border-slate-600 rounded p-2 text-xs text-white" value="${state.ticker}">
-                                <button onclick="pushTicker()" class="bg-blue-600 px-4 rounded font-bold text-xs hover:bg-blue-500">SET</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex-1 p-8 overflow-y-auto bg-black">
-                        <div class="max-w-4xl mx-auto pb-20">
-                            <div class="grid grid-cols-2 gap-4 mb-6">
-                                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex justify-between items-center">
-                                    <span class="text-slate-400 text-xs uppercase font-bold">Zone Quota</span>
-                                    <div class="text-2xl font-tech font-bold ${totalZone >= LIMITS.zone ? 'text-red-500' : 'text-blue-400'}">
-                                        ${totalZone} <span class="text-sm text-slate-600">/ ${LIMITS.zone}</span>
-                                    </div>
-                                </div>
-                                <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex justify-between items-center">
-                                    <span class="text-slate-400 text-xs uppercase font-bold">List Quota</span>
-                                    <div class="text-2xl font-tech font-bold ${totalList >= LIMITS.list ? 'text-red-500' : 'text-green-400'}">
-                                        ${totalList} <span class="text-sm text-slate-600">/ ${LIMITS.list}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="space-y-3">
-                                ${state.parties.map((p, i) => `
-                                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 hover:border-slate-600 transition flex items-center gap-4 group">
-                                        <div class="flex items-center gap-3 w-1/3">
-                                            <input type="color" value="${p.color}" onchange="updateVal(${i}, 'color', this.value)" class="w-10 h-10 rounded-lg border-0 bg-transparent cursor-pointer">
-                                            <input type="text" value="${p.name}" oninput="updateVal(${i}, 'name', this.value)" class="bg-transparent font-bold text-xl w-full focus:outline-none border-b border-transparent focus:border-slate-500 px-2 text-white">
-                                        </div>
-                                        
-                                        <div class="flex-1 grid grid-cols-2 gap-4">
-                                            <div class="bg-black/30 p-2 rounded-lg flex items-center justify-between border border-slate-800">
-                                                <button onclick="adj(${i}, 'zone', -1)" class="w-8 h-8 rounded bg-slate-800 hover:bg-red-500 font-bold">-</button>
-                                                <div class="text-center">
-                                                    <div class="text-[9px] text-slate-500 uppercase">ZONE</div>
-                                                    <div class="font-tech text-2xl font-bold text-white">${p.zone}</div>
-                                                </div>
-                                                <button onclick="adj(${i}, 'zone', 1)" class="w-8 h-8 rounded bg-slate-800 hover:bg-green-500 font-bold" ${totalZone >= LIMITS.zone ? 'disabled style="opacity:0.3"' : ''}>+</button>
-                                            </div>
-                                            <div class="bg-black/30 p-2 rounded-lg flex items-center justify-between border border-slate-800">
-                                                <button onclick="adj(${i}, 'list', -1)" class="w-8 h-8 rounded bg-slate-800 hover:bg-red-500 font-bold">-</button>
-                                                <div class="text-center">
-                                                    <div class="text-[9px] text-slate-500 uppercase">LIST</div>
-                                                    <div class="font-tech text-2xl font-bold text-white">${p.list}</div>
-                                                </div>
-                                                <button onclick="adj(${i}, 'list', 1)" class="w-8 h-8 rounded bg-slate-800 hover:bg-green-500 font-bold" ${totalList >= LIMITS.list ? 'disabled style="opacity:0.3"' : ''}>+</button>
-                                            </div>
-                                        </div>
-
-                                        <button onclick="removeParty(${i})" class="w-8 h-8 rounded text-slate-600 hover:text-red-500 transition">✕</button>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            
-                            <div class="flex gap-2 mt-6">
-                                <button onclick="addParty()" class="flex-1 py-4 border-2 border-dashed border-slate-800 rounded-xl text-slate-500 hover:text-white hover:border-slate-500 hover:bg-slate-900 transition font-bold">
-                                    + Add Party
-                                </button>
-                                 <button onclick="resetData()" class="px-4 py-4 border-2 border-slate-800 rounded-xl text-red-500 hover:bg-red-900/20 hover:border-red-500 transition font-bold">
-                                    Reset
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-        }
-
-        window.updateVal = (i, k, v) => { state.parties[i][k] = v; saveState(state); };
-        window.addParty = () => { state.parties.push({ id: 'p'+Date.now(), name: 'พรรคใหม่', color: '#888888', zone: 0, list: 0 }); saveState(state); renderUI(); };
-        window.removeParty = (i) => { if(confirm('ยืนยันลบ?')) { state.parties.splice(i, 1); saveState(state); renderUI(); } };
-        window.resetData = () => { if(confirm('Reset all to default?')) { localStorage.removeItem(STORAGE_KEY); location.reload(); } };
-        
-        window.adj = (i, type, delta) => {
-            const total = state.parties.reduce((sum, p) => sum + p[type], 0);
-            const limit = LIMITS[type];
-            if (delta > 0 && total >= limit) return; 
-            state.parties[i][type] = Math.max(0, state.parties[i][type] + delta);
-            saveState(state); renderUI(); 
-        };
-        
-        window.setScene = (s) => { state.scene = s; saveState(state); renderUI(); };
-        window.setBg = (b) => { state.bg = b; saveState(state); };
-        window.pushTicker = () => { state.ticker = document.getElementById('ticker-input').value; saveState(state); alert('Ticker Updated!'); };
-
-        renderUI();
-    }
-
-    // ==========================================
-    // 5. ON-AIR DISPLAY
-    // ==========================================
-    function initOnAir() {
-        document.title = "ON AIR DISPLAY";
-        
-        app.innerHTML = `
-            <div id="main-view" class="w-full h-full flex flex-col bg-main bg-slate-900 transition-colors duration-500 relative overflow-hidden">
-                <div class="scene-bg absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')] opacity-30 pointer-events-none"></div>
-                <div id="stage" class="absolute inset-0 z-10 flex flex-col justify-end"></div>
-            </div>`;
-            
-        // CLOCK
-        setInterval(() => {
-            const timeEl = document.getElementById('clock-text');
-            if(timeEl) timeEl.innerText = new Date().toLocaleTimeString('th-TH', {hour: '2-digit', minute:'2-digit'});
-        }, 1000);
-
-        let currentScene = '';
-        
-        setInterval(() => {
-            const newState = loadState();
-            const view = document.getElementById('main-view');
-            document.body.className = ''; 
-            if(newState.bg === 'transparent') document.body.classList.add('transparent');
-            else if(newState.bg === 'green') document.body.classList.add('green-screen');
-            
-            const tickerEl = document.getElementById('ticker-text');
-            if(tickerEl && tickerEl.innerText !== newState.ticker) tickerEl.innerText = newState.ticker;
-
-            const stage = document.getElementById('stage');
-            if (newState.scene !== currentScene || stage.innerHTML === '') {
-                renderSceneStructure(stage, newState);
-                currentScene = newState.scene;
-                
-                if(newState.scene === 'lower3') {
-                    gsap.from("#lower3-bar", { y: 200, opacity: 0, duration: 0.8, ease: "power2.out" });
-                } else {
-                    gsap.from(".slide-up", { opacity: 0, y: 50, duration: 0.8, ease: "power2.out" });
-                }
-            } else {
-                updateSceneValues(newState);
-            }
-            state = newState;
-        }, 300);
-    }
-
-    // ==========================================
-    // 6. SCENE RENDERERS (VISUALS)
-    // ==========================================
-    function renderSceneStructure(container, data) {
-        if(chartInstance) { chartInstance.destroy(); chartInstance = null; }
-        
-        const sorted = [...data.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
-        const totalSeats = data.parties.reduce((s,p)=>s+p.zone+p.list,0);
-
-        // 🔴 1. LOWER THIRD (Compact & Full Width)
-        if(data.scene === 'lower3') {
-            container.innerHTML = `
-                <div class="flex-1 w-full pointer-events-none"></div>
-                
-                <div id="lower3-bar" class="w-full relative z-50">
-                    <div class="lower-third-container h-36 flex flex-col justify-end relative overflow-hidden">
-                        
-                        <div class="flex-1 flex items-center px-6 gap-6 pt-2 pb-2">
-                            <div class="flex flex-col justify-center border-r border-slate-600 pr-6 mr-2 h-20 shrink-0">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <div class="bg-red-600 text-white text-[9px] font-bold px-2 py-0.5 rounded animate-pulse">LIVE</div>
-                                </div>
-                                <div id="clock-text" class="text-white font-tech font-bold text-4xl leading-none tracking-tight">00:00</div>
-                            </div>
-
-                            <div class="flex-1 flex gap-2 h-24 items-center w-full">
-                                ${sorted.slice(0, 5).map((p, i) => `
-                                    <div class="flex-1 bg-slate-800/80 rounded-lg px-4 py-2 border-l-4 relative overflow-hidden flex flex-col justify-center h-full shadow-lg" style="border-color:${p.color}; min-width: 0;">
-                                        <div class="flex justify-between items-center mb-0.5">
-                                            <span class="text-[9px] text-slate-400 font-bold uppercase truncate">No. ${i+1}</span>
-                                        </div>
-                                        <h3 class="text-lg font-bold text-white truncate w-full mb-0 leading-tight">${p.name}</h3>
-                                        <div class="flex items-end gap-1 mt-0">
-                                            <span class="text-4xl font-tech font-bold text-white num-roll leading-none" id="low-val-${p.id}" style="text-shadow:0 0 15px ${p.color}">${p.zone+p.list}</span>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-
-                            <div class="w-28 border-l border-slate-600 pl-6 ml-2 h-20 flex flex-col justify-center text-right shrink-0">
-                                 <div class="text-[9px] text-slate-400 uppercase font-bold mb-0">Total</div>
-                                 <div class="text-4xl font-tech font-bold text-white tracking-tighter leading-none">${totalSeats}</div>
-                                 <div class="text-[9px] text-slate-500">of 500</div>
-                            </div>
-                        </div>
-
-                        <div class="h-8 bg-black border-t border-slate-700 flex items-center relative z-50">
-                            <div class="bg-blue-700 h-full px-4 flex items-center justify-center shrink-0 z-20 shadow-xl">
-                                <span class="font-bold text-white tracking-widest text-[10px]">UPDATE</span>
-                            </div>
-                            <div class="ticker-wrap bg-slate-900 h-full flex items-center">
-                                <div id="ticker-text" class="ticker-track text-sm font-light text-slate-300">Loading...</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            return;
-        }
-
-        // Standard Wrapper for Full Screen Scenes (Maximized)
-        const wrap = (content) => `
-            <div class="absolute top-0 left-0 w-full h-20 flex justify-between items-center px-8 pt-4 z-50 obs-hide">
-                <div class="flex items-center gap-4">
-                    <div class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded shadow-lg">LIVE</div>
-                    <div class="text-white font-bold text-2xl shadow-black drop-shadow-md">ELECTION 2026</div>
+                <div className="text-center">
+                  <div className="font-bold text-white">{p.partyList}</div>
+                  <div>P-List</div>
                 </div>
-                <div class="font-tech text-slate-400 text-lg opacity-80">PO1 STABLE</div>
+             </div>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+};
+
+// 4. Donut Chart
+const SceneDonut = ({ parties }: { parties: Party[] }) => {
+  const data = parties.map(p => ({ name: p.name, value: getTotal(p), color: p.color }));
+  // Add empty seats
+  const allocated = getAllocatedSeats(parties);
+  if (allocated < 500) {
+    data.push({ name: 'Unfilled', value: 500 - allocated, color: '#334155' });
+  }
+
+  return (
+    <div className="flex items-center justify-center h-full w-full">
+      <div className="relative w-[600px] h-[600px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <RePie
+            data={data}
+            innerRadius={180}
+            outerRadius={280}
+            paddingAngle={2}
+            dataKey="value"
+            stroke="none"
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </RePie>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-9xl font-black text-white">{allocated}</span>
+            <span className="text-2xl text-slate-400 uppercase tracking-[0.3em]">Total Seats</span>
+        </div>
+      </div>
+      {/* Legend */}
+      <div className="ml-10 space-y-4">
+        {parties.sort((a,b) => getTotal(b) - getTotal(a)).map(p => (
+           <div key={p.id} className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded bg-slate-800" style={{ backgroundColor: p.color }}></div>
+              <div className="text-2xl font-bold text-white w-20 text-right">{getTotal(p)}</div>
+              <div className="text-xl text-slate-300">{p.name}</div>
+           </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// 5. Grid View
+const SceneGrid = ({ parties }: { parties: Party[] }) => {
+   const sorted = [...parties].sort((a, b) => getTotal(b) - getTotal(a));
+   let seatMap: string[] = [];
+   sorted.forEach(p => {
+     for(let i=0; i<getTotal(p); i++) seatMap.push(p.color);
+   });
+   while(seatMap.length < 500) seatMap.push('#1e293b'); // Dark slate for empty
+
+   return (
+     <div className="w-full max-w-6xl mx-auto h-full flex flex-col justify-center">
+        <h2 className="text-3xl font-bold text-white mb-6 uppercase tracking-wider border-l-8 border-white pl-4">Seat Allocation Map</h2>
+        <div className="flex flex-wrap gap-1">
+          {seatMap.map((color, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: i * 0.0005 }}
+              className="w-5 h-5 rounded-sm"
+              style={{ backgroundColor: color }}
+            />
+          ))}
+        </div>
+        <div className="mt-4 flex justify-between text-slate-400 font-mono">
+           <span>MAJORITY THRESHOLD: 251</span>
+           <span>TOTAL: 500</span>
+        </div>
+        {/* Majority Line Indicator logic is visual only here for grid */}
+     </div>
+   );
+};
+
+// --- CORE: ON-AIR RENDERER ---
+const OnAirDisplay = () => {
+  const [state, setState] = useState<AppState>(INITIAL_STATE);
+
+  useEffect(() => {
+    const bc = new BroadcastChannel('election-network');
+    bc.onmessage = (event) => setState(event.data);
+    return () => bc.close();
+  }, []);
+
+  const renderScene = () => {
+    switch (state.activeScene) {
+      case 'TABLE': return <SceneTable parties={state.parties} />;
+      case 'HEMICYCLE': return <SceneHemicycle parties={state.parties} />;
+      case 'TOP3': return <SceneTop3 parties={state.parties} />;
+      case 'DONUT': return <SceneDonut parties={state.parties} />;
+      case 'GRID': return <SceneGrid parties={state.parties} />;
+      default: return <SceneTable parties={state.parties} />;
+    }
+  };
+
+  return (
+    <div className="w-screen h-screen bg-slate-950 text-white overflow-hidden flex flex-col relative font-sans">
+       {/* Top Bar for Branding */}
+       <div className="h-16 bg-gradient-to-r from-blue-900 to-slate-900 flex items-center px-8 border-b border-slate-700 shadow-xl z-20">
+          <div className="bg-red-600 text-white font-black px-3 py-1 text-lg rounded-sm mr-4 animate-pulse">LIVE</div>
+          <div className="text-2xl font-bold tracking-tight">ELECTION 2026 <span className="text-slate-400 font-normal">OFFICIAL COUNT</span></div>
+       </div>
+
+       {/* Main Content Area */}
+       <div className="flex-1 relative flex items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]">
+          {/* Background Gradient Mesh */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-slate-900/50 to-slate-900 z-0 pointer-events-none" />
+          
+          <div className="w-full h-full relative z-10 flex items-center justify-center">
+            {renderScene()}
+          </div>
+       </div>
+
+       {/* Ticker */}
+       <AnimatePresence>
+         {state.isTickerVisible && (
+           <motion.div 
+            initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
+            className="h-14 bg-yellow-400 text-black flex items-center overflow-hidden border-t-4 border-black z-30"
+           >
+             <div className="bg-black text-yellow-400 font-black px-6 h-full flex items-center text-xl uppercase z-10 shadow-xl">
+               Breaking News
+             </div>
+             <div className="whitespace-nowrap flex-1 overflow-hidden relative">
+               <motion.div 
+                 animate={{ x: ["100%", "-100%"] }} 
+                 transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
+                 className="absolute top-0 bottom-0 flex items-center text-2xl font-bold uppercase"
+               >
+                 {state.tickerText}
+               </motion.div>
+             </div>
+           </motion.div>
+         )}
+       </AnimatePresence>
+    </div>
+  );
+};
+
+// --- CORE: DIRECTOR CONTROLLER ---
+const DirectorControl = () => {
+  const [state, setState] = useState<AppState>(INITIAL_STATE);
+  const bc = useMemo(() => new BroadcastChannel('election-network'), []);
+
+  // Sync out
+  useEffect(() => {
+    bc.postMessage(state);
+  }, [state, bc]);
+
+  const updateParty = (id: string, field: keyof Party, value: any) => {
+    setState(prev => {
+      const updatedParties = prev.parties.map(p => {
+        if (p.id !== id) return p;
+        const newP = { ...p, [field]: value };
+        // Validation Logic
+        if (field === 'constituency' || field === 'partyList') {
+           const currentTotal = getAllocatedSeats(prev.parties) - getTotal(p) + getTotal(newP);
+           if (currentTotal > MAX_SEATS) return p; // Block overflow
+           if (field === 'constituency' && value > MAX_CONST) return p;
+           if (field === 'partyList' && value > MAX_PARTY) return p;
+        }
+        return newP;
+      });
+      return { ...prev, parties: updatedParties };
+    });
+  };
+
+  const totalAllocated = getAllocatedSeats(state.parties);
+  const seatsRemaining = MAX_SEATS - totalAllocated;
+
+  return (
+    <div className="w-screen h-screen bg-zinc-900 text-zinc-100 flex overflow-hidden font-sans">
+      {/* Sidebar - Party Management */}
+      <div className="w-1/3 border-r border-zinc-700 flex flex-col bg-zinc-800">
+        <div className="p-4 border-b border-zinc-700 bg-zinc-900 flex justify-between items-center">
+           <h2 className="font-bold flex items-center gap-2"><Settings2 size={20} /> PARTY MANAGER</h2>
+           <div className={`px-3 py-1 rounded font-mono text-sm ${seatsRemaining < 0 ? 'bg-red-600' : 'bg-emerald-600'}`}>
+              Rem: {seatsRemaining}
+           </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+           {state.parties.map(p => (
+             <div key={p.id} className="bg-zinc-700/50 p-4 rounded-lg border border-zinc-600 hover:border-zinc-500 transition-colors">
+               <div className="flex justify-between items-center mb-3">
+                 <input 
+                   value={p.name} 
+                   onChange={(e) => updateParty(p.id, 'name', e.target.value)}
+                   className="bg-transparent font-bold text-lg border-b border-transparent focus:border-blue-500 outline-none w-2/3"
+                 />
+                 <input 
+                   type="color" 
+                   value={p.color} 
+                   onChange={(e) => updateParty(p.id, 'color', e.target.value)}
+                   className="w-8 h-8 rounded cursor-pointer bg-transparent"
+                 />
+               </div>
+               
+               <div className="grid grid-cols-2 gap-4">
+                 {/* Constituency Controls */}
+                 <div className="bg-zinc-900/50 p-2 rounded">
+                   <div className="text-xs text-zinc-400 mb-1 uppercase">District (Max 400)</div>
+                   <div className="flex items-center justify-between">
+                     <button onClick={() => updateParty(p.id, 'constituency', Math.max(0, p.constituency - 1))} className="p-1 hover:bg-zinc-700 rounded"><Minus size={16}/></button>
+                     <span className="font-mono text-xl font-bold">{p.constituency}</span>
+                     <button onClick={() => updateParty(p.id, 'constituency', p.constituency + 1)} className="p-1 hover:bg-blue-600 bg-blue-700 rounded"><Plus size={16}/></button>
+                   </div>
+                 </div>
+                 {/* Party List Controls */}
+                 <div className="bg-zinc-900/50 p-2 rounded">
+                   <div className="text-xs text-zinc-400 mb-1 uppercase">P-List (Max 100)</div>
+                   <div className="flex items-center justify-between">
+                     <button onClick={() => updateParty(p.id, 'partyList', Math.max(0, p.partyList - 1))} className="p-1 hover:bg-zinc-700 rounded"><Minus size={16}/></button>
+                     <span className="font-mono text-xl font-bold">{p.partyList}</span>
+                     <button onClick={() => updateParty(p.id, 'partyList', p.partyList + 1)} className="p-1 hover:bg-purple-600 bg-purple-700 rounded"><Plus size={16}/></button>
+                   </div>
+                 </div>
+               </div>
+               <div className="mt-2 text-right text-sm text-zinc-400">
+                  Total: <span className="text-white font-bold">{getTotal(p)}</span>
+               </div>
+             </div>
+           ))}
+        </div>
+      </div>
+
+      {/* Main Control Area */}
+      <div className="flex-1 flex flex-col bg-zinc-900">
+         {/* Scene Selector */}
+         <div className="p-8">
+            <h2 className="text-zinc-400 uppercase tracking-widest text-sm mb-4 font-bold">Live Scene Selection</h2>
+            <div className="grid grid-cols-5 gap-4">
+               {[
+                 { id: 'TABLE', icon: LayoutGrid, label: 'Table' },
+                 { id: 'HEMICYCLE', icon: Users, label: 'Hemicycle' },
+                 { id: 'TOP3', icon: BarChart3, label: 'Top 3' },
+                 { id: 'DONUT', icon: PieChart, label: 'Donut' },
+                 { id: 'GRID', icon: LayoutGrid, label: 'Full Grid' },
+               ].map((scene) => (
+                 <button
+                   key={scene.id}
+                   onClick={() => setState(s => ({ ...s, activeScene: scene.id as SceneType }))}
+                   className={`
+                     h-32 rounded-xl flex flex-col items-center justify-center gap-3 transition-all border-2
+                     ${state.activeScene === scene.id 
+                       ? 'bg-red-600 border-red-400 shadow-[0_0_20px_rgba(220,38,38,0.5)] scale-105' 
+                       : 'bg-zinc-800 border-zinc-700 hover:bg-zinc-700 hover:border-zinc-500'}
+                   `}
+                 >
+                    <scene.icon size={32} />
+                    <span className="font-bold uppercase">{scene.label}</span>
+                    {state.activeScene === scene.id && <span className="flex items-center gap-1 text-xs animate-pulse"><MonitorPlay size={12}/> LIVE</span>}
+                 </button>
+               ))}
             </div>
-            
-            <div class="w-full h-full flex items-center justify-center p-4 relative slide-up pb-12">
-                ${content}
+         </div>
+
+         {/* Ticker Control */}
+         <div className="mt-auto p-8 border-t border-zinc-800 bg-zinc-800/30">
+            <h2 className="text-zinc-400 uppercase tracking-widest text-sm mb-4 font-bold flex items-center gap-2"><Type size={16} /> Breaking News Ticker</h2>
+            <div className="flex gap-4">
+               <input 
+                 value={state.tickerText}
+                 onChange={(e) => setState(s => ({ ...s, tickerText: e.target.value }))}
+                 className="flex-1 bg-zinc-950 border border-zinc-700 p-4 rounded text-lg focus:border-yellow-500 outline-none"
+               />
+               <button 
+                 onClick={() => setState(s => ({ ...s, isTickerVisible: !s.isTickerVisible }))}
+                 className={`w-32 rounded font-bold uppercase transition-colors ${state.isTickerVisible ? 'bg-green-600 hover:bg-green-500' : 'bg-red-900/50 hover:bg-red-900 text-zinc-400'}`}
+               >
+                 {state.isTickerVisible ? 'ON AIR' : 'HIDDEN'}
+               </button>
             </div>
-            
-            <div class="absolute bottom-0 w-full h-8 bg-black border-t border-slate-800 flex items-center z-50">
-                 <div class="bg-blue-700 h-full px-4 flex items-center justify-center shrink-0 z-20"><span class="font-bold text-white text-[10px]">NEWS</span></div>
-                 <div class="ticker-wrap w-full bg-slate-900 h-full flex items-center"><div id="ticker-text" class="ticker-track text-sm text-slate-300">...</div></div>
-            </div>`;
+         </div>
+      </div>
+    </div>
+  );
+};
 
-        // 🔵 2. DASHBOARD (Scaled Up)
-        if(data.scene === 'dashboard') {
-            container.innerHTML = wrap(`
-                <div class="w-full max-w-[90%] scale-105 transform origin-center">
-                    <div class="grid grid-cols-1 gap-2">
-                        ${sorted.map((p, i) => `
-                        <div class="glass-panel px-6 py-4 rounded-xl flex items-center relative overflow-hidden">
-                            <div class="absolute left-0 top-0 bottom-0 w-2" style="background:${p.color}"></div>
-                            <div class="w-16 font-tech text-5xl font-bold text-slate-600 text-center mr-6 opacity-50">0${i+1}</div>
-                            <div class="flex-1 z-10">
-                                <h2 class="text-4xl font-bold text-white mb-2 tracking-tight">${p.name}</h2>
-                                <div class="w-full h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
-                                    <div class="h-full bar-fill relative" style="width:${((p.zone+p.list)/500)*100}%; background:${p.color}" id="bar-${p.id}">
-                                        <div class="absolute right-0 top-0 bottom-0 w-[2px] bg-white opacity-50 shadow-[0_0_10px_white]"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="w-48 text-right pr-2 pl-4">
-                                <div class="text-7xl font-tech font-bold text-white num-roll drop-shadow-xl leading-none" id="val-total-${p.id}">${p.zone+p.list}</div>
-                            </div>
-                        </div>`).join('')}
-                    </div>
-                </div>
-            `);
-        }
+// --- LAUNCHER ---
+export default function App() {
+  const [mode, setMode] = useState<'launcher' | 'director' | 'onair'>('launcher');
+
+  if (mode === 'director') return <DirectorControl />;
+  if (mode === 'onair') return <OnAirDisplay />;
+
+  return (
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white p-4">
+      <div className="max-w-2xl w-full text-center space-y-8">
+        <h1 className="text-5xl font-black bg-gradient-to-r from-blue-400 to-red-400 bg-clip-text text-transparent">
+          Election Broadcast System
+        </h1>
+        <p className="text-slate-400 text-lg">
+          Real-time dual-screen graphics engine. Open the Director in this tab, 
+          and the On-Air screen in a new window (connected to OBS/Stream).
+        </p>
         
-        // 🔵 3. PARLIAMENT (Maximized)
-        else if(data.scene === 'parliament') {
-            let dotsHtml = '';
-            let idx = 0;
-            let seatColors = [];
-            sorted.forEach(p => { for(let i=0; i<p.zone+p.list; i++) seatColors.push(p.color); });
-            
-            for(let r=1; r<=12; r++) {
-                const radius = 22 + (r * 3.8);
-                const arcLength = Math.PI * radius;
-                let dotsInRow = Math.floor(arcLength / 3.2);
-                if(r===12) dotsInRow = 500 - idx;
-                
-                const step = 180 / (dotsInRow + 1);
-                for(let i=0; i<dotsInRow; i++) {
-                    if(idx>=500) break;
-                    const angle = (180 - (step * (i+1))) * (Math.PI / 180);
-                    const x = 50 + (radius * Math.cos(angle));
-                    const y = 90 - (radius * Math.sin(angle));
-                    const c = seatColors[idx] || '#1e293b';
-                    dotsHtml += `<div class="dot-seat absolute w-[1.2%] pb-[1.2%] rounded-full shadow-sm" style="left:${x}%; top:${y}%; background:${c}; transform:translate(-50%,-50%); box-shadow: 0 0 4px ${c};"></div>`;
-                    idx++;
-                }
-            }
-            container.innerHTML = wrap(`
-                <div class="relative w-[90vw] max-w-[1400px] aspect-[1.9/1] mt-10">
-                    ${dotsHtml}
-                    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 text-center mb-0 glass-panel px-16 py-8 rounded-t-3xl border-t-2 border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                        <div class="text-sm text-slate-400 font-bold uppercase tracking-widest mb-2">Leading Party</div>
-                        <h1 class="text-6xl font-bold text-white mb-2 tracking-tight">${sorted[0].name}</h1>
-                        <div class="text-9xl font-tech font-bold leading-none drop-shadow-[0_0_15px_rgba(0,0,0,0.5)]" style="color:${sorted[0].color}">${sorted[0].zone + sorted[0].list}</div>
-                    </div>
-                </div>
-            `);
-        }
+        <div className="grid grid-cols-2 gap-8 mt-12">
+           <button 
+             onClick={() => setMode('director')}
+             className="group bg-slate-800 hover:bg-slate-700 border border-slate-600 p-8 rounded-2xl flex flex-col items-center gap-4 transition-all hover:scale-105"
+           >
+             <Settings2 size={48} className="text-blue-400 group-hover:text-blue-300" />
+             <div className="text-xl font-bold">Director Control</div>
+             <div className="text-sm text-slate-500">Back office controls</div>
+           </button>
 
-        // 🔵 4. BATTLE GAUGE
-        else if(data.scene === 'battle') {
-            container.innerHTML = wrap(`
-                <div class="w-full max-w-[90%] flex flex-col items-center">
-                    <h2 class="text-5xl font-bold mb-20 uppercase tracking-[0.3em] text-white/30">Coalition vs Opposition</h2>
-                    <div class="w-full h-56 bg-slate-900 rounded-full border-8 border-slate-800 relative flex overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                        <div class="h-full bg-blue-600 flex items-center justify-start pl-12 relative transition-all duration-1000" style="width:50%" id="battle-left">
-                            <span class="text-6xl font-bold text-white drop-shadow-lg z-10" id="battle-txt-left">Gov: 0</span>
-                        </div>
-                        <div class="h-full bg-red-600 flex items-center justify-end pr-12 relative transition-all duration-1000" style="width:50%" id="battle-right">
-                             <span class="text-6xl font-bold text-white drop-shadow-lg z-10" id="battle-txt-right">Opp: 0</span>
-                        </div>
-                        <div class="absolute top-0 bottom-0 w-3 bg-white left-1/2 -translate-x-1/2 z-20 shadow-[0_0_40px_white]"></div>
-                        <div class="absolute -top-20 left-1/2 -translate-x-1/2 bg-white text-black px-8 py-2 rounded-full font-bold shadow-xl border-4 border-slate-900 text-xl">TARGET 251</div>
-                    </div>
-                </div>
-            `);
-        }
-
-        // 🔵 5. CHART
-        else if(data.scene === 'chart') {
-            container.innerHTML = wrap(`
-                <div class="glass-panel p-12 rounded-[3rem] flex flex-col items-center justify-center relative bg-slate-900/90 w-[80vh] h-[80vh]">
-                    <h2 class="text-4xl font-bold mb-8 text-white uppercase tracking-widest">Parliament 500</h2>
-                    <div class="w-full h-full relative">
-                        <canvas id="seatsChart"></canvas>
-                    </div>
-                </div>
-            `);
-            setTimeout(() => {
-                const ctx = document.getElementById('seatsChart').getContext('2d');
-                const remaining = 500 - totalSeats;
-                chartInstance = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: [...sorted.map(p => p.name), 'Empty'],
-                        datasets: [{ data: [...sorted.map(p => p.zone+p.list), remaining], backgroundColor: [...sorted.map(p => p.color), '#1e293b'], borderWidth: 0, hoverOffset: 20 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false }, datalabels: { display: false } } }
-                });
-            }, 100);
-        }
-
-        // 🔵 6. WINNER
-        else if(data.scene === 'winner') {
-            const w = sorted[0];
-            container.innerHTML = wrap(`
-                <div class="text-center relative z-10 scale-125">
-                    <div class="glass-panel p-24 rounded-[3rem] border border-white/20 shadow-2xl relative z-10 bg-slate-900/80 backdrop-blur-3xl">
-                        <div class="text-8xl mb-6 animate-bounce drop-shadow-lg">🏆</div>
-                        <div class="text-2xl font-bold text-slate-400 tracking-[0.5em] mb-4 uppercase">Projected Winner</div>
-                        <h1 class="text-9xl font-bold text-white mb-8 drop-shadow-2xl">${w.name}</h1>
-                        <div class="text-[12rem] font-tech font-bold leading-none glow-text" style="color:${w.color}; text-shadow: 0 0 50px ${w.color}50">${w.zone + w.list}</div>
-                    </div>
-                </div>
-            `);
-        }
-    }
-
-    // --- 7. UPDATES ---
-    function updateSceneValues(data) {
-        const sorted = [...data.parties].sort((a,b)=>(b.zone+b.list)-(a.zone+a.list));
+           <button 
+             onClick={() => window.open(window.location.href + '?mode=onair', '_blank')}
+             // Note: In a real app, we'd handle routing better. For this single-file demo, 
+             // user just clicks this to open new tab, but needs to manually select "On Air" 
+             // in the new tab if URL params aren't handled.
+             // Simpler approach for demo:
+             className="group bg-slate-800 hover:bg-slate-700 border border-slate-600 p-8 rounded-2xl flex flex-col items-center gap-4 transition-all hover:scale-105"
+             onMouseDown={() => {
+                // Hint for the user
+             }}
+           >
+             <MonitorPlay size={48} className="text-red-500 group-hover:text-red-400" />
+             <div className="text-xl font-bold">On-Air Screen</div>
+             <div className="text-sm text-slate-500">Open in New Tab</div>
+           </button>
+        </div>
         
-        if(data.scene === 'lower3') {
-             data.parties.forEach(p => animateNum(`low-val-${p.id}`, p.zone + p.list));
-        }
-        else if(data.scene === 'dashboard') {
-            data.parties.forEach(p => {
-                const t = p.zone + p.list;
-                animateNum(`val-total-${p.id}`, t);
-                const bar = document.getElementById(`bar-${p.id}`);
-                if(bar) bar.style.width = `${(t/500)*100}%`;
-            });
-        }
-        else if(data.scene === 'battle') {
-            const p1 = sorted[0], p2 = sorted[1];
-            if(p1 && p2) {
-                const t1 = p1.zone + p1.list, t2 = p2.zone + p2.list;
-                const left = document.getElementById('battle-left');
-                const right = document.getElementById('battle-right');
-                if(left) { left.style.width = `${(t1/500)*100}%`; left.style.backgroundColor = p1.color; document.getElementById('battle-txt-left').innerText = `${p1.name}: ${t1}`; }
-                if(right) { right.style.width = `${(t2/500)*100}%`; right.style.backgroundColor = p2.color; document.getElementById('battle-txt-right').innerText = `${p2.name}: ${t2}`; }
-            }
-        }
-    }
-
-    function animateNum(id, newVal) {
-        const el = document.getElementById(id);
-        if(!el) return;
-        const oldVal = parseInt(el.innerText) || 0;
-        if(oldVal !== newVal) {
-            gsap.to(el, { innerHTML: newVal, duration: 1.5, snap: { innerHTML: 1 }, ease: "power2.out" });
-        }
-    }
-</script>
-</body>
-</html>
+        <div className="mt-8 text-sm text-slate-600 font-mono">
+           Tip: After opening the new tab, click "On Air" button in that new tab if the router is not configured.
+        </div>
+         {/* Helper for the single-file demo to switch modes if manual click needed */}
+         <div className="flex gap-4 justify-center pt-10 opacity-50">
+            <button onClick={() => setMode('onair')} className="text-xs border px-2 py-1 rounded">Debug: Switch to OnAir Here</button>
+         </div>
+      </div>
+    </div>
+  );
+}
