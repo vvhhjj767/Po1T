@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ElectionOS V4 - Pro Broadcast</title>
+    <title>ElectionOS V4 - Pro Realtime</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,6 +40,7 @@
 
         .hidden { display: none !important; }
         .flex { display: flex; }
+        .flex-col { flex-direction: column; }
         .items-center { align-items: center; }
         .justify-between { justify-content: space-between; }
         .gap-2 { gap: 0.5rem; }
@@ -225,6 +226,18 @@
             opacity: 0; 
             transform: translateX(-50px) rotateY(-10deg);
             transform-origin: left center;
+            transition: all 0.3s;
+        }
+        
+        /* FLASH EFFECT ANIMATION */
+        @keyframes flashEffect {
+            0% { filter: brightness(1); transform: scale(1); }
+            50% { filter: brightness(2.5) contrast(1.2); transform: scale(1.02); box-shadow: 0 0 20px rgba(255,255,255,0.5); }
+            100% { filter: brightness(1); transform: scale(1); }
+        }
+        .party-bar.flash {
+            animation: flashEffect 0.5s ease-out;
+            z-index: 10;
         }
 
         /* Active State Animation */
@@ -279,6 +292,29 @@
 
         @keyframes cardSlideUp { to { opacity: 1; transform: translateY(0); } }
 
+        /* --- ALL STATS SCENE --- */
+        .all-stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px; width: 90%; max-width: 1600px; height: 80%; overflow-y: auto;
+            padding: 20px;
+        }
+        .stat-card {
+            background: #18181b; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px; padding: 20px; display: flex; flex-direction: column;
+            position: relative; overflow: hidden;
+        }
+        .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .stat-card-name { font-size: 1.2rem; font-weight: 700; color: white; }
+        .stat-card-total { font-size: 2.5rem; font-weight: 800; font-family: var(--font-mono); color: white; line-height: 1; }
+        
+        .stat-breakdown { display: flex; gap: 10px; margin-top: auto; }
+        .stat-badge-mini {
+            flex: 1; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-val { font-size: 1.2rem; font-weight: 700; font-family: var(--font-mono); color: white; }
+
         /* --- COALITION --- */
         .coalition-wrapper { text-align: center; opacity: 0; transform: scale(1.2); filter: blur(10px); }
         .scene.active .coalition-wrapper { animation: focusIn 0.8s ease-out forwards; }
@@ -312,6 +348,7 @@
                 <label style="color:#71717a; font-size:0.75rem; font-weight:700; text-transform:uppercase; display:block; margin-bottom:12px;">SCENE CONTROL</label>
                 <button class="scene-btn active" onclick="setScene('dashboard')" data-s="dashboard">DASHBOARD (MAIN)</button>
                 <button class="scene-btn" onclick="setScene('top3')" data-s="top3">TOP 3 FOCUS</button>
+                <button class="scene-btn" onclick="setScene('all_stats')" data-s="all_stats">ALL PARTIES BREAKDOWN</button>
                 <button class="scene-btn" onclick="setScene('coalition')" data-s="coalition">COALITION BUILDER</button>
             </div>
             
@@ -370,7 +407,15 @@
             <div id="top3-list" class="top3-container"></div>
         </div>
 
-        <!-- Scene 3: Coalition -->
+        <!-- Scene 3: All Stats (New) -->
+        <div id="scene-all_stats" class="scene">
+            <div class="flex-col items-center w-full" style="height:100%;">
+                 <h2 style="font-family:var(--font-ui); font-size:2.5rem; margin-bottom:20px; font-weight:700; color:white; text-shadow:0 4px 10px rgba(0,0,0,0.5);">สรุปผลคะแนนอย่างไม่เป็นทางการ</h2>
+                 <div id="all-stats-list" class="all-stats-grid"></div>
+            </div>
+        </div>
+
+        <!-- Scene 4: Coalition -->
         <div id="scene-coalition" class="scene">
             <div class="coalition-wrapper">
                 <h2 style="font-family:var(--font-ui); font-size:3.5rem; margin-bottom:20px; font-weight:400; letter-spacing:2px;">GOVERNMENT FORMATION</h2>
@@ -388,9 +433,13 @@
     </div>
 
     <script>
-        const STORAGE_KEY = 'election_v4_broadcast';
+        const STORAGE_KEY = 'election_v4_realtime';
+        const CHANNEL_NAME = 'election_os_channel';
         const isDirector = !location.search.includes('mode=onair');
         
+        // --- REALTIME SYNC ---
+        const broadcast = new BroadcastChannel(CHANNEL_NAME);
+
         const MAX_CONST = 400; 
         const MAX_LIST = 100;
         const TOTAL_SEATS = MAX_CONST + MAX_LIST;
@@ -408,6 +457,8 @@
                 { id: 'p7', name: 'ชาติไทยพัฒนา', color: '#db2777', const: 2, list: 0, coal: false },
             ]
         };
+        
+        let previousScores = {}; // To track changes for flash effect
         let particles = [];
 
         function init() {
@@ -418,21 +469,55 @@
             } else {
                 document.getElementById('director-app').remove();
                 document.getElementById('on-air-app').classList.remove('hidden');
-                initParticles(); loopRender();    
-                window.addEventListener('storage', (e) => {
-                    if (e.key === STORAGE_KEY) {
-                        state = JSON.parse(e.newValue);
-                        updateOnAir();
-                    }
-                });
+                
+                // Initialize Previous Scores
+                state.parties.forEach(p => previousScores[p.id] = p.const + p.list);
+
+                initParticles(); 
+                loopRender();    
                 updateOnAir(); 
+                
+                // Listener for Broadcast Sync
+                broadcast.onmessage = (event) => {
+                    // Check for score increases
+                    const newState = event.data;
+                    newState.parties.forEach(p => {
+                        const newScore = p.const + p.list;
+                        const oldScore = previousScores[p.id] || 0;
+                        if(newScore > oldScore) {
+                            // Trigger Flash
+                            triggerFlash(p.id);
+                        }
+                        previousScores[p.id] = newScore;
+                    });
+
+                    state = newState;
+                    updateOnAir();
+                };
+
                 setInterval(() => document.getElementById('oa-clock').innerText = new Date().toLocaleTimeString('th-TH'), 1000);
             }
         }
 
         function save() {
+            // Save to local storage (persistence)
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            // Send to On-Air (Realtime)
+            broadcast.postMessage(state);
+            
             if(isDirector) renderDirector(false);
+        }
+        
+        function triggerFlash(partyId) {
+            // Wait for DOM update
+            setTimeout(() => {
+                const el = document.getElementById(`bar-${partyId}`);
+                if(el) {
+                    el.classList.remove('flash');
+                    void el.offsetWidth; // trigger reflow
+                    el.classList.add('flash');
+                }
+            }, 50);
         }
 
         // --- DIRECTOR LOGIC ---
@@ -557,29 +642,32 @@
             document.getElementById('oa-ticker').innerText = state.ticker;
             const sorted = [...state.parties].sort((a,b) => (b.const+b.list) - (a.const+a.list));
 
-            // Dashboard Update
-            const dashBars = document.getElementById('dash-bars'); 
-            dashBars.innerHTML = '';
-            
-            // Show up to 10 parties for better balance
-            sorted.slice(0, 10).forEach((p, i) => {
-                const val = p.const + p.list;
-                const bar = document.createElement('div'); 
-                bar.className = 'party-bar';
-                // Staggered Animation Delay
-                bar.style.animationDelay = (i * 0.08) + 's'; 
+            // Scene 1: Dashboard
+            if(state.scene === 'dashboard') {
+                const dashBars = document.getElementById('dash-bars'); 
+                // Only rebuild if not already built or count changed to preserve animation state (simple diff)
+                // For simplicity here, we rebuild but match IDs to allow Flash effect targeting
+                dashBars.innerHTML = '';
                 
-                bar.innerHTML = `
-                    <div class="party-bar-bg" style="background: linear-gradient(90deg, ${p.color}44 0%, ${p.color}11 100%); border-left: 6px solid ${p.color};"></div>
-                    <div class="bar-name">${p.name}</div>
-                    <div class="bar-val">${val}</div>
-                `;
-                dashBars.appendChild(bar);
-            });
-            const totalVal = sorted.reduce((a,b)=>a+b.const+b.list, 0);
-            animateNumber(document.getElementById('oa-total-display'), parseInt(document.getElementById('oa-total-display').innerText), totalVal);
+                sorted.slice(0, 10).forEach((p, i) => {
+                    const val = p.const + p.list;
+                    const bar = document.createElement('div'); 
+                    bar.id = `bar-${p.id}`; // Crucial for flash effect
+                    bar.className = 'party-bar';
+                    bar.style.animationDelay = (i * 0.08) + 's'; 
+                    
+                    bar.innerHTML = `
+                        <div class="party-bar-bg" style="background: linear-gradient(90deg, ${p.color}44 0%, ${p.color}11 100%); border-left: 6px solid ${p.color};"></div>
+                        <div class="bar-name">${p.name}</div>
+                        <div class="bar-val">${val}</div>
+                    `;
+                    dashBars.appendChild(bar);
+                });
+                const totalVal = sorted.reduce((a,b)=>a+b.const+b.list, 0);
+                animateNumber(document.getElementById('oa-total-display'), parseInt(document.getElementById('oa-total-display').innerText), totalVal);
+            }
 
-            // Top 3 Update
+            // Scene 2: Top 3
             if(state.scene === 'top3') {
                 const list = document.getElementById('top3-list'); list.innerHTML = '';
                 [{d:sorted[1],r:2,c:'rank-2'}, {d:sorted[0],r:1,c:'rank-1'}, {d:sorted[2],r:3,c:'rank-3'}].forEach(item => {
@@ -596,7 +684,34 @@
                 });
             }
 
-            // Coalition Update
+            // Scene 3: All Stats (New)
+            if(state.scene === 'all_stats') {
+                const grid = document.getElementById('all-stats-list');
+                grid.innerHTML = '';
+                sorted.forEach(p => {
+                    grid.innerHTML += `
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <div class="stat-card-name" style="color:${p.color}">${p.name}</div>
+                                <div class="stat-card-total">${p.const + p.list}</div>
+                            </div>
+                            <div class="stat-breakdown">
+                                <div class="stat-badge-mini">
+                                    <div class="stat-label">แบบแบ่งเขต</div>
+                                    <div class="stat-val">${p.const}</div>
+                                </div>
+                                <div class="stat-badge-mini">
+                                    <div class="stat-label">บัญชีรายชื่อ</div>
+                                    <div class="stat-val">${p.list}</div>
+                                </div>
+                            </div>
+                            <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${p.color};"></div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Scene 4: Coalition
             if(state.scene === 'coalition') {
                 const coalSum = state.parties.filter(p=>p.coal).reduce((a,b)=>a+b.const+b.list, 0);
                 const el = document.getElementById('coa-val');
@@ -605,7 +720,7 @@
                 st.innerHTML = coalSum >= 251 ? `<span style="color:var(--success); text-shadow:0 0 20px rgba(16,185,129,0.5);">จัดตั้งรัฐบาลได้ (MAJORITY)</span>` : `ขาดอีก ${251-coalSum} ที่นั่ง`;
             }
 
-            // Particles Update
+            // Particles
             let pIdx = 0;
             sorted.forEach(p => {
                 for(let k=0; k<p.const+p.list; k++) { if(pIdx < TOTAL_SEATS) particles[pIdx++].tc = p.color; }
@@ -615,23 +730,23 @@
 
         function loopRender() {
             if(state.scene === 'dashboard') {
-                const ctx = document.getElementById('dash-hemi').getContext('2d');
-                ctx.clearRect(0, 0, 600, 320);
-                particles.forEach(p => { 
-                    // Smooth Lerp Color
-                    // Note: For simplicity in canvas without complex lerp functions, we snap color here.
-                    // But we can add a simple size pulse if needed.
-                    ctx.fillStyle = p.tc; 
-                    ctx.beginPath(); 
-                    ctx.arc(p.x, p.y, 4, 0, Math.PI*2); 
-                    ctx.fill(); 
-                });
+                const canvas = document.getElementById('dash-hemi');
+                if(canvas) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, 600, 320);
+                    particles.forEach(p => { 
+                        ctx.fillStyle = p.tc; 
+                        ctx.beginPath(); 
+                        ctx.arc(p.x, p.y, 4, 0, Math.PI*2); 
+                        ctx.fill(); 
+                    });
+                }
             }
             requestAnimationFrame(loopRender);
         }
 
         function animateNumber(el, start, end) {
-            if(start === end) return;
+            if(!el || start === end) return;
             let current = start; const step = end > start ? 1 : -1;
             const timer = setInterval(() => {
                 current += step; el.innerText = current;
