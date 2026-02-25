@@ -813,7 +813,7 @@ const app = {
 
         // 2. แปลงเป็น Base64 และ Upload ขึ้น Drive
         // output('datauristring') จะได้ string ยาวๆ แบบ "data:application/pdf;base64,JVBER..."
-        // เราต้อง split เอาเฉพาะส่วนหลังเครื่องหมายจุลภาค
+        // เราต้อง split เอาเฉพาะส่วนหลังเครื่องหมายจุลภา
         const pdfBase64 = pdf.output('datauristring').split(',')[1];
         this.uploadPdf(data.invoiceId, pdfBase64);
     }
