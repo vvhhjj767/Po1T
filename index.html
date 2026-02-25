@@ -3,811 +3,424 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ElectionOS V4 - Final Broadcast</title>
+    <title>ผลไม้ By เจ๊เนาว์ - ระบบจัดการหน้าร้าน (Cloud Drive + Anti-Bot)</title>
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;600&family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <style>
-        /* --- THEME VARIABLES --- */
-        :root {
-            --bg-deep: #050505;
-            --bg-card: #121214;
-            --bg-input: #202023;
-            --border: rgba(255, 255, 255, 0.12);
-            --accent: #3b82f6;
-            --accent-glow: rgba(59, 130, 246, 0.4);
-            --danger: #ef4444;
-            --success: #10b981;
-            --progress-color: #22c55e;
-            --text-main: #f4f4f5;
-            --text-muted: #a1a1aa;
-
-            --font-ui: 'Prompt', sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; outline: none; }
-        
-        body {
-            background-color: var(--bg-deep);
-            color: var(--text-main);
-            font-family: var(--font-ui);
-            height: 100vh;
-            overflow: hidden;
-            font-size: 14px;
-        }
-
-        .hidden { display: none !important; }
-        .flex { display: flex; }
-        .flex-col { flex-direction: column; }
-        .items-center { align-items: center; }
-        .justify-between { justify-content: space-between; }
-        .w-full { width: 100%; }
-
-        /* --- DIRECTOR LAYOUT --- */
-        #director-app {
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            grid-template-rows: 70px 1fr;
-            height: 100vh;
-            background: var(--bg-deep);
-        }
-
-        .dir-header {
-            grid-column: 1 / -1;
-            background: var(--bg-deep);
-            border-bottom: 1px solid var(--border);
-            padding: 0 24px;
-            display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            z-index: 20;
-        }
-
-        .logo-text { font-weight: 800; font-size: 1.4rem; letter-spacing: -0.5px; }
-        .logo-accent { color: var(--accent); }
-
-        .dir-sidebar {
-            background: #09090b;
-            border-right: 1px solid var(--border);
-            padding: 24px;
-            display: flex; flex-direction: column; gap: 24px;
-        }
-
-        .dir-main {
-            background: #0f0f11;
-            padding: 32px;
-            overflow-y: auto;
-        }
-
-        /* --- CONTROLS --- */
-        .scene-btn {
-            width: 100%; padding: 14px 16px; text-align: left; 
-            background: var(--bg-input); color: var(--text-muted); 
-            border: 1px solid transparent; margin-bottom: 8px; border-radius: 10px; 
-            font-weight: 500; cursor: pointer; transition: all 0.2s ease;
-            font-family: var(--font-ui);
-        }
-        .scene-btn:hover { background: #2a2a2e; color: white; transform: translateX(2px); }
-        .scene-btn.active { 
-            background: var(--accent); color: white; 
-            box-shadow: 0 4px 15px var(--accent-glow); 
-            border-color: rgba(255,255,255,0.2);
-            font-weight: 600;
-        }
-
-        .btn-update-ticker {
-            width: 100%; background: var(--success); color: white; 
-            border: none; padding: 12px; border-radius: 10px; 
-            font-weight: 600; cursor: pointer; margin-top: 12px;
-            font-family: var(--font-ui); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
-            transition: all 0.2s;
-        }
-        .btn-update-ticker:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .btn-update-ticker:active { transform: translateY(1px); }
-
-        /* Manual Progress Input */
-        .progress-control-box {
-            background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
-        }
-        .progress-label-dir { font-size: 0.8rem; color: #aaa; font-weight: 600; text-transform: uppercase; }
-        .progress-input-wrapper { display: flex; align-items: center; gap: 5px; }
-        .manual-progress-input {
-            width: 50px; background: #000; border: 1px solid var(--border); color: var(--success);
-            font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; text-align: center;
-            border-radius: 4px; padding: 4px;
-        }
-
-        /* --- PARTY ROW --- */
-        .party-list-container { display: flex; flex-direction: column; gap: 10px; }
-        .party-card {
-            display: grid;
-            grid-template-columns: 24px 1fr auto auto 40px 40px;
-            gap: 16px; align-items: center;
-            background: var(--bg-card); 
-            padding: 10px 20px; 
-            border-radius: 12px; 
-            border: 1px solid var(--border);
-            transition: border-color 0.2s;
-        }
-        .party-card:hover { border-color: rgba(255,255,255,0.3); }
-
-        .party-name { font-size: 1rem; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        .control-pill {
-            display: flex; align-items: center;
-            background: var(--bg-input); border-radius: 8px; padding: 3px; border: 1px solid var(--border);
-        }
-        .control-label {
-            font-size: 0.7rem; color: var(--text-muted); font-weight: 600;
-            padding: 0 10px 0 6px; border-right: 1px solid rgba(255,255,255,0.1); margin-right: 4px;
-        }
-        
-        .btn-circle {
-            width: 28px; height: 28px; background: #3f3f46; color: white; border: none; border-radius: 6px;
-            font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s;
-        }
-        .btn-circle:hover { background: var(--accent); }
-        
-        .input-num {
-            width: 40px; background: transparent; border: none; color: white; text-align: center; font-family: var(--font-mono); font-weight: 700; font-size: 1rem;
-        }
-
-        .checkbox-custom { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; }
-        .btn-del { background: transparent; border: none; color: #52525b; font-size: 1.2rem; cursor: pointer; transition: color 0.2s; }
-        .btn-del:hover { color: var(--danger); }
-
-        .stats-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
-        .stat-badge {
-            background: rgba(59, 130, 246, 0.1); color: var(--accent); padding: 4px 10px; border-radius: 6px; font-weight: 600; font-family: var(--font-mono); border: 1px solid rgba(59, 130, 246, 0.2); font-size: 0.85rem;
-        }
-        .stat-badge.full { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
-
-        /* --- ON-AIR MOTION & STYLE --- */
-        #on-air-app {
-            position: relative; width: 100vw; height: 100vh;
-            background: radial-gradient(circle at 50% 50%, #151518 0%, #000000 90%);
-            overflow: hidden;
-            font-family: var(--font-ui);
-        }
-        .bg-grid {
-            position: absolute; width: 200%; height: 200%; top: -50%; left: -50%;
-            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 80px 80px; transform: perspective(1000px) rotateX(20deg); z-index: 0; pointer-events: none;
-        }
-        .oa-header {
-            position: absolute; top: 0; left: 0; width: 100%; height: 90px;
-            display: flex; justify-content: space-between; align-items: center; padding: 0 60px; z-index: 100;
-        }
-        
-        /* Scene Container */
-        .scene {
-            position: absolute; top: 90px; bottom: 70px; left: 0; width: 100%;
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; transform: scale(1.02); transition: opacity 0.5s ease-out, transform 0.5s ease-out; pointer-events: none;
-        }
-        .scene.active { opacity: 1; transform: scale(1); pointer-events: auto; }
-
-        /* --- DASHBOARD REDESIGN (Optically Balanced) --- */
-        .dash-layout { 
-            display: grid; grid-template-columns: 45% 55%; 
-            width: 90%; max-width: 1800px; height: 100%; align-items: center; 
-            margin: 0 auto; gap: 50px;
-            /* OPTICAL SHIFT UP: Lift content up by ~60px to avoid bottom-heavy look */
-            transform: translateY(-60px); 
-        }
-        
-        #dash-bars { position: relative; width: 100%; height: 600px; }
-
-        .party-bar {
-            position: absolute; left: 0; right: 0;
-            height: 58px; display: flex; align-items: center; padding: 0 20px; justify-content: space-between; 
-            border-radius: 6px; background: linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            transition: top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s;
-        }
-        
-        .scene.active .party-bar.entrance { animation: slideIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
-
-        .party-bar-indicator { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; border-radius: 4px 0 0 4px; }
-        .bar-name { font-size: 1.6rem; font-weight: 600; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); padding-left: 20px; }
-        .bar-val { font-size: 2.2rem; font-weight: 800; font-family: var(--font-mono); color: white; position: relative; z-index: 2; transition: transform 0.2s; }
-
-        /* --- GLOW EFFECT --- */
-        .update-glow {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; height: 100%; border-radius: 50%;
-            background: var(--glow-color); filter: blur(25px); opacity: 0; z-index: -1; pointer-events: none;
-        }
-        .updating .update-glow { animation: glowPulse 0.8s ease-out; }
-        @keyframes glowPulse { 0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } 50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.5); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(2); } }
-
-        /* Hemicycle */
-        .hemi-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transform: scale(0.9); height: 100%; position: relative; }
-        .scene.active .hemi-wrapper { animation: scaleIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; animation-delay: 0.2s; }
-        @keyframes scaleIn { to { opacity: 1; transform: scale(1); } }
-        
-        #dash-hemi { max-width: 100%; height: auto; filter: drop-shadow(0 0 25px rgba(0,0,0,0.4)); }
-        
-        /* Adjusted Info Position: Tighter to Graphic (approx 1cm / 40px gap from graphic base) */
-        .hemi-info { 
-            position: absolute; 
-            bottom: 50px; /* Moved UP from 20px to be closer to the arch */
-            text-align: center; 
-        }
-        .big-number { font-family: var(--font-mono); font-size: 8rem; font-weight: 800; line-height: 0.8; color: white; text-shadow: 0 0 60px rgba(255,255,255,0.15); }
-        .big-label { font-size: 1.4rem; letter-spacing: 4px; color: var(--text-muted); font-weight: 600; margin-top: 10px; }
-        
-        /* --- TOP 3 PODIUM --- */
-        .top3-container { position: relative; width: 100%; height: 75%; max-width: 1200px; margin: 0 auto; }
-        .top3-card {
-            position: absolute; bottom: 0; width: 300px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0.8) 100%);
-            border: 1px solid rgba(255,255,255,0.15); border-bottom: none; border-radius: 20px 20px 0 0;
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-            backdrop-filter: blur(20px); box-shadow: 0 -10px 40px rgba(0,0,0,0.3); padding-top: 40px; 
-            transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), height 0.6s ease;
-        }
-        
-        .scene.active .top3-card.entrance { animation: popUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        @keyframes popUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        .top3-score { font-size: 6.5rem; font-family: var(--font-mono); font-weight: 800; color: white; text-shadow: 0 4px 20px rgba(0,0,0,0.5); position: relative; }
-        .top3-score .update-glow { width: 120%; height: 120%; filter: blur(40px); }
-
-        /* --- ALL STATS SCENE --- */
-        .all-stats-container {
-            position: relative; width: 100%; height: 100%; margin: 0 auto;
-        }
-        .stat-card {
-            position: absolute; 
-            background: #18181b; border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px; padding: 24px; display: flex; flex-direction: column;
-            overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            width: 320px; height: 180px;
-            transition: top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .stat-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .stat-card-name { font-size: 1.4rem; font-weight: 700; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
-        .stat-card-total { font-size: 3rem; font-weight: 800; font-family: var(--font-mono); color: white; line-height: 1; z-index: 1; position: relative; }
-        .stat-card-total .update-glow { width: 150%; height: 150%; filter: blur(30px); }
-        .stat-breakdown { display: flex; gap: 12px; margin-top: auto; }
-        .stat-badge-mini { flex: 1; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; display: flex; flex-direction: column; align-items: center; }
-        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-        .stat-val { font-size: 1.3rem; font-weight: 700; font-family: var(--font-mono); color: white; margin-top: 4px; }
-
-        /* --- PARLIAMENT TUBE GRAPH --- */
-        .coalition-container {
-            width: 80%; max-width: 1400px; display: flex; flex-direction: column; align-items: center;
-        }
-        .coalition-bar-wrapper {
-            position: relative; width: 100%; height: 80px; background: #222; border-radius: 40px; 
-            overflow: hidden; margin-bottom: 40px; box-shadow: 0 0 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-        }
-        .coalition-segment { height: 100%; transition: width 0.5s ease-out; position: relative; }
-        .coalition-segment::after { content:''; position: absolute; right:0; top:0; height:100%; width:1px; background:rgba(0,0,0,0.3); }
-        .majority-line { position: absolute; left: 50%; top: -10px; bottom: -10px; width: 2px; background: white; z-index: 10; box-shadow: 0 0 15px white; }
-        .majority-label { position: absolute; left: 50%; top: -40px; transform: translateX(-50%); background: white; color: black; padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 1rem; font-family: var(--font-mono); }
-        .coalition-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; }
-        .legend-item { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 10px 20px; border-radius: 30px; }
-        .legend-name { font-weight: 600; font-size: 1.2rem; }
-        .legend-val { font-family: var(--font-mono); color: var(--text-muted); font-weight: 700; font-size: 1.2rem; }
-
-        /* --- TICKER & PROGRESS BAR --- */
-        .ticker-bar {
-            position: absolute; bottom: 0; width: 100%; height: 60px; background: #000; 
-            border-top: 2px solid var(--accent);
-            display: flex; align-items: center; z-index: 100; overflow: hidden;
-        }
-        .ticker-anim { 
-            white-space: nowrap; position: absolute; color: white; font-size: 1.8rem; font-weight: 400;
-            animation: marquee 25s linear infinite; padding-left: 0; 
-            will-change: transform; height: 100%; display: flex; align-items: center; padding-top: 4px;
-        }
-        @keyframes marquee { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } }
-
-        /* Independent Progress Bar (Bottom Right) */
-        .progress-float {
-            position: absolute; bottom: 70px; right: 35px; z-index: 110;
-            background: rgba(0,0,0,0.9); border: 1px solid rgba(255,255,255,0.15);
-            padding: 10px 15px; border-radius: 8px; width: 280px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
-        }
-        .progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .progress-label { font-size: 0.8rem; color: #aaa; letter-spacing: 2px; font-weight: 700; }
-        .progress-pct { font-family: var(--font-mono); font-weight: 700; color: var(--progress-color); font-size: 1.1rem; }
-        .progress-track { width: 100%; height: 8px; background: #333; border-radius: 4px; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--progress-color); width: 0%; transition: width 0.5s ease-out; box-shadow: 0 0 15px var(--progress-color); }
-
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="h-screen flex flex-col bg-slate-50">
 
-    <!-- DIRECTOR INTERFACE -->
-    <div id="director-app">
-        <header class="dir-header">
-            <div class="logo-text">ELECTION<span class="logo-accent">OS</span> V4</div>
+    <nav class="glass-nav text-white px-6 py-3 shadow-lg fixed w-full top-0 z-50 transition-all">
+        <div class="container mx-auto flex justify-between items-center">
             <div class="flex items-center gap-4">
-                <div id="d-clock" class="font-mono" style="color:#71717a; font-size:0.9rem; margin-right:30px;">00:00:00</div>
-                <button onclick="openOnAir()" style="background:var(--text-main); color:black; border:none; padding:8px 16px; border-radius:8px; font-weight:700; cursor:pointer; font-family:var(--font-ui);">เปิดจอ ON-AIR</button>
-            </div>
-        </header>
-
-        <aside class="dir-sidebar">
-            <div>
-                <label style="color:#71717a; font-size:0.75rem; font-weight:700; text-transform:uppercase; display:block; margin-bottom:12px;">SCENE CONTROL</label>
-                <button class="scene-btn active" onclick="setScene('dashboard')" data-s="dashboard">DASHBOARD (MAIN)</button>
-                <button class="scene-btn" onclick="setScene('top3')" data-s="top3">TOP 3 FOCUS</button>
-                <button class="scene-btn" onclick="setScene('all_stats')" data-s="all_stats">ALL PARTIES BREAKDOWN</button>
-                <button class="scene-btn" onclick="setScene('coalition')" data-s="coalition">PARLIAMENT TUBE</button>
-            </div>
-            
-            <div style="margin-top:auto;">
-                <!-- Manual Progress Input -->
-                <div class="progress-control-box">
-                    <span class="progress-label-dir">COUNTING PROGRESS</span>
-                    <div class="progress-input-wrapper">
-                        <input type="number" id="dir-progress-input" class="manual-progress-input" value="0" min="0" max="100" onchange="updateProgress(this.value)">
-                        <span style="color:#fff; font-weight:bold;">%</span>
-                    </div>
+                <div class="w-12 h-12 bg-white text-emerald-600 rounded-full flex items-center justify-center font-bold text-2xl shadow-md border-2 border-emerald-100">
+                    <i class="fa-solid fa-leaf"></i>
                 </div>
-
-                <label style="color:#71717a; font-size:0.75rem; font-weight:700; text-transform:uppercase; display:block; margin-bottom:12px;">TICKER (ตัววิ่ง)</label>
-                <textarea id="ticker-temp-input" placeholder="พิมพ์ข้อความที่นี่..." style="width:100%; background:var(--bg-input); border:1px solid var(--border); color:white; padding:12px; border-radius:12px; height:80px; font-family:'Prompt'; outline:none; resize:none; font-size:0.9rem;"></textarea>
-                <button onclick="submitTicker()" class="btn-update-ticker">ส่งข้อความขึ้นจอ</button>
-            </div>
-        </aside>
-
-        <main class="dir-main">
-            <div class="stats-header">
                 <div>
-                    <h2 style="font-weight:700; font-size:1.5rem;">จัดการคะแนนพรรค</h2>
-                    <div style="color:var(--text-muted); font-size:0.9rem; margin-top:4px;">Real-time Data Entry</div>
-                </div>
-                <div class="flex gap-2">
-                    <div id="stat-const" class="stat-badge">เขต: 0/400</div>
-                    <div id="stat-list" class="stat-badge">บัญชี: 0/100</div>
+                    <h1 class="text-xl font-bold tracking-wide leading-none text-white drop-shadow-md">ผลไม้ By เจ๊เนาว์</h1>
+                    <p class="text-xs text-emerald-100 font-medium opacity-90">ระบบจัดการหน้าร้าน</p>
                 </div>
             </div>
-            <div id="party-list" class="party-list-container"></div>
-            <button onclick="addParty()" style="width:100%; padding:14px; border:2px dashed var(--border); background:rgba(255,255,255,0.02); color:var(--text-muted); border-radius:12px; cursor:pointer; margin-top:16px; font-weight:600; font-family:var(--font-ui); transition:all 0.2s;">
-                + เพิ่มพรรคการเมืองใหม่
-            </button>
-        </main>
-    </div>
+            <div class="flex items-center gap-3">
+                <div id="offline-indicator" class="hidden flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-1.5 rounded-full shadow-lg cursor-pointer transition transform hover:scale-105" onclick="queueManager.sync()">
+                    <i class="fa-solid fa-cloud-arrow-up animate-bounce"></i>
+                    <span class="text-xs font-bold">รอส่ง <span id="offline-count">0</span> รายการ</span>
+                </div>
+                
+                <div class="text-sm bg-black/20 backdrop-blur-md px-5 py-2 rounded-full border border-white/20 flex items-center gap-2 shadow-inner text-white font-medium">
+                    <i class="fa-regular fa-clock text-emerald-200"></i> <span id="current-datetime"></span>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-    <!-- ON-AIR INTERFACE -->
-    <div id="on-air-app" class="hidden">
-        <div class="bg-grid"></div>
-        <header class="oa-header">
-            <div style="background:var(--danger); color:white; padding:6px 16px; font-weight:800; font-size:0.9rem; border-radius:4px; letter-spacing:1px; box-shadow:0 0 20px rgba(239,68,68,0.5);">LIVE RESULTS</div>
-            <div id="oa-clock" class="font-mono" style="font-size:2.2rem; font-weight:800;">18:00:00</div>
-        </header>
-
-        <!-- Scene 1: Dashboard -->
-        <div id="scene-dashboard" class="scene active">
-            <div class="dash-layout">
-                <div id="dash-bars"></div>
-                <div class="hemi-wrapper" style="position:relative;">
-                    <canvas id="dash-hemi" width="900" height="460"></canvas>
-                    <div class="hemi-info">
-                        <div id="oa-total-display" class="big-number">0</div>
-                        <div class="big-label">รวม ส.ส.</div>
+    <div class="container mx-auto p-4 md:p-6 mt-20 mb-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <div class="lg:col-span-8 space-y-6">
+            
+            <div class="modern-card p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wide">เลขที่ใบเสร็จ</label>
+                        <div class="relative group">
+                            <i class="fa-solid fa-hashtag absolute left-4 top-3.5 text-emerald-400 group-hover:text-emerald-600 transition-colors"></i>
+                            <input type="text" id="inv-no" class="custom-input w-full pl-10 p-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 font-mono text-sm font-semibold" readonly>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wide">วันที่ทำรายการ</label>
+                        <input type="date" id="inv-date" class="custom-input w-full p-3 border border-gray-200 rounded-xl text-sm text-gray-700 font-medium">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-emerald-600 mb-2 block uppercase tracking-wide">ชื่อลูกค้า <span class="text-red-400">*</span></label>
+                    <div class="flex gap-3">
+                        <div class="relative flex-1 group">
+                            <i class="fa-solid fa-user absolute left-4 top-3.5 text-gray-400 group-hover:text-emerald-500 transition-colors"></i>
+                            <input type="text" id="cust-name" placeholder="ค้นหาหรือระบุชื่อลูกค้า..." class="custom-input w-full pl-10 p-3 border border-gray-200 rounded-xl font-medium text-gray-700 placeholder-gray-400">
+                        </div>
+                        <button onclick="app.checkDebt()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-6 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-sm border border-gray-200">
+                            <i class="fa-solid fa-magnifying-glass"></i> เช็คหนี้
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Scene 2: Top 3 -->
-        <div id="scene-top3" class="scene">
-            <div id="top3-list" class="top3-container">
-                <div id="top3-slot-rank2" class="top3-card rank-2 entrance"></div>
-                <div id="top3-slot-rank1" class="top3-card rank-1 entrance"></div>
-                <div id="top3-slot-rank3" class="top3-card rank-3 entrance"></div>
-            </div>
-        </div>
-
-        <!-- Scene 3: All Stats -->
-        <div id="scene-all_stats" class="scene">
-            <div class="flex-col items-center w-full" style="height:100%;">
-                 <h2 style="font-family:var(--font-ui); font-size:2.5rem; margin-bottom:20px; font-weight:700; color:white; text-shadow:0 4px 10px rgba(0,0,0,0.5);">สรุปผลคะแนนอย่างไม่เป็นทางการ</h2>
-                 <div id="all-stats-list" class="all-stats-container"></div>
-            </div>
-        </div>
-
-        <!-- Scene 4: Parliament Tube -->
-        <div id="scene-coalition" class="scene">
-            <div class="coalition-container">
-                <h2 style="font-family:var(--font-ui); font-size:3rem; margin-bottom:40px; font-weight:400; letter-spacing:2px; text-align:center;">PARLIAMENT COMPOSITION</h2>
-                <div class="coalition-bar-wrapper">
-                    <div class="majority-line"></div>
-                    <div class="majority-label">250</div>
-                    <div id="coalition-bar-inner" style="width:100%; height:100%; display:flex;"></div>
+            <div class="modern-card flex flex-col min-h-[500px] overflow-hidden">
+                <div class="p-5 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-700 text-lg flex items-center gap-3">
+                        <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm"><i class="fa-solid fa-basket-shopping"></i></span>
+                        รายการสินค้า
+                    </h3>
+                    <button onclick="app.addRow()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-xl hover:bg-emerald-700 text-sm font-bold shadow-lg shadow-emerald-200 transition-all flex items-center gap-2 transform active:scale-95">
+                        <i class="fa-solid fa-plus"></i> เพิ่มรายการ
+                    </button>
                 </div>
-                <div id="coalition-legend" class="coalition-legend"></div>
+                <div class="flex-1 overflow-auto p-4">
+                    <table class="w-full text-sm border-separate border-spacing-y-2">
+                        <thead class="text-gray-400 font-semibold text-xs uppercase tracking-wider sticky top-0 bg-white z-10">
+                            <tr>
+                                <th class="pb-2 text-left w-[35%] pl-2">สินค้า</th>
+                                <th class="pb-2 text-right w-[15%]">ราคา</th>
+                                <th class="pb-2 text-center w-[15%]">จำนวน</th>
+                                <th class="pb-2 text-center w-[15%]">
+                                    <div class="relative cursor-pointer group w-full mx-auto" title="คลิกเพื่อปรับมัดจำทั้งหมด">
+                                        <span class="hover:text-emerald-600 transition-colors border-b border-dashed border-gray-300 group-hover:border-emerald-400">มัดจำ</span>
+                                        <select id="bulk-deposit-select" onchange="app.setAllDeposit(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                            <option value="">-- ปรับทั้งหมด --</option>
+                                            <option value="0">ไม่มัดจำ</option>
+                                            <option value="100">100</option>
+                                            <option value="200">200</option>
+                                        </select>
+                                    </div>
+                                </th>
+                                <th class="pb-2 text-right w-[15%] pr-2">รวม</th>
+                                <th class="w-[5%]"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-body" class="space-y-2"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- Progress Bar (Floating Bottom Right) -->
-        <div class="progress-float">
-            <div class="progress-header">
-                <span class="progress-label">COUNTED:</span>
-                <span id="oa-progress-val" class="progress-pct">0%</span>
+        <div class="lg:col-span-4 space-y-6">
+            
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="ui.openModal('product-modal')" class="modern-card p-4 hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer border-transparent hover:border-blue-100">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <span class="text-xs font-bold text-gray-600 group-hover:text-blue-700">สต็อกสินค้า</span>
+                </button>
+                <button onclick="app.loadReport(); ui.openModal('report-modal')" class="modern-card p-4 hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer border-transparent hover:border-purple-100">
+                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
+                        <i class="fa-solid fa-chart-pie"></i>
+                    </div>
+                    <span class="text-xs font-bold text-gray-600 group-hover:text-purple-700">รายงานขาย</span>
+                </button>
+                <button onclick="ui.openModal('debt-modal')" class="col-span-2 modern-card p-4 bg-gradient-to-r from-amber-50 to-orange-50 hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-4 group cursor-pointer border-amber-100/50">
+                    <div class="w-10 h-10 bg-white text-amber-500 rounded-xl flex items-center justify-center text-lg shadow-sm group-hover:scale-110 transition-transform">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                    <span class="text-sm font-bold text-amber-800">รับชำระหนี้ค้าง</span>
+                </button>
             </div>
-            <div class="progress-track">
-                <div id="oa-progress-fill" class="progress-fill"></div>
-            </div>
-        </div>
 
-        <div class="ticker-bar">
-            <div style="background:var(--accent); color:white; height:100%; padding:0 35px; display:flex; align-items:center; font-weight:800; font-size:1.1rem; letter-spacing:1px; z-index:10; position:relative;">UPDATE</div>
-            <div style="position:relative; width:100%; height:100%; overflow:hidden;">
-                <div id="oa-ticker" class="ticker-anim">...</div>
+            <div class="modern-card p-6 relative overflow-hidden bg-white">
+                <div class="absolute -top-6 -right-6 opacity-[0.03] pointer-events-none">
+                    <i class="fa-solid fa-cash-register text-9xl"></i>
+                </div>
+
+                <div class="space-y-3 mb-6 relative z-10">
+                    <div class="flex justify-between items-center text-gray-500 text-sm">
+                        <span>รวมเงินสินค้า</span>
+                        <span class="font-bold text-gray-800 text-base" id="sum-subtotal">0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-blue-600 text-sm">
+                        <span><i class="fa-solid fa-circle-plus text-[10px] mr-1"></i> ค่ามัดจำรวม</span>
+                        <span class="font-bold text-base" id="sum-deposit">0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-red-500 text-sm pb-4 border-b border-dashed border-gray-200">
+                        <span><i class="fa-solid fa-circle-minus text-[10px] mr-1"></i> ส่วนลด</span>
+                        <div class="flex items-center gap-1 bg-red-50 px-2 py-1 rounded-lg">
+                            <span class="font-bold">-</span>
+                            <input type="number" id="inp-discount" class="w-20 text-right bg-transparent border-none text-red-600 outline-none font-bold placeholder-red-300 text-sm" placeholder="0">
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end pt-2">
+                        <span class="font-bold text-gray-800 text-lg">ยอดสุทธิ</span>
+                        <span class="text-5xl font-bold text-emerald-600 tracking-tight leading-none drop-shadow-sm" id="sum-total">0.00</span>
+                    </div>
+                </div>
+
+                <p class="text-xs font-bold text-gray-400 uppercase mb-3 relative z-10 tracking-wide">ช่องทางชำระเงิน</p>
+                <div class="grid grid-cols-2 gap-3 mb-4 relative z-10">
+                    <div class="payment-option active rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('เงินสด', this)">
+                        <i class="fa-solid fa-money-bill-wave text-2xl mb-1"></i>
+                        <span class="text-xs font-bold">เงินสด</span>
+                    </div>
+                    <div class="payment-option rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('โอน (QR Code)', this)">
+                        <i class="fa-solid fa-qrcode text-2xl mb-1"></i>
+                        <span class="text-xs font-bold">โอนเงิน</span>
+                    </div>
+                    <div class="payment-option rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('รอชำระ', this)">
+                        <i class="fa-solid fa-clock-rotate-left text-2xl mb-1"></i>
+                        <span class="text-xs font-bold">รอชำระ</span>
+                    </div>
+                    <div class="payment-option rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('อื่นๆ', this)">
+                        <i class="fa-solid fa-ellipsis text-2xl mb-1"></i>
+                        <span class="text-xs font-bold">อื่นๆ</span>
+                    </div>
+                </div>
+                
+                <div id="bank-selector-area" class="hidden mb-5 bg-blue-50/50 p-4 rounded-2xl border border-blue-100 relative z-10">
+                    <div class="flex justify-between items-center mb-3">
+                        <p class="text-xs font-bold text-blue-600 uppercase flex items-center gap-2"><i class="fa-solid fa-bank"></i> เลือกบัญชีรับเงิน</p>
+                        <button onclick="ui.openModal('bank-modal')" class="text-[10px] bg-white text-blue-600 px-3 py-1 rounded-lg border border-blue-100 hover:bg-blue-50 font-bold shadow-sm">จัดการ</button>
+                    </div>
+                    <div id="bank-list-chips" class="flex flex-wrap gap-2">
+                        <div class="text-xs text-gray-400 italic w-full text-center py-2">ยังไม่มีบัญชี (กดจัดการเพื่อเพิ่ม)</div>
+                    </div>
+                </div>
+
+                <button onclick="app.processCheckout()" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-bold text-lg hover:bg-slate-900 shadow-xl shadow-slate-200 flex justify-center items-center gap-3 transition-all transform active:scale-95 relative z-10 group">
+                    <span>บันทึก & พิมพ์ A5</span>
+                    <i class="fa-solid fa-print group-hover:rotate-12 transition-transform"></i>
+                </button>
             </div>
         </div>
     </div>
 
-    <script>
-        const STORAGE_KEY = 'election_v4_final_complete';
-        const CHANNEL_NAME = 'election_os_channel';
-        const isDirector = !location.search.includes('mode=onair');
-        
-        const broadcast = new BroadcastChannel(CHANNEL_NAME);
-        const MAX_CONST = 400; 
-        const MAX_LIST = 100;
-        const TOTAL_SEATS = 500;
+    <div style="position:fixed; left:-9999px; top:0;">
+        <div id="receipt-render-area">
+            <div class="rec-header-row">
+                <div class="rec-header-left">
+                    <div class="rec-title-th">ใบเสร็จรับเงิน</div>
+                    <div class="rec-title-en">RECEIPT</div>
+                    <div class="rec-meta"><b>เลขที่:</b> <span id="r-inv"></span><br><b>วันที่:</b> <span id="r-date"></span> <span id="r-time"></span></div>
+                </div>
+                <div class="rec-header-right">
+                    <div class="rec-shop-name">ผลไม้ By เจ๊เนาว์</div>
+                    <div class="rec-shop-info">ตลาดเมืองใหม่ จ.เชียงใหม่<br>โทร. 081-114-7477</div>
+                </div>
+            </div>
+            <div class="rec-customer-row"><div><b>ลูกค้า:</b> <span id="r-name"></span></div><div><b>ชำระโดย:</b> <span id="r-pay"></span></div></div>
+            <table class="rec-items-table">
+                <thead><tr><th style="width: 55%;">รายการ</th><th style="width: 15%; text-align: right;">ราคา</th><th style="width: 15%; text-align: center;">จำนวน</th><th style="width: 15%; text-align: right;">รวม</th></tr></thead>
+                <tbody id="r-body"></tbody>
+            </table>
+            <div class="rec-total-box">
+                <table class="rec-total-table">
+                    <tr><td>รวมเงินสินค้า:</td><td width="35%" id="r-sub"></td></tr>
+                    <tr><td style="color: blue;">บวก ค่ามัดจำ:</td><td style="color: blue;" id="r-dep"></td></tr>
+                    <tr><td style="color: red;">หัก ส่วนลด:</td><td style="color: red;" id="r-disc"></td></tr>
+                    <tr><td colspan="2"><div class="rec-net-price"><span id="r-total"></span></div></td></tr>
+                </table>
+            </div>
+            <div id="r-debt-section" class="rec-debt-box hidden">
+                <div class="rec-debt-row"><span class="rec-debt-label">ยอดคงค้างเก่ายกมา:</span><span class="rec-debt-val" id="r-debt-old"></span></div>
+                <div class="rec-debt-row" style="color: #dc2626;"><span class="rec-debt-label">ยอดคงค้างสุทธิ:</span><span class="rec-debt-val" id="r-debt-new"></span></div>
+            </div>
+            <div class="rec-footer-msg">ขอบคุณที่อุดหนุนครับ / Thank you<br>Powered by NX-solution</div>
+        </div>
 
-        let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
-            scene: 'dashboard',
-            progress: 0,
-            ticker: 'เกาะติดผลการเลือกตั้ง 2569 อย่างไม่เป็นทางการ - รายงานสดจากศูนย์ข้อมูล ElectionOS...',
-            parties: [
-                { id: 'p1', name: 'ก้าวไกล', color: '#f97316', const: 150, list: 40, coal: true },
-                { id: 'p2', name: 'เพื่อไทย', color: '#ef4444', const: 140, list: 30, coal: true },
-                { id: 'p3', name: 'ภูมิใจไทย', color: '#3b82f6', const: 70, list: 10, coal: false },
-                { id: 'p4', name: 'พลังประชารัฐ', color: '#1e3a8a', const: 30, list: 5, coal: false },
-                { id: 'p5', name: 'รวมไทยสร้างชาติ', color: '#dc2626', const: 10, list: 5, coal: false },
-                { id: 'p6', name: 'ประชาธิปัตย์', color: '#60a5fa', const: 5, list: 3, coal: false },
-                { id: 'p7', name: 'ชาติไทยพัฒนา', color: '#db2777', const: 2, list: 0, coal: false },
-                { id: 'p8', name: 'ไทยสร้างไทย', color: '#c026d3', const: 1, list: 0, coal: false },
-                { id: 'p9', name: 'เสรีรวมไทย', color: '#eab308', const: 1, list: 0, coal: false },
-                { id: 'p10', name: 'ประชาชาติ', color: '#a3e635', const: 1, list: 0, coal: false },
-            ]
-        };
-        
-        let previousScores = {}; 
-        let particles = [];
-        let currentScene = state.scene;
+        <div id="debt-invoice-render-area">
+            <div class="rec-header-row">
+                <div class="rec-header-left">
+                    <div class="rec-title-th" style="color: #dc2626;">ใบแจ้งหนี้</div>
+                    <div class="rec-title-en" style="color: #dc2626;">INVOICE / DEBT NOTE</div>
+                    <div class="rec-meta"><b>ลูกค้า:</b> <span id="di-name">-</span><br><b>วันที่พิมพ์:</b> <span id="di-date">-</span></div>
+                </div>
+                <div class="rec-header-right">
+                    <div class="rec-shop-name">ผลไม้ By เจ๊เนาว์</div>
+                    <div class="rec-shop-info">ตลาดเมืองใหม่ จ.เชียงใหม่<br>โทร. 081-114-7477</div>
+                </div>
+            </div>
+            <div style="margin-top: 15px; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 5px; font-size: 10pt;">รายการค้างชำระ</div>
+            <table class="rec-items-table" style="margin-top: 10px;">
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">วันที่</th>
+                        <th style="width: 45%;">เลขที่บิล</th>
+                        <th style="width: 30%; text-align: right;">คงค้าง</th>
+                    </tr>
+                </thead>
+                <tbody id="di-body"></tbody>
+            </table>
+            <div class="rec-total-box" style="margin-top: 20px;">
+                <table class="rec-total-table">
+                    <tr>
+                        <td style="font-size: 11pt; font-weight: bold;">รวมยอดหนี้สุทธิ:</td>
+                        <td><div class="rec-net-price" style="color: #dc2626; border-bottom: 3px double #dc2626;"><span id="di-total">0.00</span></div></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="rec-footer-msg">เอกสารนี้ใช้สำหรับแจ้งยอดค้างชำระเท่านั้น<br>Powered by NX-solution</div>
+        </div>
+    </div>
 
-        function init() {
-            if (isDirector) {
-                document.getElementById('on-air-app').remove();
-                renderDirector();
-                setInterval(() => document.getElementById('d-clock').innerText = new Date().toLocaleTimeString('th-TH'), 1000);
-            } else {
-                document.getElementById('director-app').remove();
-                document.getElementById('on-air-app').classList.remove('hidden');
-                
-                state.parties.forEach(p => previousScores[p.id] = p.const + p.list);
+    <div id="debt-modal" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100 border border-white/50">
+            <h3 class="font-bold text-xl text-amber-600 mb-5 border-b pb-3 flex items-center gap-3">
+                <span class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-wallet"></i></span>
+                รับชำระหนี้ค้าง
+            </h3>
+            <div class="space-y-4">
+                <div class="flex gap-2">
+                    <input id="debt-pay-name" class="custom-input flex-1 p-3 border rounded-xl bg-gray-50" placeholder="ชื่อลูกค้า...">
+                    <button onclick="app.checkDebtInModal()" class="bg-amber-100 text-amber-700 px-4 rounded-xl font-bold text-sm hover:bg-amber-200 transition-colors">เช็ค</button>
+                </div>
+                <div id="debt-display-area" class="hidden bg-red-50 p-5 rounded-2xl text-center border border-red-100 relative">
+                    <div class="absolute top-2 right-2">
+                        <button onclick="app.printDebtInvoice()" class="text-gray-400 hover:text-gray-600 transition-colors bg-white rounded-full w-8 h-8 shadow-sm border border-gray-100 flex items-center justify-center" title="พิมพ์ใบแจ้งหนี้">
+                            <i class="fa-solid fa-print"></i>
+                        </button>
+                    </div>
 
-                initParticles(); 
-                loopRender();    
-                updateOnAir(true); 
-                
-                // Recalculate layout on resize for perfect centering
-                window.addEventListener('resize', () => {
-                    if (state.scene === 'all_stats' || state.scene === 'top3') {
-                        updateOnAir(false);
-                    }
-                });
-
-                broadcast.onmessage = (event) => {
-                    const newState = event.data;
-                    const sceneChanged = newState.scene !== currentScene;
-                    currentScene = newState.scene;
-
-                    const changes = [];
-                    newState.parties.forEach(p => {
-                        const newScore = p.const + p.list;
-                        const oldScore = previousScores[p.id] || 0;
-                        if(newScore > oldScore) changes.push({ id: p.id, color: p.color });
-                        previousScores[p.id] = newScore;
-                    });
+                    <p class="text-xs text-red-500 uppercase tracking-wide font-bold mb-1">ยอดหนี้ปัจจุบัน</p>
+                    <p class="text-4xl font-bold text-red-600 tracking-tight" id="modal-debt-val">0.00</p>
                     
-                    state = newState;
-                    updateOnAir(sceneChanged);
-
-                    setTimeout(() => {
-                        changes.forEach(c => triggerUpdateEffect(c.id, c.color));
-                    }, 50);
-                };
-
-                setInterval(() => document.getElementById('oa-clock').innerText = new Date().toLocaleTimeString('th-TH'), 1000);
-            }
-        }
-
-        function save() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-            broadcast.postMessage(state);
-            if(isDirector) renderDirector(false);
-        }
-        
-        function triggerUpdateEffect(partyId, color) {
-            const targets = [
-                document.querySelector(`#bar-${partyId} .bar-val`),
-                document.getElementById(`stat-total-${partyId}`),
-                document.getElementById(`top3-val-${partyId}`)?.closest('.top3-score')
-            ];
-            targets.forEach(el => {
-                if(el) {
-                    el.style.setProperty('--glow-color', color);
-                    el.classList.remove('updating');
-                    void el.offsetWidth;
-                    el.classList.add('updating');
-                }
-            });
-        }
-
-        // --- DIRECTOR LOGIC ---
-        function renderDirector(fullRender = true) {
-            document.querySelectorAll('.scene-btn').forEach(b => b.classList.toggle('active', b.dataset.s === state.scene));
-            if(fullRender) {
-                document.getElementById('ticker-temp-input').value = state.ticker;
-                document.getElementById('dir-progress-input').value = state.progress;
-            }
-
-            const totalConst = state.parties.reduce((sum, p) => sum + p.const, 0);
-            const totalList = state.parties.reduce((sum, p) => sum + p.list, 0);
-
-            document.getElementById('stat-const').innerText = `เขต: ${totalConst}/${MAX_CONST}`;
-            document.getElementById('stat-list').innerText = `บัญชี: ${totalList}/${MAX_LIST}`;
-
-            const list = document.getElementById('party-list');
-            list.innerHTML = '';
-            const sorted = [...state.parties].sort((a,b) => (b.const+b.list) - (a.const+a.list));
-
-            sorted.forEach(p => {
-                const row = document.createElement('div');
-                row.className = 'party-card';
-                row.innerHTML = `
-                    <input type="color" value="${p.color}" onchange="mod('${p.id}','color',this.value)" style="width:24px; height:24px; border:none; background:none; cursor:pointer; padding:0; border-radius:50%;">
-                    <div class="party-name" title="${p.name}">${p.name}</div>
-                    <div class="control-pill"><div class="control-label">เขต</div><button class="btn-circle" onclick="adj('${p.id}', 'const', -1)">-</button><input class="input-num" value="${p.const}" readonly><button class="btn-circle" onclick="adj('${p.id}', 'const', 1)">+</button></div>
-                    <div class="control-pill"><div class="control-label">บัญชี</div><button class="btn-circle" onclick="adj('${p.id}', 'list', -1)">-</button><input class="input-num" value="${p.list}" readonly><button class="btn-circle" onclick="adj('${p.id}', 'list', 1)">+</button></div>
-                    <button class="btn-del" onclick="del('${p.id}')">&times;</button>
-                `;
-                list.appendChild(row);
-            });
-        }
-
-        function setScene(s) { state.scene = s; save(); }
-        function updateProgress(val) { state.progress = val; save(); }
-        function submitTicker() {
-            state.ticker = document.getElementById('ticker-temp-input').value;
-            save();
-            const btn = document.querySelector('.btn-update-ticker');
-            btn.innerText = "ส่งข้อความแล้ว!"; btn.style.background = "#fff"; btn.style.color = "#000";
-            setTimeout(() => { btn.innerText = "ส่งข้อความขึ้นจอ"; btn.style.background = "var(--success)"; btn.style.color = "white"; }, 1000);
-        }
-
-        function mod(id,k,v) { state.parties.find(x=>x.id===id)[k]=v; save(); }
-        function adj(id, k, d) { 
-            const p = state.parties.find(x=>x.id===id);
-            if (d > 0) {
-                const currentTotal = state.parties.reduce((sum, party) => sum + party[k], 0);
-                const limit = (k === 'const') ? MAX_CONST : MAX_LIST;
-                if (currentTotal >= limit) { alert(`ไม่สามารถเพิ่มได้! ครบจำนวน ${limit} ที่นั่งแล้ว`); return; }
-            }
-            p[k] = Math.max(0, p[k]+d);
-            save();
-        }
-        function addParty() { 
-            const name = prompt("กรุณากรอกชื่อพรรคการเมืองใหม่:");
-            if(name && name.trim() !== "") {
-                state.parties.push({id: Date.now().toString(), name: name.trim(), color: '#666666', const: 0, list: 0, coal: false}); 
-                save(); 
-            }
-        }
-        function del(id) { 
-            if(confirm("ยืนยันที่จะลบพรรคนี้ออกจากระบบ?")) {
-                state.parties = state.parties.filter(x=>x.id!==id); save(); 
-            }
-        }
-        function openOnAir() { window.open(location.href + '?mode=onair', 'ElectionOS_Air', 'width=1920,height=1080'); }
-
-        // --- ON-AIR LOGIC ---
-        function initParticles() {
-            const cx = 450; const cy = 430; const innerR = 140; const outerR = 400;
-            const rowCounts = [29, 32, 35, 37, 39, 41, 43, 45, 47, 49, 51, 52];
-            particles = [];
-            for (let i = 0; i < rowCounts.length; i++) {
-                const r = innerR + (outerR - innerR) * (i / (rowCounts.length - 1));
-                const count = rowCounts[i];
-                for (let j = 0; j < count; j++) {
-                    const angle = Math.PI - (Math.PI * j / (count - 1));
-                    particles.push({
-                        x: cx + r * Math.cos(angle), y: cy - r * Math.sin(angle), angle: angle, c: '#333333', tc: '#333333'
-                    });
-                }
-            }
-            particles.sort((a,b) => b.angle - a.angle);
-        }
-
-        function updateOnAir(sceneChanged = false) {
-            document.querySelectorAll('.scene').forEach(el => el.classList.remove('active'));
-            const s = document.getElementById('scene-'+state.scene);
-            if(s) s.classList.add('active');
-
-            document.getElementById('oa-ticker').innerText = state.ticker;
-            const sorted = [...state.parties].sort((a,b) => (b.const+b.list) - (a.const+a.list));
-            const totalVal = sorted.reduce((a,b)=>a+b.const+b.list, 0);
-            
-            // Progress Bar Update
-            document.getElementById('oa-progress-val').innerText = `${state.progress}%`;
-            document.getElementById('oa-progress-fill').style.width = `${state.progress}%`;
-
-            // Scene 1: Dashboard
-            if(state.scene === 'dashboard') {
-                const dashBars = document.getElementById('dash-bars'); 
-                sorted.slice(0, 10).forEach((p, i) => {
-                    let bar = document.getElementById(`bar-${p.id}`);
-                    if (!bar) {
-                        bar = document.createElement('div');
-                        bar.id = `bar-${p.id}`;
-                        bar.className = 'party-bar entrance';
-                        bar.innerHTML = `
-                            <div class="party-bar-indicator" style="background-color: ${p.color};"></div>
-                            <div class="bar-name">${p.name}</div>
-                            <div class="bar-val">${p.const + p.list}<div class="update-glow"></div></div>
-                        `;
-                        dashBars.appendChild(bar);
-                    }
-                    bar.style.top = `${i * 70}px`; 
-                    const valEl = bar.querySelector('.bar-val');
-                    if(valEl.childNodes[0].nodeType === 3) valEl.childNodes[0].nodeValue = (p.const + p.list) + "\n"; 
-                });
-                animateNumber(document.getElementById('oa-total-display'), parseInt(document.getElementById('oa-total-display').innerText), totalVal);
-            }
-
-            // Scene 2: Top 3 (Calculated Absolute Center)
-            if(state.scene === 'top3') {
-                const list = document.getElementById('top3-list');
-                const containerWidth = list.offsetWidth;
-                const centerPos = containerWidth / 2;
-                
-                const r1x = centerPos - 150; // 300px width / 2
-                const r2x = r1x - 300 - 40;
-                const r3x = r1x + 300 + 40;
-
-                const top3Data = [
-                    { data: sorted[1], rank: 2, x: r2x, h:'75%', c:'#9ca3af' },
-                    { data: sorted[0], rank: 1, x: r1x, h:'95%', c:'#fbbf24' },
-                    { data: sorted[2], rank: 3, x: r3x, h:'60%', c:'#b45309' }
-                ];
-
-                top3Data.forEach(item => {
-                    if(!item.data) return;
-                    const p = item.data;
-                    let card = document.getElementById(`top3-slot-rank${item.rank}`);
-                    if(!card) {
-                        card = document.createElement('div');
-                        card.id = `top3-slot-rank${item.rank}`;
-                        card.className = `top3-card rank-${item.rank} entrance`;
-                        list.appendChild(card);
-                    }
-                    card.style.left = `${item.x}px`;
-                    card.style.height = item.h;
-                    card.style.borderTopColor = p.color;
-                    
-                    card.innerHTML = `
-                        <div style="padding:20px; text-align:center; width:100%;">
-                            <div style="font-size:1.4rem; font-weight:700; color:${item.c}; text-shadow:0 2px 10px rgba(0,0,0,0.5);">อันดับ ${item.rank}</div>
-                            <div style="font-size:2.8rem; line-height:1.2; font-weight:600; color:${p.color}; margin-top:10px; text-shadow:0 2px 10px rgba(0,0,0,0.5);">${p.name}</div>
-                            <div class="top3-score"><span id="top3-val-${p.id}">${p.const + p.list}</span><div class="update-glow"></div></div>
+                    <div id="debt-breakdown" class="mt-4 text-left border-t border-red-200 pt-3 hidden max-h-40 overflow-y-auto custom-scrollbar">
                         </div>
-                    `;
-                });
-            }
+                </div>
+                <div class="relative">
+                    <label class="absolute -top-2.5 left-3 bg-white px-2 text-xs font-bold text-emerald-600">ยอดชำระ</label>
+                    <input id="debt-pay-amt" type="number" class="custom-input w-full p-4 border border-emerald-200 rounded-2xl text-right text-2xl font-bold text-emerald-600" placeholder="0.00">
+                </div>
+                <div class="flex gap-3 pt-3">
+                    <button onclick="app.cancelDebtModal()" class="flex-1 py-3 bg-gray-100 rounded-xl text-gray-600 font-bold hover:bg-gray-200 transition-colors">ยกเลิก</button>
+                    <button onclick="app.submitDebtPayment()" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all transform active:scale-95">บันทึก</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            // Scene 3: All Stats (Perfect Absolute Grid Center)
-            if(state.scene === 'all_stats') {
-                const container = document.getElementById('all-stats-list');
-                const cardW = 320; const cardH = 180; const gap = 20;
-                const containerW = container.offsetWidth;
-                
-                if(containerW > 0) {
-                    const cols = Math.max(1, Math.floor(containerW / (cardW + gap)));
-                    // Calculate Block Dimensions to center it
-                    const blockW = cols * cardW + (cols - 1) * gap;
-                    const startX = (containerW - blockW) / 2;
-                    
-                    sorted.forEach((p, i) => {
-                        let card = document.getElementById(`stat-card-${p.id}`);
-                        if(!card) {
-                            card = document.createElement('div');
-                            card.id = `stat-card-${p.id}`;
-                            card.className = 'stat-card';
-                            card.innerHTML = `
-                                <div class="stat-card-header"><div class="stat-card-name" style="color:${p.color}">${p.name}</div><div id="stat-total-${p.id}" class="stat-card-total">${p.const + p.list}<div class="update-glow"></div></div></div>
-                                <div class="stat-breakdown"><div class="stat-badge-mini"><div class="stat-label">แบบแบ่งเขต</div><div class="stat-val">${p.const}</div></div><div class="stat-badge-mini"><div class="stat-label">บัญชีรายชื่อ</div><div class="stat-val">${p.list}</div></div></div>
-                                <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${p.color};"></div>
-                            `;
-                            container.appendChild(card);
-                        } else {
-                            const totalEl = document.getElementById(`stat-total-${p.id}`);
-                            if(totalEl.childNodes[0].nodeType === 3) totalEl.childNodes[0].nodeValue = (p.const + p.list) + "\n";
-                        }
-                        
-                        const col = i % cols;
-                        const row = Math.floor(i / cols);
-                        card.style.left = `${startX + col * (cardW + gap)}px`;
-                        card.style.top = `${row * (cardH + gap)}px`;
-                    });
-                }
-            }
+    <div id="product-modal" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+            <h3 class="font-bold text-lg text-blue-600 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-box"></i> จัดการสินค้า</h3>
+            <div class="flex gap-2 mb-4">
+                <input id="new-prod-name" class="custom-input flex-1 p-2 border rounded-lg text-sm" placeholder="ชื่อสินค้า">
+                <input id="new-prod-price" type="number" class="custom-input w-24 p-2 border rounded-lg text-sm" placeholder="ราคา">
+                <button onclick="app.addProduct()" class="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 shadow"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <div class="max-h-64 overflow-y-auto border rounded-xl p-2 bg-gray-50">
+                <table class="w-full text-sm"><tbody id="prod-list" class="divide-y text-slate-700"></tbody></table>
+            </div>
+            <button onclick="ui.closeModal('product-modal')" class="mt-5 w-full py-2.5 bg-gray-100 rounded-xl text-gray-600 text-sm font-bold hover:bg-gray-200 transition-colors">ปิดหน้าต่าง</button>
+        </div>
+    </div>
+    
+    <div id="bank-modal" class="hidden fixed inset-0 bg-slate-900/40 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+            <h3 class="font-bold text-lg text-blue-600 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> จัดการบัญชีธนาคาร</h3>
+            <div class="space-y-3 mb-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <input id="new-bank-name" class="custom-input w-full p-2 border rounded-lg text-sm" placeholder="ชื่อธนาคาร (เช่น กสิกร, ไทยพาณิชย์)">
+                <button onclick="app.addBank()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 shadow-md font-bold text-sm mt-2"><i class="fa-solid fa-plus"></i> เพิ่มบัญชี</button>
+            </div>
+            <div class="max-h-64 overflow-y-auto border rounded-xl p-2 bg-white">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100 text-gray-500 font-semibold rounded-lg"><tr><th class="p-2 text-left rounded-l-lg">ชื่อธนาคาร</th><th class="w-10 rounded-r-lg"></th></tr></thead>
+                    <tbody id="bank-list-manage" class="divide-y text-slate-700"></tbody>
+                </table>
+            </div>
+            <button onclick="ui.closeModal('bank-modal')" class="mt-5 w-full py-2.5 bg-gray-100 rounded-xl text-gray-600 text-sm font-bold hover:bg-gray-200 transition-colors">ปิดหน้าต่าง</button>
+        </div>
+    </div>
 
-            // Scene 4: Parliament Tube
-            if(state.scene === 'coalition') {
-                const barInner = document.getElementById('coalition-bar-inner');
-                barInner.innerHTML = '';
-                sorted.forEach(p => {
-                    const widthPct = ((p.const+p.list) / TOTAL_SEATS) * 100;
-                    if(widthPct > 0) {
-                        const seg = document.createElement('div');
-                        seg.className = 'coalition-segment';
-                        seg.style.width = widthPct + '%';
-                        seg.style.background = p.color;
-                        barInner.appendChild(seg);
-                    }
-                });
-
-                const legBox = document.getElementById('coalition-legend');
-                legBox.innerHTML = '';
-                sorted.forEach(p => {
-                    legBox.innerHTML += `
-                        <div class="legend-item" style="border-left:4px solid ${p.color}">
-                            <div class="legend-name" style="color:${p.color}">${p.name}</div>
-                            <div class="legend-val">${p.const+p.list}</div>
+    <div id="report-modal" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
+            <div class="p-5 border-b flex justify-between items-center bg-white">
+                <h3 class="font-bold text-2xl text-purple-700 flex items-center gap-3">
+                    <span class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-chart-pie"></i></span>
+                    รายงานยอดขาย
+                </h3>
+                <button onclick="ui.closeModal('report-modal')" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 text-xl flex items-center justify-center transition-colors"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-50">
+                <div class="bg-white p-5 rounded-2xl border border-gray-200 mb-6 shadow-sm space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="col-span-1 md:col-span-2">
+                             <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">ค้นหา (ชื่อ/เลขบิล)</label>
+                             <div class="relative">
+                                 <i class="fa-solid fa-search absolute left-3 top-3 text-gray-300"></i>
+                                 <input type="text" id="rpt-search" placeholder="พิมพ์เพื่อค้นหา..." class="p-2.5 pl-10 border rounded-xl w-full text-sm bg-gray-50 focus:bg-white transition-colors" onkeyup="app.renderReportTable()">
+                             </div>
                         </div>
-                    `;
-                });
-            }
+                         <div>
+                             <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">บัญชีรับเงิน</label>
+                             <select id="rpt-bank-filter" class="p-2.5 border rounded-xl w-full text-sm bg-gray-50 focus:bg-white transition-colors" onchange="app.renderReportTable()">
+                                 </select>
+                        </div>
+                    </div>
+                     <div class="flex items-center gap-3">
+                        <div class="flex-1">
+                             <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">ตั้งแต่วันที่</label>
+                             <input type="date" id="rpt-start-date" class="p-2.5 border rounded-xl w-full text-sm bg-gray-50 focus:bg-white" onchange="app.renderReportTable()">
+                        </div>
+                        <div class="text-gray-300 self-end pb-3"><i class="fa-solid fa-arrow-right"></i></div>
+                        <div class="flex-1">
+                             <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">ถึงวันที่</label>
+                             <input type="date" id="rpt-end-date" class="p-2.5 border rounded-xl w-full text-sm bg-gray-50 focus:bg-white" onchange="app.renderReportTable()">
+                        </div>
+                        <div class="self-end">
+                            <button onclick="app.clearReportFilters()" class="px-5 py-2.5 bg-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-300 font-bold transition-colors">ล้างค่า</button>
+                        </div>
+                    </div>
+                </div>
 
-            // Particles
-            let pIdx = 0;
-            sorted.forEach(p => {
-                for(let k=0; k<p.const+p.list; k++) { if(pIdx < TOTAL_SEATS) particles[pIdx++].tc = p.color; }
-            });
-            while(pIdx < TOTAL_SEATS) particles[pIdx++].tc = '#333333';
-        }
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><i class="fa-solid fa-calendar-days text-6xl text-indigo-600"></i></div>
+                        <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-wide">ยอดขายเดือนนี้</p>
+                        <p class="text-2xl font-bold text-indigo-700 mt-1" id="rpt-month">0</p>
+                    </div>
+                     <div class="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><i class="fa-solid fa-calendar-week text-6xl text-blue-600"></i></div>
+                        <p class="text-[10px] text-blue-500 font-bold uppercase tracking-wide">ยอดขายสัปดาห์นี้</p>
+                        <p class="text-2xl font-bold text-blue-700 mt-1" id="rpt-week">0</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><i class="fa-solid fa-calendar-day text-6xl text-emerald-600"></i></div>
+                        <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-wide">ยอดขายวันนี้</p>
+                        <p class="text-2xl font-bold text-emerald-700 mt-1" id="rpt-today">0</p>
+                    </div>
+                    <div class="bg-amber-50 p-5 rounded-2xl border border-amber-200 shadow-sm relative overflow-hidden group">
+                        <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><i class="fa-solid fa-filter text-6xl text-amber-600"></i></div>
+                        <p class="text-[10px] text-amber-600 font-bold uppercase tracking-wide">ยอดรวม (Filtered)</p>
+                        <p class="text-2xl font-bold text-amber-700 mt-1" id="rpt-filter-total">0</p>
+                    </div>
+                </div>
+                
+                <div id="rpt-container" class="space-y-6"></div>
+            </div>
+        </div>
+    </div>
 
-        function loopRender() {
-            if(state.scene === 'dashboard') {
-                const canvas = document.getElementById('dash-hemi');
-                if(canvas) {
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, 900, 460);
-                    particles.forEach(p => { 
-                        ctx.fillStyle = p.tc; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); 
-                    });
-                }
-            }
-            requestAnimationFrame(loopRender);
-        }
+    <div id="edit-modal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 w-80">
+            <h3 class="font-bold text-lg mb-4 text-gray-800">แก้ไขยอดชำระ</h3>
+            <input type="hidden" id="edit-inv-id">
+            <input type="number" id="edit-amt" class="w-full p-4 border rounded-2xl text-right font-bold text-2xl text-blue-600 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
+            <div class="flex gap-3">
+                <button onclick="ui.closeModal('edit-modal')" class="flex-1 bg-gray-100 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-200">ยกเลิก</button>
+                <button onclick="app.confirmEdit()" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:bg-blue-700">บันทึก</button>
+            </div>
+        </div>
+    </div>
 
-        function animateNumber(el, start, end) {
-            if(!el || start === end) return;
-            let current = start; const step = end > start ? 1 : -1;
-            const timer = setInterval(() => {
-                current += step; el.innerText = current;
-                if(current === end) clearInterval(timer);
-            }, Math.abs(end-start)>50?5:20);
-        }
+    <div id="loader" class="hidden fixed inset-0 bg-white/90 z-[100] flex flex-col items-center justify-center backdrop-blur-sm">
+        <div class="w-16 h-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin shadow-lg"></div>
+        <p class="mt-4 text-emerald-700 font-bold animate-pulse text-lg">กำลังดำเนินการ...</p>
+    </div>
 
-        init();
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
