@@ -1,0 +1,84 @@
+body { font-family: 'Prompt', sans-serif; background-color: #f3f4f6; color: #1f2937; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+
+.custom-input:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); transition: all 0.3s; }
+
+/* Modern Payment Option Card */
+.payment-option { 
+    border: 2px solid transparent; 
+    background: white; 
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+.payment-option:hover { 
+    transform: translateY(-3px); 
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: #d1fae5;
+}
+.payment-option.active { 
+    background-color: #ecfdf5; 
+    border-color: #10b981; 
+    color: #065f46; 
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+}
+
+.bank-chip { border: 1px solid #e5e7eb; transition: all 0.2s; cursor: pointer; }
+.bank-chip:hover { background-color: #f0fdf4; border-color: #10b981; }
+.bank-chip.selected { background-color: #d1fae5; border-color: #059669; color: #065f46; font-weight: bold; }
+
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Glassmorphism Navbar */
+.glass-nav {
+    background: rgba(5, 150, 105, 0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Modern Card Styling */
+.modern-card {
+    background: white;
+    border-radius: 1.5rem;
+    box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05);
+    border: 1px solid #f3f4f6;
+}
+
+/* A5 Receipt Layout */
+#receipt-render-area { width: 148mm; min-height: 210mm; background: white; padding: 6mm 8mm; box-sizing: border-box; font-size: 9pt; line-height: 1.3; color: #1f2937; position: relative; font-family: 'Prompt', sans-serif; }
+.rec-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 2px solid #059669; }
+.rec-header-left { text-align: left; width: 50%; }
+.rec-title-th { font-size: 16pt; font-weight: bold; color: #059669; line-height: 1; }
+.rec-title-en { font-size: 10pt; font-weight: bold; color: #059669; margin-top: -2px; }
+.rec-meta { font-size: 8.5pt; color: #555; margin-top: 5px; line-height: 1.4; }
+.rec-header-right { text-align: right; width: 50%; }
+.rec-shop-name { font-size: 14pt; font-weight: bold; color: #1f2937; margin-bottom: 2px; }
+.rec-shop-info { font-size: 8.5pt; color: #4b5563; line-height: 1.4; }
+.rec-customer-row { margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed #e5e7eb; font-size: 9pt; display: flex; justify-content: space-between; font-weight: 500; }
+.rec-items-table { width: 100%; font-size: 9pt; border-collapse: collapse; margin-bottom: 8px; }
+.rec-items-table th { border-bottom: 1px solid #374151; text-align: left; padding: 3px 2px; font-weight: 600; color: #374151; }
+.rec-items-table td { padding: 3px 2px; border-bottom: 1px dotted #e5e7eb; vertical-align: top; }
+.rec-total-box { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.rec-total-table { width: 60%; font-size: 9pt; }
+.rec-total-table td { text-align: right; padding: 1px 0; }
+.rec-net-price { font-size: 14pt; font-weight: bold; color: #059669; border-top: 1px solid #374151; border-bottom: 2px solid #374151; padding: 4px 0; margin-top: 4px; }
+.rec-debt-box { text-align: left; margin-top: 5px; padding: 6px 0; border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc; font-size: 9pt; width: 100%; }
+.rec-debt-row { display: flex; justify-content: flex-start; gap: 15px; margin-bottom: 2px; }
+.rec-debt-label { width: 130px; color: #555; }
+.rec-debt-val { font-weight: 600; }
+.rec-footer-msg { margin-top: 20px; text-align: center; font-size: 8pt; color: #9ca3af; }
+
+/* Debt Invoice Layout */
+#debt-invoice-render-area { 
+    width: 148mm; 
+    min-height: 210mm; 
+    background: white; 
+    padding: 8mm; 
+    box-sizing: border-box; 
+    font-size: 9pt; 
+    line-height: 1.4; 
+    color: #1f2937; 
+    position: relative; 
+    font-family: 'Prompt', sans-serif; 
+}
