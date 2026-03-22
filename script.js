@@ -264,9 +264,10 @@ const app = {
         if(!item) return;
         if(key==='prodId') {
             const p = this.data.products.find(x=>x.id==val);
-            item.prodId = val; item.name = p?p.name:''; item.price = p?p.price:0;
+            item.prodId = val; item.name = p?p.name:''; item.price = p?p.price:'';
         } else {
-            item[key] = parseFloat(val)||0;
+            // อนุญาตให้เก็บค่าว่าง ("") ได้ แต่ถ้ามีตัวเลขให้แปลงเป็นตัวเลข
+            item[key] = val === "" ? "" : parseFloat(val);
         }
         this.renderCart();
     },
@@ -287,10 +288,14 @@ const app = {
         let sub=0, depTotal=0;
         
         this.data.cart.forEach(item => {
-            const q = item.qty===''?0:item.qty;
-            const lineTotal = (item.price * q) + item.deposit; 
-            sub += (item.price * q);
+            // ป้องกัน Error โดยถ้าเป็นค่าว่างให้มองเป็นเลข 0 ในการคำนวณ
+            const q = item.qty === '' ? 0 : parseFloat(item.qty) || 0;
+            const p = item.price === '' ? 0 : parseFloat(item.price) || 0;
+            
+            const lineTotal = (p * q) + item.deposit; 
+            sub += (p * q);
             depTotal += item.deposit;
+            // ...
 
             const opts = `<option value="">--เลือก--</option>` + this.data.products.map(p=>`<option value="${p.id}" ${p.id==item.prodId?'selected':''}>${p.name}</option>`).join('');
             const depOpts = [0, 100, 200].map(v => `<option value="${v}" ${v==item.deposit?'selected':''}>${v===0?'ไม่มัดจำ':v}</option>`).join('');
@@ -298,8 +303,11 @@ const app = {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="p-1"><select class="custom-input w-full p-2.5 border border-gray-200 rounded-lg bg-white text-sm" onchange="app.updateRow(${item.id},'prodId',this.value)">${opts}</select></td>
-                <td class="p-1"><input type="number" class="custom-input w-full p-2.5 border border-gray-200 rounded-lg text-right text-sm" value="${item.price}" onchange="app.updateRow(${item.id},'price',this.value)"></td>
-                <td class="p-1"><input type="number" class="custom-input w-full p-2.5 border border-gray-200 rounded-lg text-center text-sm font-bold text-emerald-600" placeholder="0" value="${item.qty}" onchange="app.updateRow(${item.id},'qty',this.value)"></td>
+                
+                <td class="p-1"><input type="number" class="custom-input w-full p-2.5 border border-gray-200 rounded-lg text-right text-sm" placeholder="0" value="${item.price}" onfocus="this.select()" onchange="app.updateRow(${item.id},'price',this.value)"></td>
+                
+                <td class="p-1"><input type="number" class="custom-input w-full p-2.5 border border-gray-200 rounded-lg text-center text-sm font-bold text-emerald-600" placeholder="0" value="${item.qty}" onfocus="this.select()" onchange="app.updateRow(${item.id},'qty',this.value)"></td>
+                
                 <td class="p-1"><select class="custom-input w-full p-2.5 border border-gray-200 rounded-lg text-center bg-white text-sm text-gray-500" onchange="app.updateRow(${item.id},'deposit',this.value)">${depOpts}</select></td>
                 <td class="p-1 text-right font-bold text-gray-700 text-sm py-2">${lineTotal.toLocaleString()}</td>
                 <td class="p-1 text-center text-red-400 hover:text-red-600 cursor-pointer transition-colors" onclick="app.delRow(${item.id})"><i class="fa-solid fa-trash-can"></i></td>
