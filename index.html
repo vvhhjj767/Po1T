@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ผลไม้ By เจ๊เนาว์ - ระบบจัดการหน้าร้าน (Cloud Drive + Anti-Bot)</title>
-    
+    <title>ผลไม้ By เจ๊เนาว์ - ระบบจัดการหน้าร้าน</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -12,415 +11,2006 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <style>
+        body { font-family: 'Prompt', sans-serif; background-color: #f3f4f6; color: #1f2937; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-input:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); transition: all 0.3s; }
+        .payment-option { border: 2px solid transparent; background: white; transition: all 0.2s ease-in-out; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05),0 2px 4px -1px rgba(0,0,0,0.06); }
+        .payment-option:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: #d1fae5; }
+        .payment-option.active { background-color: #ecfdf5; border-color: #10b981; color: #065f46; box-shadow: 0 4px 6px -1px rgba(16,185,129,0.3); }
+        .bank-chip { border: 1px solid #e5e7eb; transition: all 0.2s; cursor: pointer; }
+        .bank-chip:hover { background-color: #f0fdf4; border-color: #10b981; }
+        .bank-chip.selected { background-color: #d1fae5; border-color: #059669; color: #065f46; font-weight: bold; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .glass-nav { background: rgba(5,150,105,0.95); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .modern-card { background: white; border-radius: 1.5rem; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.05); border: 1px solid #f3f4f6; }
 
-    <link rel="stylesheet" href="style.css">
+        /* ─── PIN LOCK SCREEN ─── */
+        #pin-screen {
+            position: fixed; inset: 0; z-index: 9999;
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 40%, #047857 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 0;
+        }
+        #pin-screen .pin-logo {
+            width: 72px; height: 72px; background: rgba(255,255,255,0.15);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; color: white; margin-bottom: 1rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        #pin-screen h2 { color: white; font-size: 1.4rem; font-weight: 700; margin-bottom: 0.25rem; }
+        #pin-screen p { color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-bottom: 2rem; }
+        .pin-dots { display: flex; gap: 14px; margin-bottom: 2rem; }
+        .pin-dot {
+            width: 18px; height: 18px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.5);
+            background: transparent; transition: all 0.2s;
+        }
+        .pin-dot.filled { background: white; border-color: white; transform: scale(1.1); }
+        .pin-dot.error { background: #f87171; border-color: #f87171; animation: shake 0.4s ease; }
+        @keyframes shake {
+            0%,100%{transform:translateX(0)}
+            20%{transform:translateX(-8px)}
+            40%{transform:translateX(8px)}
+            60%{transform:translateX(-5px)}
+            80%{transform:translateX(5px)}
+        }
+        .pin-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; width: 260px; }
+        .pin-btn {
+            height: 68px; background: rgba(255,255,255,0.12); border: none; border-radius: 16px;
+            color: white; font-size: 1.5rem; font-weight: 600; cursor: pointer;
+            transition: all 0.15s; backdrop-filter: blur(4px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .pin-btn:hover { background: rgba(255,255,255,0.22); transform: scale(1.04); }
+        .pin-btn:active { transform: scale(0.96); }
+        .pin-btn.zero { grid-column: 2; }
+        .pin-btn.del { background: rgba(239,68,68,0.25); }
+        .pin-error-msg { color: #fca5a5; font-size: 0.8rem; margin-top: 1rem; min-height: 1.2rem; font-weight: 600; }
+        #pin-setup-hint { color: rgba(255,255,255,0.55); font-size: 0.75rem; margin-top: 0.5rem; }
+
+        /* ─── LOCK BUTTON IN NAV ─── */
+        #lock-btn { cursor: pointer; }
+
+        /* ─── A5 RECEIPT LAYOUT ─── */
+        #receipt-render-area { width: 148mm; min-height: 210mm; background: white; padding: 6mm 8mm; box-sizing: border-box; font-size: 9pt; line-height: 1.3; color: #1f2937; position: relative; font-family: 'Prompt', sans-serif; }
+        .rec-header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 2px solid #059669; }
+        .rec-header-left { text-align: left; width: 50%; }
+        .rec-title-th { font-size: 16pt; font-weight: bold; color: #059669; line-height: 1; }
+        .rec-title-en { font-size: 10pt; font-weight: bold; color: #059669; margin-top: -2px; }
+        .rec-meta { font-size: 8.5pt; color: #555; margin-top: 5px; line-height: 1.4; }
+        .rec-header-right { text-align: right; width: 50%; }
+        .rec-shop-name { font-size: 14pt; font-weight: bold; color: #1f2937; margin-bottom: 2px; }
+        .rec-shop-info { font-size: 8.5pt; color: #4b5563; line-height: 1.4; }
+        .rec-customer-row { margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px dashed #e5e7eb; font-size: 9pt; display: flex; justify-content: space-between; font-weight: 500; }
+        .rec-items-table { width: 100%; font-size: 9pt; border-collapse: collapse; margin-bottom: 8px; }
+        .rec-items-table th { border-bottom: 1px solid #374151; text-align: left; padding: 3px 2px; font-weight: 600; color: #374151; }
+        .rec-items-table td { padding: 3px 2px; border-bottom: 1px dotted #e5e7eb; vertical-align: top; }
+        .rec-total-box { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+        .rec-total-table { width: 60%; font-size: 9pt; }
+        .rec-total-table td { text-align: right; padding: 1px 0; }
+        .rec-net-price { font-size: 14pt; font-weight: bold; color: #059669; border-top: 1px solid #374151; border-bottom: 2px solid #374151; padding: 4px 0; margin-top: 4px; }
+        .rec-debt-box { text-align: left; margin-top: 5px; padding: 6px 0; border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc; font-size: 9pt; width: 100%; }
+        .rec-debt-row { display: flex; justify-content: flex-start; gap: 15px; margin-bottom: 2px; }
+        .rec-debt-label { width: 130px; color: #555; }
+        .rec-debt-val { font-weight: 600; }
+        .rec-footer-msg { margin-top: 20px; text-align: center; font-size: 8pt; color: #9ca3af; }
+        #debt-invoice-render-area { width: 148mm; min-height: 210mm; background: white; padding: 8mm; box-sizing: border-box; font-size: 9pt; line-height: 1.4; color: #1f2937; position: relative; font-family: 'Prompt', sans-serif; }
+
+        /* ─── LINE SHARE MODAL ─── */
+        #line-share-modal .line-preview {
+            background: #dcf8c6; border-radius: 16px; padding: 14px 16px;
+            font-size: 0.82rem; line-height: 1.7; white-space: pre-wrap;
+            max-height: 240px; overflow-y: auto; color: #1f2937;
+            border: 1px solid #b9e6a4; font-family: 'Prompt', sans-serif;
+        }
+        #line-share-modal .line-btn {
+            background: #06C755; color: white; border: none; border-radius: 14px;
+            padding: 14px; font-size: 1rem; font-weight: 700; cursor: pointer;
+            width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+            transition: all 0.2s; box-shadow: 0 4px 14px rgba(6,199,85,0.35);
+        }
+        #line-share-modal .line-btn:hover { background: #05b54c; transform: translateY(-1px); }
+        #line-share-modal .copy-btn {
+            background: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; border-radius: 14px;
+            padding: 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: all 0.2s;
+        }
+        #line-share-modal .copy-btn:hover { background: #e5e7eb; }
+
+        /* ─── SETTINGS MODAL ─── */
+        #settings-modal input[type=password] { letter-spacing: 0.3em; font-size: 1.2rem; }
+    </style>
 </head>
 <body class="h-screen flex flex-col bg-slate-50">
 
-    <nav class="glass-nav text-white px-6 py-3 shadow-lg fixed w-full top-0 z-50 transition-all">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 bg-white text-emerald-600 rounded-full flex items-center justify-center font-bold text-2xl shadow-md border-2 border-emerald-100">
-                    <i class="fa-solid fa-leaf"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold tracking-wide leading-none text-white drop-shadow-md">ผลไม้ By เจ๊เนาว์</h1>
-                    <p class="text-xs text-emerald-100 font-medium opacity-90">ระบบจัดการหน้าร้าน</p>
-                </div>
+<!-- ═══════════════════════════════════════════
+     🔐 PIN LOCK SCREEN
+═══════════════════════════════════════════ -->
+<div id="pin-screen">
+    <div class="pin-logo"><i class="fa-solid fa-leaf"></i></div>
+    <h2>ผลไม้ By เจ๊เนาว์</h2>
+    <p id="pin-screen-label">กรอก PIN 4 หลักเพื่อเข้าใช้งาน</p>
+    <div class="pin-dots" id="pin-dots">
+        <div class="pin-dot" id="d0"></div>
+        <div class="pin-dot" id="d1"></div>
+        <div class="pin-dot" id="d2"></div>
+        <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-grid">
+        <button class="pin-btn" onclick="pinManager.press('1')">1</button>
+        <button class="pin-btn" onclick="pinManager.press('2')">2</button>
+        <button class="pin-btn" onclick="pinManager.press('3')">3</button>
+        <button class="pin-btn" onclick="pinManager.press('4')">4</button>
+        <button class="pin-btn" onclick="pinManager.press('5')">5</button>
+        <button class="pin-btn" onclick="pinManager.press('6')">6</button>
+        <button class="pin-btn" onclick="pinManager.press('7')">7</button>
+        <button class="pin-btn" onclick="pinManager.press('8')">8</button>
+        <button class="pin-btn" onclick="pinManager.press('9')">9</button>
+        <button class="pin-btn zero" onclick="pinManager.press('0')">0</button>
+        <button class="pin-btn del" onclick="pinManager.del()"><i class="fa-solid fa-delete-left"></i></button>
+    </div>
+    <div class="pin-error-msg" id="pin-error"></div>
+    <div id="pin-setup-hint"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     NAVBAR
+═══════════════════════════════════════════ -->
+<nav class="glass-nav text-white px-6 py-3 shadow-lg fixed w-full top-0 z-50 transition-all">
+    <div class="container mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-white text-emerald-600 rounded-full flex items-center justify-center font-bold text-2xl shadow-md border-2 border-emerald-100">
+                <i class="fa-solid fa-leaf"></i>
             </div>
-            <div class="flex items-center gap-3">
-                <div id="offline-indicator" class="hidden flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-1.5 rounded-full shadow-lg cursor-pointer transition transform hover:scale-105" onclick="queueManager.sync()">
-                    <i class="fa-solid fa-cloud-arrow-up animate-bounce"></i>
-                    <span class="text-xs font-bold">รอส่ง <span id="offline-count">0</span> รายการ</span>
-                </div>
-                
-                <div class="text-sm bg-black/20 backdrop-blur-md px-5 py-2 rounded-full border border-white/20 flex items-center gap-2 shadow-inner text-white font-medium">
-                    <i class="fa-regular fa-clock text-emerald-200"></i> <span id="current-datetime"></span>
-                </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-wide leading-none text-white drop-shadow-md">ผลไม้ By เจ๊เนาว์</h1>
+                <p class="text-xs text-emerald-100 font-medium opacity-90">ระบบจัดการหน้าร้าน</p>
             </div>
         </div>
-    </nav>
+        <div class="flex items-center gap-3">
+            <div id="offline-indicator" class="hidden flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-4 py-1.5 rounded-full shadow-lg cursor-pointer transition transform hover:scale-105" onclick="queueManager.sync()">
+                <i class="fa-solid fa-cloud-arrow-up animate-bounce"></i>
+                <span class="text-xs font-bold">รอส่ง <span id="offline-count">0</span> รายการ</span>
+            </div>
+            <div class="text-sm bg-black/20 backdrop-blur-md px-5 py-2 rounded-full border border-white/20 flex items-center gap-2 shadow-inner text-white font-medium">
+                <i class="fa-regular fa-clock text-emerald-200"></i> <span id="current-datetime"></span>
+            </div>
+            <!-- 🔐 Lock + Settings buttons -->
+            <button id="lock-btn" onclick="pinManager.lock()" title="ล็อกหน้าจอ" class="w-9 h-9 bg-white/15 hover:bg-white/25 rounded-full flex items-center justify-center transition-all" >
+                <i class="fa-solid fa-lock text-white text-sm"></i>
+            </button>
+            <button onclick="ui.openModal('settings-modal')" title="ตั้งค่า PIN" class="w-9 h-9 bg-white/15 hover:bg-white/25 rounded-full flex items-center justify-center transition-all">
+                <i class="fa-solid fa-gear text-white text-sm"></i>
+            </button>
+        </div>
+    </div>
+</nav>
 
-    <div class="container mx-auto p-4 md:p-6 mt-20 mb-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        <div class="lg:col-span-8 space-y-6">
-            
-            <div class="modern-card p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
-                    <div>
-                        <label class="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wide">เลขที่ใบเสร็จ</label>
-                        <div class="relative group">
-                            <i class="fa-solid fa-hashtag absolute left-4 top-3.5 text-emerald-400 group-hover:text-emerald-600 transition-colors"></i>
-                            <input type="text" id="inv-no" class="custom-input w-full pl-10 p-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 font-mono text-sm font-semibold" readonly>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wide">วันที่ทำรายการ</label>
-                        <input type="date" id="inv-date" class="custom-input w-full p-3 border border-gray-200 rounded-xl text-sm text-gray-700 font-medium">
+<!-- ═══════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════ -->
+<div class="container mx-auto p-4 md:p-6 mt-20 mb-10 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="lg:col-span-8 space-y-6">
+        <div class="modern-card p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
+                <div>
+                    <label class="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wide">เลขที่ใบเสร็จ</label>
+                    <div class="relative group">
+                        <i class="fa-solid fa-hashtag absolute left-4 top-3.5 text-emerald-400"></i>
+                        <input type="text" id="inv-no" class="custom-input w-full pl-10 p-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-600 font-mono text-sm font-semibold" readonly>
                     </div>
                 </div>
                 <div>
-                    <label class="text-xs font-bold text-emerald-600 mb-2 block uppercase tracking-wide">ชื่อลูกค้า <span class="text-red-400">*</span></label>
-                    <div class="flex gap-3">
-                        <div class="relative flex-1 group">
-                            <i class="fa-solid fa-user absolute left-4 top-3.5 text-gray-400 group-hover:text-emerald-500 transition-colors"></i>
-                            <input type="text" id="cust-name" placeholder="ค้นหาหรือระบุชื่อลูกค้า..." class="custom-input w-full pl-10 p-3 border border-gray-200 rounded-xl font-medium text-gray-700 placeholder-gray-400">
-                        </div>
-                        <button onclick="app.checkDebt()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-6 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-sm border border-gray-200">
-                            <i class="fa-solid fa-magnifying-glass"></i> เช็คหนี้
-                        </button>
-                    </div>
+                    <label class="text-xs font-bold text-gray-400 mb-2 block uppercase tracking-wide">วันที่ทำรายการ</label>
+                    <input type="date" id="inv-date" class="custom-input w-full p-3 border border-gray-200 rounded-xl text-sm text-gray-700 font-medium">
                 </div>
             </div>
-
-            <div class="modern-card flex flex-col min-h-[500px] overflow-hidden">
-                <div class="p-5 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex justify-between items-center">
-                    <h3 class="font-bold text-gray-700 text-lg flex items-center gap-3">
-                        <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm"><i class="fa-solid fa-basket-shopping"></i></span>
-                        รายการสินค้า
-                    </h3>
-                    <button onclick="app.addRow()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-xl hover:bg-emerald-700 text-sm font-bold shadow-lg shadow-emerald-200 transition-all flex items-center gap-2 transform active:scale-95">
-                        <i class="fa-solid fa-plus"></i> เพิ่มรายการ
+            <div>
+                <label class="text-xs font-bold text-emerald-600 mb-2 block uppercase tracking-wide">ชื่อลูกค้า <span class="text-red-400">*</span></label>
+                <div class="flex gap-3">
+                    <div class="relative flex-1 group">
+                        <i class="fa-solid fa-user absolute left-4 top-3.5 text-gray-400"></i>
+                        <input type="text" id="cust-name" placeholder="ค้นหาหรือระบุชื่อลูกค้า..." class="custom-input w-full pl-10 p-3 border border-gray-200 rounded-xl font-medium text-gray-700 placeholder-gray-400">
+                    </div>
+                    <button onclick="app.checkDebt()" class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-6 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-sm border border-gray-200">
+                        <i class="fa-solid fa-magnifying-glass"></i> เช็คหนี้
                     </button>
                 </div>
-                <div class="flex-1 overflow-auto p-4">
-                    <table class="w-full text-sm border-separate border-spacing-y-2">
-                        <thead class="text-gray-400 font-semibold text-xs uppercase tracking-wider sticky top-0 bg-white z-10">
-                            <tr>
-                                <th class="pb-2 text-left w-[35%] pl-2">สินค้า</th>
-                                <th class="pb-2 text-right w-[15%]">ราคา</th>
-                                <th class="pb-2 text-center w-[15%]">จำนวน</th>
-                                <th class="pb-2 text-center w-[15%]">
-                                    <div class="relative cursor-pointer group w-full mx-auto" title="คลิกเพื่อปรับมัดจำทั้งหมด">
-                                        <span class="hover:text-emerald-600 transition-colors border-b border-dashed border-gray-300 group-hover:border-emerald-400">มัดจำ</span>
-                                        <select id="bulk-deposit-select" onchange="app.setAllDeposit(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                                            <option value="">-- ปรับทั้งหมด --</option>
-                                            <option value="0">ไม่มัดจำ</option>
-                                            <option value="100">100</option>
-                                            <option value="200">200</option>
-                                        </select>
-                                    </div>
-                                </th>
-                                <th class="pb-2 text-right w-[15%] pr-2">รวม</th>
-                                <th class="w-[5%]"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="cart-body" class="space-y-2"></tbody>
-                    </table>
-                </div>
             </div>
         </div>
 
-        <div class="lg:col-span-4 space-y-6">
-            
-            <div class="grid grid-cols-2 gap-4">
-                <button onclick="ui.openModal('product-modal')" class="modern-card p-4 hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer border-transparent hover:border-blue-100">
-                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
-                        <i class="fa-solid fa-boxes-stacked"></i>
-                    </div>
-                    <span class="text-xs font-bold text-gray-600 group-hover:text-blue-700">สต็อกสินค้า</span>
+        <div class="modern-card flex flex-col min-h-[500px] overflow-hidden">
+            <div class="p-5 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex justify-between items-center">
+                <h3 class="font-bold text-gray-700 text-lg flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center text-sm"><i class="fa-solid fa-basket-shopping"></i></span>
+                    รายการสินค้า
+                </h3>
+                <button onclick="app.addRow()" class="bg-emerald-600 text-white px-5 py-2.5 rounded-xl hover:bg-emerald-700 text-sm font-bold shadow-lg shadow-emerald-200 transition-all flex items-center gap-2 transform active:scale-95">
+                    <i class="fa-solid fa-plus"></i> เพิ่มรายการ
                 </button>
-                <button onclick="app.loadReport(); ui.openModal('report-modal')" class="modern-card p-4 hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer border-transparent hover:border-purple-100">
-                    <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
-                        <i class="fa-solid fa-chart-pie"></i>
-                    </div>
-                    <span class="text-xs font-bold text-gray-600 group-hover:text-purple-700">รายงานขาย</span>
-                </button>
-                <button onclick="ui.openModal('debt-modal')" class="col-span-2 modern-card p-4 bg-gradient-to-r from-amber-50 to-orange-50 hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-4 group cursor-pointer border-amber-100/50">
-                    <div class="w-10 h-10 bg-white text-amber-500 rounded-xl flex items-center justify-center text-lg shadow-sm group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-hand-holding-dollar"></i>
-                    </div>
+            </div>
+            <div class="flex-1 overflow-auto p-4">
+                <table class="w-full text-sm border-separate border-spacing-y-2">
+                    <thead class="text-gray-400 font-semibold text-xs uppercase tracking-wider sticky top-0 bg-white z-10">
+                        <tr>
+                            <th class="pb-2 text-left w-[35%] pl-2">สินค้า</th>
+                            <th class="pb-2 text-right w-[15%]">ราคา</th>
+                            <th class="pb-2 text-center w-[15%]">จำนวน</th>
+                            <th class="pb-2 text-center w-[15%]">
+                                <div class="relative cursor-pointer group w-full mx-auto" title="คลิกเพื่อปรับมัดจำทั้งหมด">
+                                    <span class="hover:text-emerald-600 transition-colors border-b border-dashed border-gray-300">มัดจำ</span>
+                                    <select id="bulk-deposit-select" onchange="app.setAllDeposit(this.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                                        <option value="">-- ปรับทั้งหมด --</option>
+                                        <option value="0">ไม่มัดจำ</option>
+                                        <option value="100">100</option>
+                                        <option value="200">200</option>
+                                    </select>
+                                </div>
+                            </th>
+                            <th class="pb-2 text-right w-[15%] pr-2">รวม</th>
+                            <th class="w-[5%]"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="lg:col-span-4 space-y-6">
+        <div class="grid grid-cols-2 gap-4">
+            <button onclick="ui.openModal('product-modal')" class="modern-card p-4 hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer">
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm"><i class="fa-solid fa-boxes-stacked"></i></div>
+                <span class="text-xs font-bold text-gray-600 group-hover:text-blue-700">สต็อกสินค้า</span>
+            </button>
+            <button onclick="app.loadReport(); ui.openModal('report-modal')" class="modern-card p-4 hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col items-center justify-center gap-2 group cursor-pointer">
+                <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm"><i class="fa-solid fa-chart-pie"></i></div>
+                <span class="text-xs font-bold text-gray-600 group-hover:text-purple-700">รายงานขาย</span>
+            </button>
+            <div class="col-span-2 flex gap-3">
+                <button onclick="ui.openModal('debt-modal')" class="flex-1 modern-card p-4 bg-gradient-to-r from-amber-50 to-orange-50 hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-4 group cursor-pointer border-amber-100/50">
+                    <div class="w-10 h-10 bg-white text-amber-500 rounded-xl flex items-center justify-center text-lg shadow-sm group-hover:scale-110 transition-transform"><i class="fa-solid fa-hand-holding-dollar"></i></div>
                     <span class="text-sm font-bold text-amber-800">รับชำระหนี้ค้าง</span>
                 </button>
+                <!-- 📱 LINE SHARE BUTTON FOR DEBT (active after debt payment) -->
+                <button id="debt-line-share-btn" onclick="lineShare.openModal()" title="แชร์ใบเสร็จรับชำระหนี้ผ่าน Line" class="hidden w-16 bg-[#06C755] text-white rounded-2xl font-bold shadow-lg flex items-center justify-center transition-all hover:bg-[#05b54c] active:scale-95">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+                </button>
             </div>
+        </div>
 
-            <div class="modern-card p-6 relative overflow-hidden bg-white">
-                <div class="absolute -top-6 -right-6 opacity-[0.03] pointer-events-none">
-                    <i class="fa-solid fa-cash-register text-9xl"></i>
+        <div class="modern-card p-6 relative overflow-hidden bg-white">
+            <div class="absolute -top-6 -right-6 opacity-[0.03] pointer-events-none"><i class="fa-solid fa-cash-register text-9xl"></i></div>
+            <div class="space-y-3 mb-6 relative z-10">
+                <div class="flex justify-between items-center text-gray-500 text-sm">
+                    <span>รวมเงินสินค้า</span>
+                    <span class="font-bold text-gray-800 text-base" id="sum-subtotal">0.00</span>
                 </div>
-
-                <div class="space-y-3 mb-6 relative z-10">
-                    <div class="flex justify-between items-center text-gray-500 text-sm">
-                        <span>รวมเงินสินค้า</span>
-                        <span class="font-bold text-gray-800 text-base" id="sum-subtotal">0.00</span>
-                    </div>
-                    <div class="flex justify-between items-center text-blue-600 text-sm">
-                        <span><i class="fa-solid fa-circle-plus text-[10px] mr-1"></i> ค่ามัดจำรวม</span>
+                <div class="flex justify-between items-center text-blue-600 text-sm pb-1">
+                    <span><i class="fa-solid fa-circle-plus text-[10px] mr-1"></i> บวก ค่ามัดจำรวม</span>
+                    <div class="flex items-center gap-1">
+                        <span class="font-bold">+</span>
                         <span class="font-bold text-base" id="sum-deposit">0.00</span>
                     </div>
-                    <div class="flex justify-between items-center text-red-500 text-sm pb-4 border-b border-dashed border-gray-200">
-                        <span><i class="fa-solid fa-circle-minus text-[10px] mr-1"></i> ส่วนลด</span>
-                        <div class="flex items-center gap-1 bg-red-50 px-2 py-1 rounded-lg">
-                            <span class="font-bold">-</span>
-                            <input type="number" id="inp-discount" class="w-20 text-right bg-transparent border-none text-red-600 outline-none font-bold placeholder-red-300 text-sm" placeholder="0">
-                        </div>
-                    </div>
-                    <div class="flex justify-between items-end pt-2">
-                        <span class="font-bold text-gray-800 text-lg">ยอดสุทธิ</span>
-                        <span class="text-5xl font-bold text-emerald-600 tracking-tight leading-none drop-shadow-sm" id="sum-total">0.00</span>
+                </div>
+                <div class="flex justify-between items-center text-red-500 text-sm pb-4 border-b border-dashed border-gray-200">
+                    <span><i class="fa-solid fa-circle-minus text-[10px] mr-1"></i> ส่วนหักลด</span>
+                    <div class="flex items-center gap-1 bg-red-50 px-2 py-1 rounded-lg">
+                        <span class="font-bold">-</span>
+                        <input type="number" id="inp-discount" class="w-20 text-right bg-transparent border-none text-red-600 outline-none font-bold placeholder-red-300 text-sm" placeholder="0">
                     </div>
                 </div>
+                <div class="flex justify-between items-end pt-2">
+                    <span class="font-bold text-gray-800 text-lg">ยอดสุทธิ</span>
+                    <span class="text-5xl font-bold text-emerald-600 tracking-tight leading-none drop-shadow-sm" id="sum-total">0.00</span>
+                </div>
+            </div>
 
-                <p class="text-xs font-bold text-gray-400 uppercase mb-3 relative z-10 tracking-wide">ช่องทางชำระเงิน</p>
-                <div class="grid grid-cols-2 gap-3 mb-4 relative z-10">
-                    <div class="payment-option active rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('เงินสด', this)">
-                        <i class="fa-solid fa-money-bill-wave text-2xl mb-1"></i>
-                        <span class="text-xs font-bold">เงินสด</span>
-                    </div>
-                    <div class="payment-option rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('โอน (QR Code)', this)">
-                        <i class="fa-solid fa-qrcode text-2xl mb-1"></i>
-                        <span class="text-xs font-bold">โอนเงิน</span>
-                    </div>
-                    <div class="payment-option rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('รอชำระ', this)">
-                        <i class="fa-solid fa-clock-rotate-left text-2xl mb-1"></i>
-                        <span class="text-xs font-bold">รอชำระ</span>
-                    </div>
-                    <div class="payment-option rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('อื่นๆ', this)">
-                        <i class="fa-solid fa-ellipsis text-2xl mb-1"></i>
-                        <span class="text-xs font-bold">อื่นๆ</span>
-                    </div>
+            <p class="text-xs font-bold text-gray-400 uppercase mb-3 relative z-10 tracking-wide">ช่องทางชำระเงิน</p>
+            <div class="grid grid-cols-2 gap-3 mb-4 relative z-10">
+                <div class="payment-option active rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('เงินสด', this)">
+                    <i class="fa-solid fa-money-bill-wave text-2xl mb-1"></i>
+                    <span class="text-xs font-bold">เงินสด</span>
                 </div>
-                
-                <div id="bank-selector-area" class="hidden mb-5 bg-blue-50/50 p-4 rounded-2xl border border-blue-100 relative z-10">
-                    <div class="flex justify-between items-center mb-3">
-                        <p class="text-xs font-bold text-blue-600 uppercase flex items-center gap-2"><i class="fa-solid fa-bank"></i> เลือกบัญชีรับเงิน</p>
-                        <button onclick="ui.openModal('bank-modal')" class="text-[10px] bg-white text-blue-600 px-3 py-1 rounded-lg border border-blue-100 hover:bg-blue-50 font-bold shadow-sm">จัดการ</button>
-                    </div>
-                    <div id="bank-list-chips" class="flex flex-wrap gap-2">
-                        <div class="text-xs text-gray-400 italic w-full text-center py-2">ยังไม่มีบัญชี (กดจัดการเพื่อเพิ่ม)</div>
-                    </div>
+                <div class="payment-option rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('โอน (QR Code)', this)">
+                    <i class="fa-solid fa-qrcode text-2xl mb-1"></i>
+                    <span class="text-xs font-bold">โอนเงิน</span>
                 </div>
+                <div class="payment-option rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('รอชำระ', this)">
+                    <i class="fa-solid fa-clock-rotate-left text-2xl mb-1"></i>
+                    <span class="text-xs font-bold">รอชำระ</span>
+                </div>
+                <div class="payment-option rounded-2xl p-3 cursor-pointer select-none flex flex-col items-center justify-center gap-2 h-20" onclick="app.setPayment('อื่นๆ', this)">
+                    <i class="fa-solid fa-ellipsis text-2xl mb-1"></i>
+                    <span class="text-xs font-bold">อื่นๆ</span>
+                </div>
+            </div>
+            <div id="bank-selector-area" class="hidden mb-5 bg-blue-50/50 p-4 rounded-2xl border border-blue-100 relative z-10">
+                <div class="flex justify-between items-center mb-3">
+                    <p class="text-xs font-bold text-blue-600 uppercase flex items-center gap-2"><i class="fa-solid fa-bank"></i> เลือกบัญชีรับเงิน</p>
+                    <button onclick="ui.openModal('bank-modal')" class="text-[10px] bg-white text-blue-600 px-3 py-1 rounded-lg border border-blue-100 hover:bg-blue-50 font-bold shadow-sm">จัดการ</button>
+                </div>
+                <div id="bank-list-chips" class="flex flex-wrap gap-2">
+                    <div class="text-xs text-gray-400 italic w-full text-center py-2">ยังไม่มีบัญชี (กดจัดการเพื่อเพิ่ม)</div>
+                </div>
+            </div>
 
-                <button onclick="app.processCheckout()" class="w-full py-4 bg-slate-800 text-white rounded-2xl font-bold text-lg hover:bg-slate-900 shadow-xl shadow-slate-200 flex justify-center items-center gap-3 transition-all transform active:scale-95 relative z-10 group">
-                    <span>บันทึก & พิมพ์ A5</span>
+            <!-- บันทึก + Share Line -->
+            <div class="flex gap-3 relative z-10">
+                <button onclick="app.processCheckout()" class="flex-1 py-4 bg-slate-800 text-white rounded-2xl font-bold text-lg hover:bg-slate-900 shadow-xl shadow-slate-200 flex justify-center items-center gap-3 transition-all transform active:scale-95 group">
+                    <span>บันทึก & พิมพ์</span>
                     <i class="fa-solid fa-print group-hover:rotate-12 transition-transform"></i>
+                </button>
+                <!-- 📱 LINE SHARE BUTTON (active after checkout) -->
+                <button id="line-share-btn" onclick="lineShare.openModal()" title="แชร์ผ่าน Line"
+                    class="hidden w-16 bg-[#06C755] text-white rounded-2xl font-bold shadow-lg flex items-center justify-center transition-all hover:bg-[#05b54c] active:scale-95">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
                 </button>
             </div>
         </div>
     </div>
+</div>
 
-    <div style="position:fixed; left:-9999px; top:0;">
-        <div id="receipt-render-area">
-            <div class="rec-header-row">
-                <div class="rec-header-left">
-                    <div class="rec-title-th">ใบเสร็จรับเงิน</div>
-                    <div class="rec-title-en">RECEIPT</div>
-                    <div class="rec-meta"><b>เลขที่:</b> <span id="r-inv"></span><br><b>วันที่:</b> <span id="r-date"></span> <span id="r-time"></span></div>
-                </div>
-                <div class="rec-header-right">
-                    <div class="rec-shop-name">ผลไม้ By เจ๊เนาว์</div>
-                    <div class="rec-shop-info">ตลาดเมืองใหม่ จ.เชียงใหม่<br>โทร. 081-114-7477</div>
-                </div>
+<!-- ═══════════════════════════════════════════
+     HIDDEN RECEIPT RENDER AREAS
+═══════════════════════════════════════════ -->
+<div style="position:fixed; left:-9999px; top:0;">
+    <div id="receipt-render-area">
+        <div class="rec-header-row">
+            <div class="rec-header-left">
+                <div class="rec-title-th">ใบเสร็จรับเงิน</div>
+                <div class="rec-title-en">RECEIPT</div>
+                <div class="rec-meta"><b>เลขที่:</b> <span id="r-inv"></span><br><b>วันที่:</b> <span id="r-date"></span> <span id="r-time"></span></div>
             </div>
-            <div class="rec-customer-row"><div><b>ลูกค้า:</b> <span id="r-name"></span></div><div><b>ชำระโดย:</b> <span id="r-pay"></span></div></div>
-            <table class="rec-items-table">
-                <thead><tr><th style="width: 55%;">รายการ</th><th style="width: 15%; text-align: right;">ราคา</th><th style="width: 15%; text-align: center;">จำนวน</th><th style="width: 15%; text-align: right;">รวม</th></tr></thead>
-                <tbody id="r-body"></tbody>
-            </table>
-            <div class="rec-total-box">
-                <table class="rec-total-table">
-                    <tr><td>รวมเงินสินค้า:</td><td width="35%" id="r-sub"></td></tr>
-                    <tr><td style="color: blue;">บวก ค่ามัดจำ:</td><td style="color: blue;" id="r-dep"></td></tr>
-                    <tr><td style="color: red;">หัก ส่วนลด:</td><td style="color: red;" id="r-disc"></td></tr>
-                    <tr><td colspan="2"><div class="rec-net-price"><span id="r-total"></span></div></td></tr>
-                </table>
+            <div class="rec-header-right">
+                <div class="rec-shop-name">ผลไม้ By เจ๊เนาว์</div>
+                <div class="rec-shop-info">ตลาดเมืองใหม่ จ.เชียงใหม่<br>โทร. 081-114-7477</div>
             </div>
-            <div id="r-debt-section" class="rec-debt-box hidden">
-                <div class="rec-debt-row"><span class="rec-debt-label">ยอดคงค้างเก่ายกมา:</span><span class="rec-debt-val" id="r-debt-old"></span></div>
-                <div class="rec-debt-row" style="color: #dc2626;"><span class="rec-debt-label">ยอดคงค้างสุทธิ:</span><span class="rec-debt-val" id="r-debt-new"></span></div>
-            </div>
-            <div class="rec-footer-msg">ขอบคุณที่อุดหนุนครับ / Thank you<br>Powered by NX-solution</div>
         </div>
+        <div class="rec-customer-row"><div><b>ลูกค้า:</b> <span id="r-name"></span></div><div><b>ชำระโดย:</b> <span id="r-pay"></span></div></div>
+        <table class="rec-items-table">
+            <thead><tr><th style="width:55%">รายการ</th><th style="width:15%;text-align:right">ราคา</th><th style="width:15%;text-align:center">จำนวน</th><th style="width:15%;text-align:right">รวม</th></tr></thead>
+            <tbody id="r-body"></tbody>
+        </table>
+        
+        <div class="rec-total-box" style="justify-content: space-between; align-items: flex-end; margin-top: 5px; border-top: 1px dashed #e5e7eb; padding-top: 5px;">
+            <!-- ส่วนแสดง QR Code PromptPay (ย้ายมาฝั่งซ้าย) -->
+            <div id="r-qr-section" class="hidden" style="text-align: center; margin-bottom: 4px; margin-left: 1.5cm;">
+                <div style="font-size: 8pt; font-weight: bold; color: #059669; margin-bottom: 0.2cm;">สแกนเพื่อชำระเงิน</div>
+                <canvas id="promptpay-qr" style="margin: 0 auto; display: block;"></canvas>
+            </div>
 
-        <div id="debt-invoice-render-area">
-            <div class="rec-header-row">
-                <div class="rec-header-left">
-                    <div class="rec-title-th" style="color: #dc2626;">ใบแจ้งหนี้</div>
-                    <div class="rec-title-en" style="color: #dc2626;">INVOICE / DEBT NOTE</div>
-                    <div class="rec-meta"><b>ลูกค้า:</b> <span id="di-name">-</span><br><b>วันที่พิมพ์:</b> <span id="di-date">-</span></div>
-                </div>
-                <div class="rec-header-right">
-                    <div class="rec-shop-name">ผลไม้ By เจ๊เนาว์</div>
-                    <div class="rec-shop-info">ตลาดเมืองใหม่ จ.เชียงใหม่<br>โทร. 081-114-7477</div>
-                </div>
-            </div>
-            <div style="margin-top: 15px; font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 5px; font-size: 10pt;">รายการค้างชำระ</div>
-            <table class="rec-items-table" style="margin-top: 10px;">
-                <thead>
-                    <tr>
-                        <th style="width: 25%;">วันที่</th>
-                        <th style="width: 45%;">เลขที่บิล</th>
-                        <th style="width: 30%; text-align: right;">คงค้าง</th>
-                    </tr>
-                </thead>
-                <tbody id="di-body"></tbody>
+            <table class="rec-total-table" style="margin-left: auto;">
+                <tr><td>รวมเงินสินค้า:</td><td width="35%" id="r-sub"></td></tr>
+                <tr><td style="color:blue">บวก ค่ามัดจำ:</td><td style="color:blue">+<span id="r-dep"></span></td></tr>
+                <tr><td style="color:red">ลบ ส่วนหักลด:</td><td style="color:red">-<span id="r-disc"></span></td></tr>
+                <tr><td colspan="2"><div class="rec-net-price"><span id="r-total"></span></div></td></tr>
             </table>
-            <div class="rec-total-box" style="margin-top: 20px;">
-                <table class="rec-total-table">
-                    <tr>
-                        <td style="font-size: 11pt; font-weight: bold;">รวมยอดหนี้สุทธิ:</td>
-                        <td><div class="rec-net-price" style="color: #dc2626; border-bottom: 3px double #dc2626;"><span id="di-total">0.00</span></div></td>
-                    </tr>
-                </table>
-            </div>
-            <div class="rec-footer-msg">เอกสารนี้ใช้สำหรับแจ้งยอดค้างชำระเท่านั้น<br>Powered by NX-solution</div>
         </div>
+        
+        <div id="r-debt-section" class="rec-debt-box hidden">
+            <div class="rec-debt-row"><span class="rec-debt-label">ยอดคงค้างเก่ายกมา:</span><span class="rec-debt-val" id="r-debt-old"></span></div>
+            <div class="rec-debt-row" style="color:#dc2626"><span class="rec-debt-label">ยอดคงค้างสุทธิ:</span><span class="rec-debt-val" id="r-debt-new"></span></div>
+        </div>
+        <div class="rec-footer-msg">ขอบคุณที่อุดหนุนครับ / Thank you<br>Powered by JAE-solution</div>
     </div>
 
-    <div id="debt-modal" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 transform transition-all scale-100 border border-white/50">
-            <h3 class="font-bold text-xl text-amber-600 mb-5 border-b pb-3 flex items-center gap-3">
-                <span class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-wallet"></i></span>
-                รับชำระหนี้ค้าง
+    <div id="debt-invoice-render-area">
+        <div class="rec-header-row">
+            <div class="rec-header-left">
+                <div class="rec-title-th" style="color:#dc2626">ใบแจ้งยอดค้างชำระ</div>
+                <div class="rec-title-en" style="color:#dc2626">INVOICE / DEBT NOTE</div>
+                <div class="rec-meta"><b>ลูกค้า:</b> <span id="di-name">-</span><br><b>วันที่พิมพ์:</b> <span id="di-date">-</span></div>
+            </div>
+            <div class="rec-header-right">
+                <div class="rec-shop-name">ผลไม้ By เจ๊เนาว์</div>
+                <div class="rec-shop-info">ตลาดเมืองใหม่ จ.เชียงใหม่<br>โทร. 081-114-7477</div>
+            </div>
+        </div>
+        <div style="margin-top:15px;font-weight:bold;border-bottom:1px solid #ddd;padding-bottom:5px;font-size:10pt">รายการค้างชำระ</div>
+        <table class="rec-items-table" style="margin-top:10px">
+            <thead><tr><th style="width:25%">วันที่</th><th style="width:45%">เลขที่บิล</th><th style="width:30%;text-align:right">คงค้าง</th></tr></thead>
+            <tbody id="di-body"></tbody>
+        </table>
+        <div class="rec-total-box" style="margin-top:20px">
+            <table class="rec-total-table">
+                <tr><td style="font-size:11pt;font-weight:bold">รวมยอดคงค้างสุทธิ:</td><td><div class="rec-net-price" style="color:#dc2626;border-bottom:3px double #dc2626"><span id="di-total">0.00</span></div></td></tr>
+            </table>
+        </div>
+        <div class="rec-footer-msg">เอกสารนี้จัดทำโดยอัตโนมัติเพื่อใช้สำหรับแจ้งยอดค้างชำระเท่านั้น พบปัญหาโปรดสอบถาม<br>Powered by JAE-solution</div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     📱 LINE SHARE MODAL
+═══════════════════════════════════════════ -->
+<div id="line-share-modal" class="hidden fixed inset-0 bg-slate-900/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                <span class="w-9 h-9 bg-[#06C755]/10 rounded-xl flex items-center justify-center">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#06C755"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+                </span>
+                แชร์ใบเสร็จผ่าน Line
             </h3>
-            <div class="space-y-4">
-                <div class="flex gap-2">
-                    <input id="debt-pay-name" class="custom-input flex-1 p-3 border rounded-xl bg-gray-50" placeholder="ชื่อลูกค้า...">
-                    <button onclick="app.checkDebtInModal()" class="bg-amber-100 text-amber-700 px-4 rounded-xl font-bold text-sm hover:bg-amber-200 transition-colors">เช็ค</button>
-                </div>
-                <div id="debt-display-area" class="hidden bg-red-50 p-5 rounded-2xl text-center border border-red-100 relative">
-                    <div class="absolute top-2 right-2">
-                        <button onclick="app.printDebtInvoice()" class="text-gray-400 hover:text-gray-600 transition-colors bg-white rounded-full w-8 h-8 shadow-sm border border-gray-100 flex items-center justify-center" title="พิมพ์ใบแจ้งหนี้">
-                            <i class="fa-solid fa-print"></i>
-                        </button>
-                    </div>
+            <button onclick="ui.closeModal('line-share-modal')" class="w-8 h-8 rounded-full bg-gray-100 text-gray-400 hover:bg-red-100 hover:text-red-400 flex items-center justify-center transition-colors">
+                <i class="fa-solid fa-times text-sm"></i>
+            </button>
+        </div>
 
-                    <p class="text-xs text-red-500 uppercase tracking-wide font-bold mb-1">ยอดหนี้ปัจจุบัน</p>
-                    <p class="text-4xl font-bold text-red-600 tracking-tight" id="modal-debt-val">0.00</p>
-                    
-                    <div id="debt-breakdown" class="mt-4 text-left border-t border-red-200 pt-3 hidden max-h-40 overflow-y-auto custom-scrollbar">
-                        </div>
+        <!-- Preview ข้อความที่จะส่ง -->
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">ตัวอย่างข้อความ</p>
+        <div class="line-preview mb-4" id="line-message-preview"></div>
+
+        <div class="space-y-3">
+            <!-- ปุ่ม Share ผ่าน Line -->
+            <button class="line-btn" onclick="lineShare.sendLine()">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+                ส่งผ่าน Line
+            </button>
+            <!-- ปุ่ม Copy -->
+            <button class="copy-btn" onclick="lineShare.copyText()">
+                <i class="fa-solid fa-copy"></i>
+                คัดลอกข้อความ
+            </button>
+        </div>
+        <p class="text-center text-xs text-gray-400 mt-3">กด "ส่งผ่าน Line" จะเปิดแอป Line พร้อมข้อความอัตโนมัติ</p>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ⚙️ SETTINGS MODAL (เปลี่ยน PIN)
+═══════════════════════════════════════════ -->
+<div id="settings-modal" class="hidden fixed inset-0 bg-slate-900/50 z-[70] flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+        <h3 class="font-bold text-xl text-gray-800 mb-5 flex items-center gap-3">
+            <span class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center"><i class="fa-solid fa-shield-halved"></i></span>
+            ตั้งค่า PIN ล็อกหน้าจอ
+        </h3>
+
+        <!-- แสดง Status PIN -->
+        <div id="pin-status-box" class="mb-5 p-4 rounded-2xl text-sm font-medium flex items-center gap-3"></div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="text-xs font-bold text-gray-500 uppercase block mb-1">PIN ปัจจุบัน <span class="text-gray-400 font-normal">(ถ้ายังไม่มี PIN ปล่อยว่างได้)</span></label>
+                <input type="password" id="set-old-pin" maxlength="4" class="custom-input w-full p-3 border border-gray-200 rounded-xl text-center text-xl tracking-[0.5em]" placeholder="••••">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 uppercase block mb-1">PIN ใหม่ (4 หลัก)</label>
+                <input type="password" id="set-new-pin" maxlength="4" class="custom-input w-full p-3 border border-gray-200 rounded-xl text-center text-xl tracking-[0.5em]" placeholder="••••">
+            </div>
+            <div>
+                <label class="text-xs font-bold text-gray-500 uppercase block mb-1">ยืนยัน PIN ใหม่</label>
+                <input type="password" id="set-confirm-pin" maxlength="4" class="custom-input w-full p-3 border border-gray-200 rounded-xl text-center text-xl tracking-[0.5em]" placeholder="••••">
+            </div>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+            <button onclick="ui.closeModal('settings-modal')" class="flex-1 py-3 bg-gray-100 rounded-xl text-gray-600 font-bold hover:bg-gray-200 transition-colors">ยกเลิก</button>
+            <button onclick="pinManager.savePin()" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-all">บันทึก</button>
+        </div>
+
+        <!-- ปุ่มปิด PIN -->
+        <button onclick="pinManager.disablePin()" class="mt-3 w-full py-2.5 text-red-500 text-sm font-bold hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center gap-2">
+            <i class="fa-solid fa-lock-open"></i> ปิดใช้งาน PIN (ไม่ปลอดภัย)
+        </button>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     EXISTING MODALS (unchanged)
+═══════════════════════════════════════════ -->
+<div id="debt-modal" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 border border-white/50">
+        <h3 class="font-bold text-xl text-amber-600 mb-5 border-b pb-3 flex items-center gap-3">
+            <span class="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center"><i class="fa-solid fa-wallet"></i></span>
+            รับชำระหนี้ค้าง
+        </h3>
+        <div class="space-y-4">
+            <div class="flex gap-2">
+                <input id="debt-pay-name" class="custom-input flex-1 p-3 border rounded-xl bg-gray-50" placeholder="ชื่อลูกค้า...">
+                <button onclick="app.checkDebtInModal()" class="bg-amber-100 text-amber-700 px-4 rounded-xl font-bold text-sm hover:bg-amber-200">เช็ค</button>
+            </div>
+            <div id="debt-display-area" class="hidden bg-red-50 p-5 rounded-2xl text-center border border-red-100 relative">
+                <div class="absolute top-2 right-2">
+                    <button onclick="app.printDebtInvoice()" class="text-gray-400 hover:text-gray-600 bg-white rounded-full w-8 h-8 shadow-sm border border-gray-100 flex items-center justify-center" title="พิมพ์ใบแจ้งหนี้">
+                        <i class="fa-solid fa-print"></i>
+                    </button>
                 </div>
-                <div class="relative">
-                    <label class="absolute -top-2.5 left-3 bg-white px-2 text-xs font-bold text-emerald-600">ยอดชำระ</label>
-                    <input id="debt-pay-amt" type="number" class="custom-input w-full p-4 border border-emerald-200 rounded-2xl text-right text-2xl font-bold text-emerald-600" placeholder="0.00">
+                <p class="text-xs text-red-500 uppercase tracking-wide font-bold mb-1">ยอดหนี้ปัจจุบัน</p>
+                <p class="text-4xl font-bold text-red-600 tracking-tight" id="modal-debt-val">0.00</p>
+                <div id="debt-breakdown" class="mt-4 text-left border-t border-red-200 pt-3 hidden max-h-40 overflow-y-auto"></div>
+            </div>
+            <div class="relative">
+                <label class="absolute -top-2.5 left-3 bg-white px-2 text-xs font-bold text-emerald-600">ยอดชำระ</label>
+                <input id="debt-pay-amt" type="number" class="custom-input w-full p-4 border border-emerald-200 rounded-2xl text-right text-2xl font-bold text-emerald-600" placeholder="0.00">
+            </div>
+            
+            <!-- เพิ่มส่วนเลือกช่องทางชำระเงินในหน้ารับชำระหนี้ -->
+            <div class="mt-2">
+                <p class="text-xs font-bold text-gray-400 uppercase mb-2 tracking-wide">ช่องทางรับชำระ</p>
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <div id="debt-pay-cash" class="payment-option active rounded-xl p-3 cursor-pointer select-none flex items-center justify-center gap-2" onclick="app.setDebtPayment('เงินสด')">
+                        <i class="fa-solid fa-money-bill-wave text-lg"></i>
+                        <span class="text-sm font-bold">เงินสด</span>
+                    </div>
+                    <div id="debt-pay-transfer" class="payment-option rounded-xl p-3 cursor-pointer select-none flex items-center justify-center gap-2" onclick="app.setDebtPayment('โอน')">
+                        <i class="fa-solid fa-qrcode text-lg"></i>
+                        <span class="text-sm font-bold">โอนเงิน</span>
+                    </div>
                 </div>
-                <div class="flex gap-3 pt-3">
-                    <button onclick="app.cancelDebtModal()" class="flex-1 py-3 bg-gray-100 rounded-xl text-gray-600 font-bold hover:bg-gray-200 transition-colors">ยกเลิก</button>
-                    <button onclick="app.submitDebtPayment()" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all transform active:scale-95">บันทึก</button>
+                <div id="debt-bank-area" class="hidden bg-blue-50/50 p-3 rounded-xl border border-blue-100">
+                    <p class="text-[10px] font-bold text-blue-600 uppercase mb-2 flex items-center gap-1"><i class="fa-solid fa-bank"></i> เลือกบัญชีรับเงิน</p>
+                    <div id="debt-bank-chips" class="flex flex-wrap gap-2"></div>
                 </div>
+            </div>
+
+            <div class="flex gap-3 pt-3">
+                <button onclick="app.cancelDebtModal()" class="flex-1 py-3 bg-gray-100 rounded-xl text-gray-600 font-bold hover:bg-gray-200">ยกเลิก</button>
+                <button onclick="app.submitDebtPayment()" class="flex-1 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-lg shadow-amber-200 hover:bg-amber-600 active:scale-95">บันทึก</button>
             </div>
         </div>
     </div>
+</div>
 
-    <div id="product-modal" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
-            <h3 class="font-bold text-lg text-blue-600 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-box"></i> จัดการสินค้า</h3>
-            <div class="flex gap-2 mb-4">
-                <input id="new-prod-name" class="custom-input flex-1 p-2 border rounded-lg text-sm" placeholder="ชื่อสินค้า">
-                <input id="new-prod-price" type="number" class="custom-input w-24 p-2 border rounded-lg text-sm" placeholder="ราคา">
-                <button onclick="app.addProduct()" class="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 shadow"><i class="fa-solid fa-plus"></i></button>
-            </div>
-            <div class="max-h-64 overflow-y-auto border rounded-xl p-2 bg-gray-50">
-                <table class="w-full text-sm"><tbody id="prod-list" class="divide-y text-slate-700"></tbody></table>
-            </div>
-            <button onclick="ui.closeModal('product-modal')" class="mt-5 w-full py-2.5 bg-gray-100 rounded-xl text-gray-600 text-sm font-bold hover:bg-gray-200 transition-colors">ปิดหน้าต่าง</button>
+<div id="product-modal" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+        <h3 class="font-bold text-lg text-blue-600 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-box"></i> จัดการสินค้า</h3>
+        <div class="flex gap-2 mb-4">
+            <input id="new-prod-name" class="custom-input flex-1 p-2 border rounded-lg text-sm" placeholder="ชื่อสินค้า">
+            <input id="new-prod-price" type="number" class="custom-input w-24 p-2 border rounded-lg text-sm" placeholder="ราคา">
+            <button onclick="app.addProduct()" class="bg-blue-600 text-white px-4 rounded-lg hover:bg-blue-700 shadow"><i class="fa-solid fa-plus"></i></button>
         </div>
-    </div>
-    
-    <div id="bank-modal" class="hidden fixed inset-0 bg-slate-900/40 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
-            <h3 class="font-bold text-lg text-blue-600 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> จัดการบัญชีธนาคาร</h3>
-            <div class="space-y-3 mb-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                <input id="new-bank-name" class="custom-input w-full p-2 border rounded-lg text-sm" placeholder="ชื่อธนาคาร (เช่น กสิกร, ไทยพาณิชย์)">
-                <button onclick="app.addBank()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 shadow-md font-bold text-sm mt-2"><i class="fa-solid fa-plus"></i> เพิ่มบัญชี</button>
-            </div>
-            <div class="max-h-64 overflow-y-auto border rounded-xl p-2 bg-white">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-100 text-gray-500 font-semibold rounded-lg"><tr><th class="p-2 text-left rounded-l-lg">ชื่อธนาคาร</th><th class="w-10 rounded-r-lg"></th></tr></thead>
-                    <tbody id="bank-list-manage" class="divide-y text-slate-700"></tbody>
-                </table>
-            </div>
-            <button onclick="ui.closeModal('bank-modal')" class="mt-5 w-full py-2.5 bg-gray-100 rounded-xl text-gray-600 text-sm font-bold hover:bg-gray-200 transition-colors">ปิดหน้าต่าง</button>
+        <div class="max-h-64 overflow-y-auto border rounded-xl p-2 bg-gray-50">
+            <table class="w-full text-sm"><tbody id="prod-list" class="divide-y text-slate-700"></tbody></table>
         </div>
+        <button onclick="ui.closeModal('product-modal')" class="mt-5 w-full py-2.5 bg-gray-100 rounded-xl text-gray-600 text-sm font-bold hover:bg-gray-200">ปิดหน้าต่าง</button>
     </div>
+</div>
 
-    <div id="report-modal" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
-            <div class="p-5 border-b flex justify-between items-center bg-white">
-                <h3 class="font-bold text-2xl text-purple-700 flex items-center gap-3">
-                    <span class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-chart-pie"></i></span>
-                    รายงานยอดขาย
-                </h3>
-                <button onclick="ui.closeModal('report-modal')" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 text-xl flex items-center justify-center transition-colors"><i class="fa-solid fa-times"></i></button>
-            </div>
-            <div class="p-6 overflow-y-auto flex-1 bg-gray-50">
-                <div class="bg-white p-5 rounded-2xl border border-gray-200 mb-6 shadow-sm space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="col-span-1 md:col-span-2">
-                             <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">ค้นหา (ชื่อ/เลขบิล)</label>
-                             <div class="relative">
-                                 <i class="fa-solid fa-search absolute left-3 top-3 text-gray-300"></i>
-                                 <input type="text" id="rpt-search" placeholder="พิมพ์เพื่อค้นหา..." class="p-2.5 pl-10 border rounded-xl w-full text-sm bg-gray-50 focus:bg-white transition-colors" onkeyup="app.renderReportTable()">
-                             </div>
-                        </div>
-                         <div>
-                             <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">บัญชีรับเงิน</label>
-                             <select id="rpt-bank-filter" class="p-2.5 border rounded-xl w-full text-sm bg-gray-50 focus:bg-white transition-colors" onchange="app.renderReportTable()">
-                                 </select>
+<div id="bank-modal" class="hidden fixed inset-0 bg-slate-900/40 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+        <h3 class="font-bold text-lg text-blue-600 mb-4 border-b pb-2 flex items-center gap-2"><i class="fa-solid fa-building-columns"></i> จัดการบัญชีธนาคาร</h3>
+        <div class="space-y-3 mb-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
+            <input id="new-bank-name" class="custom-input w-full p-2 border rounded-lg text-sm" placeholder="ชื่อธนาคาร (เช่น กสิกร, ไทยพาณิชย์)">
+            <button onclick="app.addBank()" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 shadow-md font-bold text-sm mt-2"><i class="fa-solid fa-plus"></i> เพิ่มบัญชี</button>
+        </div>
+        <div class="max-h-64 overflow-y-auto border rounded-xl p-2 bg-white">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-100 text-gray-500 font-semibold rounded-lg"><tr><th class="p-2 text-left rounded-l-lg">ชื่อธนาคาร</th><th class="w-10 rounded-r-lg"></th></tr></thead>
+                <tbody id="bank-list-manage" class="divide-y text-slate-700"></tbody>
+            </table>
+        </div>
+        <button onclick="ui.closeModal('bank-modal')" class="mt-5 w-full py-2.5 bg-gray-100 rounded-xl text-gray-600 text-sm font-bold hover:bg-gray-200">ปิดหน้าต่าง</button>
+    </div>
+</div>
+
+<div id="report-modal" class="hidden fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden">
+        <div class="p-5 border-b flex justify-between items-center bg-white">
+            <h3 class="font-bold text-2xl text-purple-700 flex items-center gap-3">
+                <span class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-chart-pie"></i></span>
+                รายงานยอดขาย
+            </h3>
+            <button onclick="ui.closeModal('report-modal')" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 text-xl flex items-center justify-center transition-colors"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <div class="p-6 overflow-y-auto flex-1 bg-gray-50">
+            <div class="bg-white p-5 rounded-2xl border border-gray-200 mb-6 shadow-sm space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="col-span-1 md:col-span-2">
+                        <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">ค้นหา (ชื่อ/เลขบิล)</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-search absolute left-3 top-3 text-gray-300"></i>
+                            <input type="text" id="rpt-search" placeholder="พิมพ์เพื่อค้นหา..." class="p-2.5 pl-10 border rounded-xl w-full text-sm bg-gray-50 focus:bg-white" onkeyup="app.renderReportTable()">
                         </div>
                     </div>
-                     <div class="flex items-center gap-3">
-                        <div class="flex-1">
-                             <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">ตั้งแต่วันที่</label>
-                             <input type="date" id="rpt-start-date" class="p-2.5 border rounded-xl w-full text-sm bg-gray-50 focus:bg-white" onchange="app.renderReportTable()">
-                        </div>
-                        <div class="text-gray-300 self-end pb-3"><i class="fa-solid fa-arrow-right"></i></div>
-                        <div class="flex-1">
-                             <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">ถึงวันที่</label>
-                             <input type="date" id="rpt-end-date" class="p-2.5 border rounded-xl w-full text-sm bg-gray-50 focus:bg-white" onchange="app.renderReportTable()">
-                        </div>
-                        <div class="self-end">
-                            <button onclick="app.clearReportFilters()" class="px-5 py-2.5 bg-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-300 font-bold transition-colors">ล้างค่า</button>
-                        </div>
+                    <div>
+                        <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">บัญชีรับเงิน</label>
+                        <select id="rpt-bank-filter" class="p-2.5 border rounded-xl w-full text-sm bg-gray-50 focus:bg-white" onchange="app.renderReportTable()"></select>
                     </div>
                 </div>
-
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div class="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden group">
-                        <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><i class="fa-solid fa-calendar-days text-6xl text-indigo-600"></i></div>
+                <div class="flex items-center gap-3">
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">ตั้งแต่วันที่</label>
+                        <input type="date" id="rpt-start-date" class="p-2.5 border rounded-xl w-full text-sm bg-gray-50" onchange="app.renderReportTable()">
+                    </div>
+                    <div class="text-gray-300 self-end pb-3"><i class="fa-solid fa-arrow-right"></i></div>
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-400 block mb-1 uppercase">ถึงวันที่</label>
+                        <input type="date" id="rpt-end-date" class="p-2.5 border rounded-xl w-full text-sm bg-gray-50" onchange="app.renderReportTable()">
+                    </div>
+                    <div class="self-end">
+                        <button onclick="app.clearReportFilters()" class="px-5 py-2.5 bg-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-300 font-bold">ล้างค่า</button>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden group">
+                    <div class="absolute right-0 top-0 p-3 opacity-10"><i class="fa-solid fa-calendar-days text-6xl text-indigo-600"></i></div>
+                    <div class="flex justify-between items-center relative z-10">
                         <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-wide">ยอดขายเดือนนี้</p>
-                        <p class="text-2xl font-bold text-indigo-700 mt-1" id="rpt-month">0</p>
+                        <button onclick="app.toggleCard('month')" class="text-indigo-300 hover:text-indigo-600 transition-colors" title="แสดง/ซ่อนยอดเงิน"><i class="fa-solid fa-eye-slash" id="icon-month"></i></button>
                     </div>
-                     <div class="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm relative overflow-hidden group">
-                        <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><i class="fa-solid fa-calendar-week text-6xl text-blue-600"></i></div>
-                        <p class="text-[10px] text-blue-500 font-bold uppercase tracking-wide">ยอดขายสัปดาห์นี้</p>
-                        <p class="text-2xl font-bold text-blue-700 mt-1" id="rpt-week">0</p>
-                    </div>
-                    <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm relative overflow-hidden group">
-                        <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><i class="fa-solid fa-calendar-day text-6xl text-emerald-600"></i></div>
-                        <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-wide">ยอดขายวันนี้</p>
-                        <p class="text-2xl font-bold text-emerald-700 mt-1" id="rpt-today">0</p>
-                    </div>
-                    <div class="bg-amber-50 p-5 rounded-2xl border border-amber-200 shadow-sm relative overflow-hidden group">
-                        <div class="absolute right-0 top-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><i class="fa-solid fa-filter text-6xl text-amber-600"></i></div>
-                        <p class="text-[10px] text-amber-600 font-bold uppercase tracking-wide">ยอดรวม (Filtered)</p>
-                        <p class="text-2xl font-bold text-amber-700 mt-1" id="rpt-filter-total">0</p>
-                    </div>
+                    <p class="text-2xl font-bold text-indigo-700 mt-1 relative z-10" id="rpt-month">******</p>
                 </div>
+                <div class="bg-white p-5 rounded-2xl border border-blue-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute right-0 top-0 p-3 opacity-10"><i class="fa-solid fa-calendar-week text-6xl text-blue-600"></i></div>
+                    <div class="flex justify-between items-center relative z-10">
+                        <p class="text-[10px] text-blue-500 font-bold uppercase tracking-wide">ยอดขายสัปดาห์นี้</p>
+                        <button onclick="app.toggleCard('week')" class="text-blue-300 hover:text-blue-600 transition-colors" title="แสดง/ซ่อนยอดเงิน"><i class="fa-solid fa-eye-slash" id="icon-week"></i></button>
+                    </div>
+                    <p class="text-2xl font-bold text-blue-700 mt-1 relative z-10" id="rpt-week">******</p>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm relative overflow-hidden">
+                    <div class="absolute right-0 top-0 p-3 opacity-10"><i class="fa-solid fa-calendar-day text-6xl text-emerald-600"></i></div>
+                    <div class="flex justify-between items-center relative z-10">
+                        <p class="text-[10px] text-emerald-500 font-bold uppercase tracking-wide">ยอดขายวันนี้</p>
+                        <button onclick="app.toggleCard('today')" class="text-emerald-300 hover:text-emerald-600 transition-colors" title="แสดง/ซ่อนยอดเงิน"><i class="fa-solid fa-eye-slash" id="icon-today"></i></button>
+                    </div>
+                    <p class="text-2xl font-bold text-emerald-700 mt-1 relative z-10" id="rpt-today">******</p>
+                </div>
+                <div class="bg-amber-50 p-5 rounded-2xl border border-amber-200 shadow-sm relative overflow-hidden">
+                    <div class="absolute right-0 top-0 p-3 opacity-10"><i class="fa-solid fa-filter text-6xl text-amber-600"></i></div>
+                    <div class="flex justify-between items-center relative z-10">
+                        <p class="text-[10px] text-amber-600 font-bold uppercase tracking-wide">ยอดรวม (Filtered)</p>
+                        <button onclick="app.toggleCard('filter')" class="text-amber-300 hover:text-amber-600 transition-colors" title="แสดง/ซ่อนยอดเงิน"><i class="fa-solid fa-eye-slash" id="icon-filter"></i></button>
+                    </div>
+                    <p class="text-2xl font-bold text-amber-700 mt-1 relative z-10" id="rpt-filter-total">******</p>
+                </div>
+            </div>
+            <div id="rpt-container" class="space-y-6"></div>
+        </div>
+    </div>
+</div>
+
+<div id="edit-modal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl p-6 w-80">
+        <h3 class="font-bold text-lg mb-4 text-gray-800">แก้ไขยอดชำระ</h3>
+        <input type="hidden" id="edit-inv-id">
+        <input type="number" id="edit-amt" class="w-full p-4 border rounded-2xl text-right font-bold text-2xl text-blue-600 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
+        <div class="flex gap-3">
+            <button onclick="ui.closeModal('edit-modal')" class="flex-1 bg-gray-100 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-200">ยกเลิก</button>
+            <button onclick="app.confirmEdit()" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:bg-blue-700">บันทึก</button>
+        </div>
+    </div>
+</div>
+
+<div id="loader" class="hidden fixed inset-0 bg-white/90 z-[100] flex flex-col items-center justify-center backdrop-blur-sm">
+    <div class="w-16 h-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin shadow-lg"></div>
+    <p class="mt-4 text-emerald-700 font-bold animate-pulse text-lg">กำลังดำเนินการ...</p>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbw8JQEp7nV0LS-jy6BFeqq6A3fiw4Imqws6cbih6Vaq1bj66B5XYpnMhCLmfpECvz53/exec';
+const MY_SECRET = "My_Super_Secret_Password_999";
+const SHOP_PROMPTPAY_ID = "0811147477"; // เปลี่ยนเป็นเบอร์พร้อมเพย์ หรือ เลขบัตร ปชช. ของร้าน
+
+/* ═══════════════════════════════════════════════════════
+   💰 PROMPTPAY PAYLOAD GENERATOR
+═══════════════════════════════════════════════════════ */
+const promptPayHelper = {
+    crc16(data) {
+        let crc = 0xFFFF;
+        for (let i = 0; i < data.length; i++) {
+            crc ^= data.charCodeAt(i) << 8;
+            for (let j = 0; j < 8; j++) {
+                if ((crc & 0x8000) !== 0) crc = (crc << 1) ^ 0x1021;
+                else crc <<= 1;
+            }
+        }
+        return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+    },
+    generate(id, amount) {
+        let target = id.replace(/[^0-9]/g, '');
+        if (target.length >= 15) target = "0315" + target; // e-Wallet
+        else if (target.length === 13) target = "0213" + target; // ID Card
+        else if (target.length === 10) target = "01130066" + target.substring(1); // Mobile
+        else target = "02" + target.length.toString().padStart(2, '0') + target;
+
+        let payload = "00020101021229370016A000000677010111" + target + "5802TH5303764";
+        if (amount) {
+            let amtStr = parseFloat(amount).toFixed(2);
+            payload += "54" + amtStr.length.toString().padStart(2, '0') + amtStr;
+        }
+        payload += "6304";
+        return payload + this.crc16(payload);
+    }
+};
+
+/* ═══════════════════════════════════════════════════════
+   🔐 PIN MANAGER
+   - เก็บ PIN hash ไว้ใน localStorage (ไม่เก็บตัวจริง)
+   - Auto-lock หลังไม่มีการใช้งาน 15 นาที
+   - ล็อก/ปลดล็อกด้วยปุ่ม + เข้าใช้งานครั้งแรก
+═══════════════════════════════════════════════════════ */
+const pinManager = {
+    PIN_KEY: 'pos_pin_hash',
+    UNLOCK_KEY: 'pos_unlocked_until',
+    TIMEOUT_MS: 15 * 60 * 1000, // 15 นาที
+    _input: '',
+    _setupStep: 0,     // 0=first entry, 1=confirm
+    _firstPin: '',
+
+    // ยกระดับความปลอดภัยโดยใช้ Web Crypto API (SHA-256) และ Salt
+    async hash(pin) {
+        // ดึงหรือสร้าง Salt (ค่าสุ่มเฉพาะเครื่อง) เพื่อป้องกันการโจมตีแบบ Rainbow Tables
+        let salt = localStorage.getItem('pos_pin_salt');
+        if (!salt) {
+            const array = new Uint8Array(16);
+            window.crypto.getRandomValues(array);
+            salt = Array.from(array, dec => dec.toString(16).padStart(2, "0")).join('');
+            localStorage.setItem('pos_pin_salt', salt);
+        }
+        
+        // ผสม PIN กับ Salt ก่อนนำไปเข้ารหัส
+        const encoder = new TextEncoder();
+        const data = encoder.encode(pin + salt);
+        
+        // เข้ารหัสด้วย SHA-256
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    },
+
+    hasPin() { return !!localStorage.getItem(this.PIN_KEY); },
+
+    isUnlocked() {
+        if (!this.hasPin()) return true; // ไม่มี PIN = ไม่ล็อก
+        const until = parseInt(localStorage.getItem(this.UNLOCK_KEY) || '0');
+        return Date.now() < until;
+    },
+
+    setUnlocked() {
+        localStorage.setItem(this.UNLOCK_KEY, Date.now() + this.TIMEOUT_MS);
+    },
+
+    init() {
+        if (!this.hasPin()) {
+            // ยังไม่มี PIN — ให้ทะลุผ่านเข้าไปใช้งานระบบได้เลย (ซ่อนหน้าล็อก)
+            this.unlock();
+        } else if (!this.isUnlocked()) {
+            document.getElementById('pin-screen-label').innerText = 'กรอก PIN 4 หลักเพื่อเข้าใช้งาน';
+            document.getElementById('pin-setup-hint').innerText = '';
+            document.getElementById('pin-screen').style.display = 'flex';
+        } else {
+            this.unlock();
+        }
+
+        // Auto-lock timer
+        this._resetTimer();
+        ['click', 'keydown', 'touchstart'].forEach(ev => {
+            document.addEventListener(ev, () => {
+                if (this.isUnlocked()) this._resetTimer();
+            });
+        });
+    },
+
+    _timer: null,
+    _resetTimer() {
+        clearTimeout(this._timer);
+        if (this.hasPin()) {
+            this._timer = setTimeout(() => this.lock(), this.TIMEOUT_MS);
+        }
+    },
+
+    press(digit) {
+        if (this._input.length >= 4) return;
+        this._input += digit;
+        this._updateDots();
+        if (this._input.length === 4) {
+            setTimeout(() => this._submit(), 200);
+        }
+    },
+
+    del() {
+        this._input = this._input.slice(0, -1);
+        this._updateDots();
+    },
+
+    _updateDots(state = '') {
+        for (let i = 0; i < 4; i++) {
+            const dot = document.getElementById('d' + i);
+            dot.className = 'pin-dot';
+            if (i < this._input.length) dot.classList.add('filled');
+            if (state === 'error') dot.classList.add('error');
+        }
+    },
+
+    async _submit() {
+        if (!this.hasPin()) {
+            // กำลังตั้ง PIN ครั้งแรก
+            if (this._setupStep === 0) {
+                this._firstPin = this._input;
+                this._setupStep = 1;
+                this._input = '';
+                this._updateDots();
+                document.getElementById('pin-screen-label').innerText = 'ยืนยัน PIN อีกครั้ง';
+                document.getElementById('pin-error').innerText = '';
+            } else {
+                if (this._input === this._firstPin) {
+                    const hashedPin = await this.hash(this._input);
+                    localStorage.setItem(this.PIN_KEY, hashedPin);
+                    this.unlock();
+                } else {
+                    this._showError('PIN ไม่ตรงกัน ลองใหม่อีกครั้ง');
+                    this._setupStep = 0;
+                    this._firstPin = '';
+                    document.getElementById('pin-screen-label').innerText = 'ตั้ง PIN 4 หลัก เพื่อความปลอดภัย';
+                }
+            }
+        } else {
+            // ตรวจสอบ PIN
+            const hashedInput = await this.hash(this._input);
+            if (hashedInput === localStorage.getItem(this.PIN_KEY)) {
+                this.unlock();
+            } else {
+                this._showError('PIN ไม่ถูกต้อง');
+            }
+        }
+    },
+
+    _showError(msg) {
+        this._updateDots('error');
+        document.getElementById('pin-error').innerText = msg;
+        setTimeout(() => {
+            this._input = '';
+            this._updateDots();
+            document.getElementById('pin-error').innerText = '';
+        }, 900);
+    },
+
+    unlock() {
+        this.setUnlocked();
+        this._input = '';
+        this._setupStep = 0;
+        this._firstPin = '';
+        document.getElementById('pin-screen').style.display = 'none';
+        this._resetTimer();
+    },
+
+    lock() {
+        if (!this.hasPin()) return;
+        localStorage.removeItem(this.UNLOCK_KEY);
+        this._input = '';
+        this._updateDots();
+        document.getElementById('pin-screen-label').innerText = 'กรอก PIN 4 หลักเพื่อเข้าใช้งาน';
+        document.getElementById('pin-error').innerText = '';
+        document.getElementById('pin-setup-hint').innerText = '';
+        document.getElementById('pin-screen').style.display = 'flex';
+    },
+
+    // บันทึก PIN ใหม่จาก Settings Modal
+    async savePin() {
+        const oldInput = document.getElementById('set-old-pin').value;
+        const newPin = document.getElementById('set-new-pin').value;
+        const confirmPin = document.getElementById('set-confirm-pin').value;
+
+        if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+            return Swal.fire('PIN ต้องเป็นตัวเลข 4 หลัก', '', 'warning');
+        }
+        if (newPin !== confirmPin) {
+            return Swal.fire('PIN ไม่ตรงกัน', 'กรุณากรอก PIN ใหม่และยืนยันให้ตรงกัน', 'warning');
+        }
+        // ตรวจสอบ PIN เก่า (ถ้ามี)
+        if (this.hasPin()) {
+            const hashedOld = await this.hash(oldInput);
+            if (hashedOld !== localStorage.getItem(this.PIN_KEY)) {
+                return Swal.fire('PIN ปัจจุบันไม่ถูกต้อง', '', 'error');
+            }
+        }
+
+        const hashedNew = await this.hash(newPin);
+        localStorage.setItem(this.PIN_KEY, hashedNew);
+        document.getElementById('set-old-pin').value = '';
+        document.getElementById('set-new-pin').value = '';
+        document.getElementById('set-confirm-pin').value = '';
+        ui.closeModal('settings-modal');
+        Swal.fire({ icon: 'success', title: 'บันทึก PIN สำเร็จ', text: 'ระบบจะล็อกอัตโนมัติเมื่อไม่ได้ใช้งาน 15 นาที', timer: 2000, showConfirmButton: false });
+        this._updateSettingsStatus();
+    },
+
+    disablePin() {
+        Swal.fire({
+            title: 'ปิดใช้งาน PIN?',
+            text: 'ระบบจะไม่มีการป้องกันการเข้าใช้งาน',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'ปิดใช้งาน',
+            confirmButtonColor: '#ef4444',
+            cancelButtonText: 'ยกเลิก'
+        }).then(r => {
+            if (r.isConfirmed) {
+                localStorage.removeItem(this.PIN_KEY);
+                localStorage.removeItem(this.UNLOCK_KEY);
+                ui.closeModal('settings-modal');
+                Swal.fire({ icon: 'info', title: 'ปิด PIN แล้ว', timer: 1500, showConfirmButton: false });
+                this._updateSettingsStatus();
+            }
+        });
+    },
+
+    _updateSettingsStatus() {
+        const box = document.getElementById('pin-status-box');
+        if (this.hasPin()) {
+            box.className = 'mb-5 p-4 rounded-2xl text-sm font-medium flex items-center gap-3 bg-emerald-50 text-emerald-700 border border-emerald-200';
+            box.innerHTML = '<i class="fa-solid fa-lock text-emerald-500"></i> PIN เปิดใช้งานอยู่ · ล็อกอัตโนมัติ 15 นาที';
+        } else {
+            box.className = 'mb-5 p-4 rounded-2xl text-sm font-medium flex items-center gap-3 bg-amber-50 text-amber-700 border border-amber-200';
+            box.innerHTML = '<i class="fa-solid fa-lock-open text-amber-500"></i> ยังไม่ได้ตั้ง PIN — ระบบไม่มีการป้องกัน';
+        }
+    }
+};
+
+/* ═══════════════════════════════════════════════════════
+   📱 LINE SHARE MANAGER
+═══════════════════════════════════════════════════════ */
+const lineShare = {
+    _lastReceipt: null,
+    _lastDebtReceipt: null,
+    _currentMode: 'sale', // 'sale' หรือ 'debt'
+
+    // เก็บข้อมูลบิลล่าสุดไว้สำหรับ share (รายการขายปกติ)
+    store(data, cartItems, sub, dep, disc, total) {
+        this._currentMode = 'sale';
+        this._lastReceipt = { data, cartItems, sub, dep, disc, total };
+    },
+
+    // เก็บข้อมูลสำหรับการรับชำระหนี้
+    storeDebt(data, paidBills) {
+        this._currentMode = 'debt';
+        this._lastDebtReceipt = { data, paidBills };
+    },
+
+    buildMessage() {
+        if (this._currentMode === 'sale') return this._buildSaleMessage();
+        if (this._currentMode === 'debt') return this._buildDebtMessage();
+        return '';
+    },
+
+    _buildSaleMessage() {
+        const r = this._lastReceipt;
+        if (!r) return '';
+        const { data, cartItems, sub, dep, disc, total } = r;
+        
+        // แก้ไขการดึงวันที่ให้ตรงกับ Local Time เสมอ
+        const [yyyy, mm, dd] = data.date.split('-');
+        const dateObj = new Date(yyyy, mm - 1, dd);
+        const date = dateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        let itemLines = cartItems
+            .filter(i => i.name)
+            .map(i => {
+                const qty = i.qty || 0;
+                const price = i.price || 0;
+                // ตัดส่วนยอดรวมของแต่ละรายการออก ให้เหลือแค่ ชื่อ ปริมาณ x ราคา
+                return `  • ${i.name} ${qty} x ${price.toLocaleString()}`;
+            }).join('\n');
+
+        // ลดความยาวเส้นแบ่งลง เพื่อไม่ให้ตกบรรทัดในแอป Line
+        return `📄 นำส่ง บิลการขาย\n` +
+               `━━━━━━━━━━━━━━\n` +
+               `เลขที่: ${data.invoiceId}\n` +
+               `📅 วันที่: ${date}\n` +
+               `👤 ลูกค้า: ${data.customerName}\n` +
+               `━━━━━━━━━━━━━━\n` +
+               `รายการ:\n${itemLines}\n` +
+               `━━━━━━━━━━━━━━\n` +
+               `รวมสินค้า:  ${parseFloat(sub.replace(/,/g,'')).toLocaleString()} ฿\n` +
+               (parseFloat(dep.replace(/,/g,'')) > 0 ? `บวกมัดจำ:  +${parseFloat(dep.replace(/,/g,'')).toLocaleString()} ฿\n` : '') +
+               (parseFloat(disc) > 0 ? `ส่วนลด:    -${parseFloat(disc).toLocaleString()} ฿\n` : '') +
+               `💰 ยอดสุทธิ: ${total.toLocaleString()} ฿\n` +
+               `💳 ชำระโดย: ${data.paymentMethod}\n` +
+               `━━━━━━━━━━━━━━\n` +
+               `ขอบคุณที่อุดหนุนครับ 🙏`;
+    },
+
+    _buildDebtMessage() {
+        const r = this._lastDebtReceipt;
+        if (!r) return '';
+        const { data, paidBills } = r;
+        
+        const [yyyy, mm, dd] = data.date.split('-');
+        const dateObj = new Date(yyyy, mm - 1, dd);
+        const date = dateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        // สร้างรายการบิลที่ถูกนำไปตัดยอดแบบใหม่ (เอาวันที่ออก และเพิ่มสถานะการปิดยอด)
+        let billLines = paidBills.map(b => {
+            if (b.invoiceId === 'OVERPAYMENT') {
+                return `  • ชำระเกินยอดค้างทั้งหมด\n    จำนวน: ${b.paid.toLocaleString()}`;
+            }
+            
+            const autoNote = b.isAutoAllocated ? ' (ออโต้)' : '';
+            const statusNote = b.remainingAfterPay <= 0 
+                ? '🟢 ปิดยอด' 
+                : `คงค้าง ${b.remainingAfterPay.toLocaleString()}`;
+
+            return `  • บิล: ${b.invoiceId}${autoNote}\n    ตัดยอด: ${b.paid.toLocaleString()} [${statusNote}]`;
+        }).join('\n');
+
+        if (paidBills.length === 0) billLines = `  • ไม่มียอดค้าง / รับชำระล่วงหน้า`;
+
+        return ` ✅ ยืนยันการรับชำระยอดค้าง\n` +
+               `━━━━━━━━━━━━━━\n` +
+               `อ้างอิง: ${data.invoiceId}\n` +
+               `📅 วันที่: ${date}\n` +
+               `👤 ลูกค้า: ${data.customerName}\n` +
+               `━━━━━━━━━━━━━━\n` +
+               `นำไปหักยอดบิลดังนี้:\n${billLines}\n` +
+               `━━━━━━━━━━━━━━\n` +
+               `💰 ยอดรับชำระรวม: ${data.totalAmount.toLocaleString()} ฿\n` +
+               `💳 ชำระผ่าน: ${data.paymentMethod}\n` +
+               `━━━━━━━━━━━━━━\n` +
+               `ขอบคุณครับ 🙏`;
+    },
+
+    openModal() {
+        if (this._currentMode === 'sale' && !this._lastReceipt) return;
+        if (this._currentMode === 'debt' && !this._lastDebtReceipt) return;
+        
+        const msg = this.buildMessage();
+        document.getElementById('line-message-preview').innerText = msg;
+        ui.openModal('line-share-modal');
+    },
+
+    sendLine() {
+        const msg = this.buildMessage();
+        const encoded = encodeURIComponent(msg);
+        // Line Share URL — เปิดแอป Line พร้อม pre-filled text
+        window.open(`https://line.me/R/msg/text/?${encoded}`, '_blank');
+        ui.closeModal('line-share-modal');
+    },
+
+    copyText() {
+        const msg = this.buildMessage();
+        
+        // สร้าง textarea ชั่วคราวซ่อนไว้เพื่อใช้คัดลอกข้อความ
+        const ta = document.createElement('textarea');
+        ta.value = msg;
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        
+        ta.focus();
+        ta.select();
+
+        try {
+            document.execCommand('copy');
+            Swal.fire({ icon: 'success', title: 'คัดลอกแล้ว!', text: 'นำไปวางใน Line ได้เลย', timer: 1500, showConfirmButton: false });
+            ui.closeModal('line-share-modal');
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'ไม่สามารถคัดลอกได้', text: 'เบราว์เซอร์ไม่รองรับ', timer: 1500, showConfirmButton: false });
+        } finally {
+            document.body.removeChild(ta);
+        }
+    }
+};
+
+/* ═══════════════════════════════════════════════════════
+   OFFLINE QUEUE MANAGER (unchanged)
+═══════════════════════════════════════════════════════ */
+const queueManager = {
+    key: 'pos_offline_queue',
+    getQueue() { return JSON.parse(localStorage.getItem(this.key)) || []; },
+    addToQueue(data) {
+        const q = this.getQueue();
+        q.push(data);
+        try {
+            localStorage.setItem(this.key, JSON.stringify(q));
+            this.updateIndicator();
+        } catch(e) {
+            Swal.fire('หน่วยความจำเต็ม', 'ไม่สามารถบันทึก Offline เพิ่มได้ กรุณาต่อเน็ต', 'error');
+        }
+    },
+    async sync() {
+        const q = this.getQueue();
+        if (q.length === 0) return;
+        document.getElementById('loader').classList.remove('hidden');
+        document.getElementById('loader').querySelector('p').innerText = "กำลังซิงค์ข้อมูล...";
+        let successCount = 0;
+        const newQ = [];
+        for (const item of q) {
+            try {
+                item.secret = MY_SECRET;
+                const res = await fetch(API_URL, { method: 'POST', headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(item) });
+                const json = await res.json();
+                if (json.status === 'success') successCount++;
+                else newQ.push(item);
+            } catch (e) { newQ.push(item); }
+        }
+        localStorage.setItem(this.key, JSON.stringify(newQ));
+        this.updateIndicator();
+        document.getElementById('loader').classList.add('hidden');
+        if (successCount > 0) Swal.fire({icon: 'success', title: `ซิงค์สำเร็จ ${successCount} รายการ`});
+        else Swal.fire({icon: 'error', title: 'ซิงค์ไม่สำเร็จ', text: 'กรุณาตรวจสอบอินเทอร์เน็ต'});
+    },
+    updateIndicator() {
+        const count = this.getQueue().length;
+        const el = document.getElementById('offline-indicator');
+        if (count > 0) { el.classList.remove('hidden'); document.getElementById('offline-count').innerText = count; }
+        else { el.classList.add('hidden'); }
+    }
+};
+
+const api = {
+    async post(payload, background = false) {
+        if (!background) {
+            document.getElementById('loader').classList.remove('hidden');
+            document.getElementById('loader').querySelector('p').innerText = "กำลังดำเนินการ...";
+        }
+        payload.secret = MY_SECRET;
+        try {
+            const res = await fetch(API_URL, { method: 'POST', headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+            const data = await res.json();
+            if (!background) document.getElementById('loader').classList.add('hidden');
+            if (data.status === 'error') throw new Error(data.message);
+            return data;
+        } catch (e) {
+            if (!background) document.getElementById('loader').classList.add('hidden');
+            console.warn("API Error / Offline", e);
+            if (e.message && e.message.includes('Access Denied')) {
+                Swal.fire('ข้อผิดพลาด', 'รหัสความปลอดภัยไม่ถูกต้อง (API Secret Key)', 'error');
+                throw e;
+            }
+            if (payload.action === 'save_transaction' || payload.action === 'upload_pdf') {
+                queueManager.addToQueue(payload);
+                return { status: 'success', offline: true };
+            } else { throw e; }
+        }
+    }
+};
+
+/* ═══════════════════════════════════════════════════════
+   APP (unchanged core, + lineShare integration)
+═══════════════════════════════════════════════════════ */
+const app = {
+    data: {
+        cart: [],
+        products: JSON.parse(localStorage.getItem('pos_products')) || [{id:1, name:'ทุเรียนหมอนทอง', price:150}],
+        banks: JSON.parse(localStorage.getItem('pos_banks')) || [],
+        reportData: [],
+        payMethod: 'เงินสด',
+        selectedBank: null,
+        invNo: '',
+        currentDebtList: [],
+        debtPayMethod: 'เงินสด',
+        debtSelectedBank: null,
+        reportVisibility: { month: false, week: false, today: false, filter: false },
+        calculatedTotals: { month: 0, week: 0, today: 0, filter: 0 }
+    },
+    init() {
+        this.resetForm();
+        this.renderProdList();
+        this.renderBankList();
+        this.updateTime();
+        setInterval(() => this.updateTime(), 60000);
+        document.getElementById('inp-discount').addEventListener('input', () => this.renderCart());
+        queueManager.updateIndicator();
+    },
+    clearDebtForm() {
+        document.getElementById('debt-pay-name').value = '';
+        document.getElementById('debt-pay-amt').value = '';
+        document.getElementById('modal-debt-val').innerText = '0.00';
+        document.getElementById('debt-display-area').classList.add('hidden');
+        document.getElementById('debt-breakdown').innerHTML = '';
+        document.getElementById('debt-breakdown').classList.add('hidden');
+        if(typeof this.setDebtPayment === 'function') this.setDebtPayment('เงินสด');
+    },
+    resetForm() {
+        this.data.cart = [];
+        this.data.payMethod = 'เงินสด';
+        this.data.selectedBank = null;
+        this.genInv();
+        
+        // แก้ไขการเซ็ตวันที่ปัจจุบันให้ตรงกับ Local Time เสมอ
+        const now = new Date();
+        const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        document.getElementById('inv-date').value = localDate;
+        
+        document.getElementById('cust-name').value = '';
+        document.getElementById('inp-discount').value = '';
+        this.clearDebtForm();
+        const bulkSelect = document.getElementById('bulk-deposit-select');
+        if(bulkSelect) bulkSelect.value = '';
+        this.addRow();
+        this.setPayment('เงินสด', document.querySelector('.payment-option:first-child'));
+        // ซ่อนปุ่ม Line Share (ทั้งสองจุด) เมื่อเริ่มบิลใหม่
+        document.getElementById('line-share-btn').classList.add('hidden');
+        if(document.getElementById('debt-line-share-btn')) {
+            document.getElementById('debt-line-share-btn').classList.add('hidden');
+        }
+    },
+    cancelDebtModal() { ui.closeModal('debt-modal'); this.clearDebtForm(); },
+    updateTime() {
+        const now = new Date();
+        document.getElementById('current-datetime').innerText = now.toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'2-digit', hour:'2-digit', minute:'2-digit'});
+    },
+    genInv() {
+        const r = Math.floor(10000 + Math.random() * 90000);
+        // แก้ไขดึงวันที่สำหรับเลขบิลให้เป็นเวลา Local Time
+        const now = new Date();
+        const d = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(2,10).replace(/-/g,'');
+        this.data.invNo = `INV-${d}-${r}`;
+        document.getElementById('inv-no').value = this.data.invNo;
+    },
+    renderProdList() {
+        document.getElementById('prod-list').innerHTML = this.data.products.map(p =>
+            `<tr><td class="p-3 font-medium">${p.name}</td><td class="text-right p-3 text-slate-500">${p.price||'-'}</td>
+            <td class="text-center text-red-400 hover:text-red-600 cursor-pointer p-3" onclick="app.delProd(${p.id})"><i class="fa-solid fa-trash"></i></td></tr>`
+        ).join('');
+    },
+    addProduct() {
+        const n = document.getElementById('new-prod-name').value;
+        const p = document.getElementById('new-prod-price').value;
+        if(n) {
+            this.data.products.push({id:Date.now(), name:n, price:p});
+            localStorage.setItem('pos_products', JSON.stringify(this.data.products));
+            this.renderProdList(); this.renderCart();
+            document.getElementById('new-prod-name').value = '';
+            document.getElementById('new-prod-price').value = '';
+        }
+    },
+    delProd(id) {
+        this.data.products = this.data.products.filter(p=>p.id!==id);
+        localStorage.setItem('pos_products', JSON.stringify(this.data.products));
+        this.renderProdList(); this.renderCart();
+    },
+    renderBankList() {
+        document.getElementById('bank-list-manage').innerHTML = this.data.banks.map(b =>
+            `<tr><td class="p-2 font-medium">${b.name}</td>
+            <td class="text-center text-red-400 hover:text-red-600 cursor-pointer p-2" onclick="app.delBank(${b.id})"><i class="fa-solid fa-trash"></i></td></tr>`
+        ).join('');
+        const chipsContainer = document.getElementById('bank-list-chips');
+        if(this.data.banks.length === 0) {
+            chipsContainer.innerHTML = `<div class="text-xs text-slate-400 italic w-full text-center py-2">ยังไม่มีบัญชี (กดจัดการเพื่อเพิ่ม)</div>`;
+        } else {
+            chipsContainer.innerHTML = this.data.banks.map(b =>
+                `<div class="bank-chip px-3 py-1.5 rounded-lg text-xs font-medium ${this.data.selectedBank === b.name ? 'selected' : 'bg-white text-slate-600'}"
+                onclick="app.selectBank('${b.name}', this)">
+                <i class="fa-solid fa-building-columns mr-1"></i> ${b.name}
+                </div>`
+            ).join('');
+        }
+    },
+    addBank() {
+        const n = document.getElementById('new-bank-name').value.trim();
+        if(n) {
+            this.data.banks.push({id:Date.now(), name:n});
+            localStorage.setItem('pos_banks', JSON.stringify(this.data.banks));
+            document.getElementById('new-bank-name').value = '';
+            this.renderBankList();
+        }
+    },
+    delBank(id) {
+        this.data.banks = this.data.banks.filter(b=>b.id!==id);
+        localStorage.setItem('pos_banks', JSON.stringify(this.data.banks));
+        if(this.data.selectedBank && !this.data.banks.find(b=>b.name === this.data.selectedBank)) this.data.selectedBank = null;
+        this.renderBankList();
+    },
+    selectBank(name, el) {
+        this.data.selectedBank = name;
+        document.querySelectorAll('.bank-chip').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+    },
+    setDebtPayment(m) {
+        this.data.debtPayMethod = m;
+        document.getElementById('debt-pay-cash').classList.toggle('active', m === 'เงินสด');
+        document.getElementById('debt-pay-transfer').classList.toggle('active', m === 'โอน');
+        const bankArea = document.getElementById('debt-bank-area');
+        if (m === 'โอน') {
+            bankArea.classList.remove('hidden');
+            this.renderDebtBankList();
+        } else {
+            bankArea.classList.add('hidden');
+            this.data.debtSelectedBank = null;
+        }
+    },
+    renderDebtBankList() {
+        const container = document.getElementById('debt-bank-chips');
+        if (this.data.banks.length === 0) {
+            container.innerHTML = '<div class="text-xs text-slate-400 italic w-full py-1">ไม่มีข้อมูลบัญชี</div>';
+            return;
+        }
+        container.innerHTML = this.data.banks.map(b =>
+            `<div class="bank-chip px-3 py-1.5 rounded-lg text-xs font-medium ${this.data.debtSelectedBank === b.name ? 'selected' : 'bg-white text-slate-600'}"
+            onclick="app.selectDebtBank('${b.name}', this)">
+            <i class="fa-solid fa-building-columns mr-1"></i> ${b.name}
+            </div>`
+        ).join('');
+    },
+    selectDebtBank(name, el) {
+        this.data.debtSelectedBank = name;
+        const chips = document.getElementById('debt-bank-chips').querySelectorAll('.bank-chip');
+        chips.forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+    },
+    addRow() {
+        let newItem = {id:Date.now(), prodId:'', price:0, qty:'', deposit:0, name:''};
+        if (this.data.cart.length > 0) {
+            const lastItem = this.data.cart[this.data.cart.length - 1];
+            if (lastItem.prodId) { newItem.prodId = lastItem.prodId; newItem.name = lastItem.name; newItem.price = lastItem.price; newItem.deposit = lastItem.deposit; }
+        }
+        this.data.cart.push(newItem);
+        this.renderCart();
+    },
+    updateRow(id, key, val) {
+        const item = this.data.cart.find(x=>x.id===id);
+        if(!item) return;
+        if(key==='prodId') {
+            const p = this.data.products.find(x=>x.id==val);
+            item.prodId = val; item.name = p?p.name:''; item.price = p?p.price:'';
+        } else {
+            item[key] = val === "" ? "" : parseFloat(val);
+        }
+        this.renderCart();
+    },
+    delRow(id) { this.data.cart = this.data.cart.filter(x=>x.id!==id); this.renderCart(); },
+    setAllDeposit(val) {
+        if(val === "") return;
+        const v = parseFloat(val);
+        this.data.cart.forEach(item => item.deposit = v);
+        this.renderCart();
+        document.getElementById('bulk-deposit-select').value = "";
+    },
+    renderCart() {
+        const tbody = document.getElementById('cart-body');
+        tbody.innerHTML = '';
+        let sub=0, depTotal=0;
+        this.data.cart.forEach(item => {
+            const q = item.qty === '' ? 0 : parseFloat(item.qty) || 0;
+            const p = item.price === '' ? 0 : parseFloat(item.price) || 0;
+            const d = parseFloat(item.deposit) || 0;
+            const lineTotal = (p * q) + d;
+            sub += (p * q);
+            depTotal += d;
+            const opts = `<option value="">--เลือก--</option>` + this.data.products.map(p=>`<option value="${p.id}" ${p.id==item.prodId?'selected':''}>${p.name}</option>`).join('');
+            const depOpts = [0, 100, 200].map(v => `<option value="${v}" ${v==item.deposit?'selected':''}>${v===0?'ไม่มัดจำ':v}</option>`).join('');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="p-1"><select class="custom-input w-full p-2.5 border border-gray-200 rounded-lg bg-white text-sm" onchange="app.updateRow(${item.id},'prodId',this.value)">${opts}</select></td>
+                <td class="p-1"><input type="number" class="custom-input w-full p-2.5 border border-gray-200 rounded-lg text-right text-sm" placeholder="0" value="${item.price}" onfocus="this.select()" onchange="app.updateRow(${item.id},'price',this.value)"></td>
+                <td class="p-1"><input type="number" class="custom-input w-full p-2.5 border border-gray-200 rounded-lg text-center text-sm font-bold text-emerald-600" placeholder="0" value="${item.qty}" onfocus="this.select()" onchange="app.updateRow(${item.id},'qty',this.value)"></td>
+                <td class="p-1"><select class="custom-input w-full p-2.5 border border-gray-200 rounded-lg text-center bg-white text-sm text-gray-500" onchange="app.updateRow(${item.id},'deposit',this.value)">${depOpts}</select></td>
+                <td class="p-1 text-right font-bold text-gray-700 text-sm py-2">${lineTotal.toLocaleString()}</td>
+                <td class="p-1 text-center text-red-400 hover:text-red-600 cursor-pointer" onclick="app.delRow(${item.id})"><i class="fa-solid fa-trash-can"></i></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        const disc = parseFloat(document.getElementById('inp-discount').value) || 0;
+        const total = sub + depTotal - disc;
+        document.getElementById('sum-subtotal').innerText = sub.toLocaleString('th-TH',{minimumFractionDigits:2});
+        document.getElementById('sum-deposit').innerText = depTotal.toLocaleString('th-TH',{minimumFractionDigits:2});
+        document.getElementById('sum-total').innerText = total.toLocaleString('th-TH',{minimumFractionDigits:2});
+    },
+    setPayment(m, el) {
+        this.data.payMethod = m;
+        document.querySelectorAll('.payment-option').forEach(x=>x.classList.remove('active'));
+        if(el) el.classList.add('active');
+        const bankArea = document.getElementById('bank-selector-area');
+        if(m === 'โอน (QR Code)') { bankArea.classList.remove('hidden'); this.renderBankList(); }
+        else { bankArea.classList.add('hidden'); this.data.selectedBank = null; }
+    },
+    async checkDebt() {
+        const name = document.getElementById('cust-name').value.trim();
+        if(!name) return Swal.fire('แจ้งเตือน', 'กรุณาระบุชื่อลูกค้า', 'warning');
+        try {
+            const res = await api.post({ action: 'get_debt', name: name });
+            if(res.status==='success') Swal.fire(`หนี้คงค้าง: ${res.debt.toLocaleString()} บาท`, name, 'info');
+        } catch(e) { Swal.fire('Offline', 'ไม่สามารถเช็คยอดหนี้ได้ขณะออฟไลน์', 'warning'); }
+    },
+    async checkDebtInModal() {
+        const name = document.getElementById('debt-pay-name').value.trim();
+        if(!name) return;
+        document.getElementById('modal-debt-val').innerText = "...";
+        document.getElementById('debt-display-area').classList.remove('hidden');
+        const breakdownDiv = document.getElementById('debt-breakdown');
+        breakdownDiv.innerHTML = ''; breakdownDiv.classList.add('hidden');
+        this.data.currentDebtList = [];
+        try {
+            const res = await api.post({ action: 'get_report' });
+            if(res.status === 'success') {
+                const transactions = res.data;
+                const custTx = transactions.filter(t => t.customerName === name);
+                custTx.sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
                 
-                <div id="rpt-container" class="space-y-6"></div>
-            </div>
-        </div>
-    </div>
+                const debtMap = {};
+                const debtBills = [];
+                
+                // สร้างรายการหนี้ทั้งหมด
+                custTx.forEach(x => {
+                    if(x.note !== 'ชำระหนี้ค้าง' && (x.paymentMethod.includes('รอชำระ') || x.paymentMethod === 'ชำระแล้ว (C)')) {
+                        debtMap[x.invoiceId] = x.totalAmount;
+                        debtBills.push(x);
+                    }
+                });
 
-    <div id="edit-modal" class="hidden fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl p-6 w-80">
-            <h3 class="font-bold text-lg mb-4 text-gray-800">แก้ไขยอดชำระ</h3>
-            <input type="hidden" id="edit-inv-id">
-            <input type="number" id="edit-amt" class="w-full p-4 border rounded-2xl text-right font-bold text-2xl text-blue-600 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
-            <div class="flex gap-3">
-                <button onclick="ui.closeModal('edit-modal')" class="flex-1 bg-gray-100 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-200">ยกเลิก</button>
-                <button onclick="app.confirmEdit()" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold shadow-lg hover:bg-blue-700">บันทึก</button>
-            </div>
-        </div>
-    </div>
+                let generalPool = 0;
+                // ประมวลผลเงินที่ชำระเข้ามา
+                custTx.forEach(x => {
+                    if(x.note === 'ชำระหนี้ค้าง') {
+                        let allocatedAmount = 0;
+                        // แกะข้อมูลว่าเจาะจงจ่ายบิลไหนบ้าง (อ่านจากที่แอบฝังไว้)
+                        const match = x.items.match(/\[(.*?)\]/);
+                        if (match) {
+                            const allocs = match[1].split(',');
+                            allocs.forEach(alloc => {
+                                const [inv, amtStr] = alloc.split(':');
+                                const amt = parseFloat(amtStr);
+                                if (inv && !isNaN(amt) && inv !== 'OVERPAYMENT') {
+                                    if (debtMap[inv] !== undefined) {
+                                        // เพิ่มการปัดเศษเพื่อแก้ปัญหาเลขทศนิยมผิดเพี้ยน
+                                        debtMap[inv] = Math.round((debtMap[inv] - amt) * 100) / 100;
+                                        allocatedAmount += amt;
+                                    }
+                                }
+                            });
+                        }
+                        // เงินที่เหลือจากการจัดสรร หรือยอดจ่ายเกิน ให้นำไปใส่กองกลาง
+                        generalPool += (x.totalAmount - allocatedAmount);
+                        generalPool = Math.round(generalPool * 100) / 100; // ปัดเศษกองกลาง
+                    }
+                });
 
-    <div id="loader" class="hidden fixed inset-0 bg-white/90 z-[100] flex flex-col items-center justify-center backdrop-blur-sm">
-        <div class="w-16 h-16 border-4 border-emerald-100 border-t-emerald-600 rounded-full animate-spin shadow-lg"></div>
-        <p class="mt-4 text-emerald-700 font-bold animate-pulse text-lg">กำลังดำเนินการ...</p>
-    </div>
+                let totalDebt = 0;
+                const outstandingBills = [];
+                
+                // นำเงินกองกลางไปตัดยอดบิลเก่าที่เหลืออยู่ (FIFO)
+                debtBills.forEach(x => {
+                    let remain = debtMap[x.invoiceId];
+                    if (remain > 0.01 && generalPool > 0.01) { // ใช้ 0.01 เพื่อป้องกันเศษเสี้ยวทศนิยม
+                        const deduct = Math.min(remain, generalPool);
+                        remain = Math.round((remain - deduct) * 100) / 100;
+                        generalPool = Math.round((generalPool - deduct) * 100) / 100;
+                        debtMap[x.invoiceId] = remain;
+                    }
+                    // ถ้ายังมียอดค้าง ให้แสดงในหน้าจอ
+                    if (remain > 0.01) {
+                        outstandingBills.push({ ...x, remaining: remain });
+                        totalDebt += remain;
+                    }
+                });
 
-    <script src="script.js"></script>
+                document.getElementById('modal-debt-val').innerText = totalDebt.toLocaleString('th-TH');
+                this.data.currentDebtList = outstandingBills;
+                if(outstandingBills.length > 0) {
+                    breakdownDiv.classList.remove('hidden');
+                    // เพิ่มระบบ Checkbox และปุ่มเลือกทั้งหมด
+                    let html = `<div class="flex justify-between items-center mb-2">
+                                    <p class="font-bold text-slate-500 text-[10px] uppercase">เลือกบิลที่ต้องการชำระ:</p>
+                                    <span class="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded cursor-pointer hover:bg-amber-100 font-bold" onclick="app.selectAllDebt()">เลือกทั้งหมด</span>
+                                </div>`;
+                    html += outstandingBills.map(b => {
+                        const bDate = new Date(b.date).toLocaleDateString('th-TH', {day:'numeric', month:'short'});
+                        return `<label class="flex justify-between items-center border-b border-red-100 py-2 text-slate-600 text-xs last:border-0 cursor-pointer hover:bg-red-50 rounded px-1 transition-colors">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" class="debt-checkbox w-4 h-4 text-amber-500 rounded border-gray-300 focus:ring-amber-500" value="${b.invoiceId}" data-amount="${b.remaining}" onchange="app.calcSelectedDebt()">
+                                <span>${bDate} <span class="text-gray-400">(${b.invoiceId})</span></span>
+                            </div>
+                            <span class="font-bold text-red-500">${b.remaining.toLocaleString()}</span>
+                        </label>`;
+                    }).join('');
+                    breakdownDiv.innerHTML = html;
+                }
+            }
+        } catch(e) { document.getElementById('modal-debt-val').innerText = "0.00"; console.error(e); }
+    },
+    calcSelectedDebt() {
+        const checkboxes = document.querySelectorAll('.debt-checkbox:checked');
+        if (checkboxes.length === 0) return; // ถ้าไม่ได้ติ๊กเลย ให้คงตัวเลขเดิมไว้ เผื่อพิมพ์เอง
+        let total = 0;
+        checkboxes.forEach(cb => total += parseFloat(cb.dataset.amount));
+        document.getElementById('debt-pay-amt').value = total;
+    },
+    selectAllDebt() {
+        const checkboxes = document.querySelectorAll('.debt-checkbox');
+        // ตรวจสอบว่ามีอันไหนยังไม่ถูกติ๊กไหม ถ้ามีให้ติ๊กให้หมด ถ้าติ๊กหมดแล้วให้เอาออกให้หมด
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+        
+        if (!allChecked) {
+            this.calcSelectedDebt();
+        } else {
+            document.getElementById('debt-pay-amt').value = '';
+        }
+    },
+    async printDebtInvoice() {
+        const list = this.data.currentDebtList;
+        const name = document.getElementById('debt-pay-name').value.trim();
+        const total = document.getElementById('modal-debt-val').innerText;
+        if(!list || list.length === 0) return Swal.fire('ไม่พบยอดค้าง', 'ไม่มีรายการหนี้ให้พิมพ์', 'warning');
+        document.getElementById('di-name').innerText = name;
+        document.getElementById('di-date').innerText = new Date().toLocaleDateString('th-TH');
+        document.getElementById('di-total').innerText = total;
+        
+        // แปลงวันที่ Local Time สำหรับใบแจ้งหนี้
+        document.getElementById('di-body').innerHTML = list.map(item => {
+            const [y, m, d] = item.date.split('-');
+            const dateObj = new Date(y, m - 1, d);
+            return `<tr><td>${dateObj.toLocaleDateString('th-TH')}</td><td>${item.invoiceId}</td><td style="text-align:right">${item.remaining.toLocaleString()}</td></tr>`;
+        }).join('');
+        
+        const el = document.getElementById('debt-invoice-render-area');
+        try {
+            const canvas = await html2canvas(el, {scale: 2});
+            const img = canvas.toDataURL('image/jpeg');
+            const pdf = new jspdf.jsPDF({orientation: 'p', unit: 'mm', format: 'a5'});
+            const w = pdf.internal.pageSize.getWidth();
+            pdf.addImage(img, 'JPEG', 0, 0, w, (canvas.height * w) / canvas.width);
+            pdf.save(`DebtNote_${name}.pdf`);
+        } catch(e) { Swal.fire('Error', 'ไม่สามารถพิมพ์ได้', 'error'); }
+    },
+    async submitDebtPayment() {
+        const name = document.getElementById('debt-pay-name').value.trim();
+        const amtInput = document.getElementById('debt-pay-amt').value;
+        const amt = parseFloat(amtInput);
+        if(!name || !amt || isNaN(amt)) return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุยอดชำระให้ถูกต้อง', 'warning');
+        
+        let finalPayMethod = this.data.debtPayMethod;
+        if (finalPayMethod === 'โอน') {
+            if (!this.data.debtSelectedBank) return Swal.fire('กรุณาเลือกบัญชี', 'โปรดเลือกบัญชีธนาคารที่รับเงิน', 'warning');
+            finalPayMethod = `โอน(${this.data.debtSelectedBank})`;
+        }
+        
+        // คำนวณว่าชำระบิลไหนไปบ้างตามยอดที่รับมาแบบใหม่
+        let remainingPayment = amt;
+        const paidBills = [];
+        
+        // แยกบิลที่ถูกเลือก กับ บิลที่ไม่ได้เลือก ออกจากกัน
+        const checkedBoxes = document.querySelectorAll('.debt-checkbox:checked');
+        const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
+        
+        const selectedBills = [];
+        const unselectedBills = [];
+        
+        this.data.currentDebtList.forEach(bill => {
+            if (selectedIds.includes(bill.invoiceId)) {
+                selectedBills.push(bill);
+            } else {
+                unselectedBills.push(bill);
+            }
+        });
+
+        // 1. นำเงินไปตัดบิลที่จิ้มเลือกก่อน
+        for (const bill of selectedBills) {
+            if (remainingPayment <= 0) break;
+            const paidForThisBill = Math.min(remainingPayment, bill.remaining);
+            paidBills.push({
+                invoiceId: bill.invoiceId,
+                date: bill.date,
+                paid: paidForThisBill,
+                isAutoAllocated: false, // บิลที่จิ้มเลือกเอง
+                remainingAfterPay: bill.remaining - paidForThisBill // คำนวณยอดคงเหลือหลังหัก
+            });
+            remainingPayment -= paidForThisBill;
+        }
+
+        // 2. ถ้ายอดเงินยังเหลือ ให้นำส่วนที่เกินมาไปตัดบิลเก่าสุดที่ไม่ได้เลือก
+        if (remainingPayment > 0) {
+            for (const bill of unselectedBills) {
+                if (remainingPayment <= 0) break;
+                const paidForThisBill = Math.min(remainingPayment, bill.remaining);
+                paidBills.push({
+                    invoiceId: bill.invoiceId,
+                    date: bill.date,
+                    paid: paidForThisBill,
+                    isAutoAllocated: selectedIds.length > 0, // ถ้ามีการจิ้มเลือกบิลไปแล้ว แต่เงินเหลือมาตัดบิลนี้ ถือว่าระบบตัดให้อัตโนมัติ
+                    remainingAfterPay: bill.remaining - paidForThisBill // คำนวณยอดคงเหลือหลังหัก
+                });
+                remainingPayment -= paidForThisBill;
+            }
+        }
+
+        // 3. ถ้าเงินยังเหลืออีก แสดงว่าลูกค้าจ่ายเกินหนี้ค้างทั้งหมดที่มี
+        if (remainingPayment > 0) {
+            paidBills.push({
+                invoiceId: 'OVERPAYMENT',
+                date: '',
+                paid: remainingPayment
+            });
+        }
+        
+        // แก้ไขดึงวันที่บันทึกหนี้ให้เป็นเวลา Local Time
+        const now = new Date();
+        const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0,10);
+        
+        // บันทึกการแบ่งยอดเจาะจงบิล (Allocation) ลงในฐานข้อมูลเลย เพื่อให้อ่านค่าได้ตรงเป๊ะในครั้งถัดไป
+        let allocationStrs = paidBills.map(b => `${b.invoiceId}:${b.paid}`);
+        const itemsStr = `ชำระหนี้ค้าง [${allocationStrs.join(',')}]`;
+        
+        const payload = { action: 'save_transaction', invoiceId: 'PAY-'+Date.now(), date: localDate, time: now.toLocaleTimeString('th-TH'), customerName: name, items: itemsStr, totalAmount: amt, paymentMethod: finalPayMethod, note: 'ชำระหนี้ค้าง' };
+        const res = await api.post(payload);
+        
+        if(res.status==='success') {
+            ui.closeModal('debt-modal');
+            
+            // เก็บข้อมูลสำหรับการแชร์ลง Line
+            lineShare.storeDebt(payload, paidBills);
+            
+            Swal.fire({
+                icon:'success', 
+                title: res.offline ? 'บันทึกออฟไลน์แล้ว' : 'บันทึกสำเร็จ',
+                html: `<button onclick="lineShare.openModal(); Swal.close();" style="background:#06C755;color:white;border:none;padding:10px 24px;border-radius:12px;font-size:0.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;margin:8px auto 0">📱 แชร์ผ่าน Line</button>`,
+                showConfirmButton:false, 
+                timer: 3000
+            });
+            this.resetForm();
+            // แสดงปุ่ม Line Share ข้างปุ่มรับชำระหนี้ หลังจากชำระสำเร็จ
+            document.getElementById('debt-line-share-btn').classList.remove('hidden');
+        }
+    },
+    toggleCard(type) {
+        this.data.reportVisibility[type] = !this.data.reportVisibility[type];
+        const isVisible = this.data.reportVisibility[type];
+        const icon = document.getElementById(`icon-${type}`);
+        const valEl = document.getElementById(type === 'filter' ? 'rpt-filter-total' : `rpt-${type}`);
+
+        if (icon) {
+            icon.className = isVisible ? 'fa-solid fa-eye text-gray-700' : 'fa-solid fa-eye-slash';
+        }
+        if (valEl) {
+            valEl.innerText = isVisible ? this.data.calculatedTotals[type].toLocaleString('th-TH') : '******';
+        }
+    },
+    async loadReport() {
+        // บังคับซ่อนยอดเงินทุกครั้งที่เปิดหน้ารายงานใหม่
+        this.data.reportVisibility = { month: false, week: false, today: false, filter: false };
+        ['month', 'week', 'today', 'filter'].forEach(type => {
+            const icon = document.getElementById(`icon-${type}`);
+            const valEl = document.getElementById(type === 'filter' ? 'rpt-filter-total' : `rpt-${type}`);
+            if(icon) icon.className = 'fa-solid fa-eye-slash';
+            if(valEl) valEl.innerText = '******';
+        });
+
+        try {
+            const res = await api.post({ action: 'get_report' });
+            if(res.status==='success') {
+                this.data.reportData = res.data;
+                const select = document.getElementById('rpt-bank-filter');
+                const staticOpts = '<option value="">-- ทั้งหมด --</option><option value="เงินสด">เงินสด</option><option value="รอชำระ">รอชำระ</option>';
+                const historyBanks = new Set();
+                this.data.reportData.forEach(d => { const match = d.paymentMethod.match(/โอน\((.*?)\)/); if(match && match[1]) historyBanks.add(match[1]); });
+                this.data.banks.forEach(b => historyBanks.add(b.name));
+                select.innerHTML = staticOpts + Array.from(historyBanks).sort().map(name => `<option value="${name}">โอน (${name})</option>`).join('');
+                this.renderReportTable();
+            }
+        } catch(e) { Swal.fire('Offline', 'ไม่สามารถดูรายงานได้ขณะออฟไลน์', 'warning'); }
+    },
+    clearReportFilters() {
+        ['rpt-search','rpt-bank-filter','rpt-start-date','rpt-end-date'].forEach(id => document.getElementById(id).value = '');
+        this.renderReportTable();
+    },
+    renderReportTable() {
+        const search = document.getElementById('rpt-search').value.toLowerCase();
+        const bankFilter = document.getElementById('rpt-bank-filter').value;
+        const startDate = document.getElementById('rpt-start-date').value;
+        const endDate = document.getElementById('rpt-end-date').value;
+        const filtered = this.data.reportData.filter(d => {
+            const matchText = (d.customerName||'').toLowerCase().includes(search) || (d.invoiceId||'').toLowerCase().includes(search);
+            let matchDate = true;
+            if(startDate && d.date < startDate) matchDate = false;
+            if(endDate && d.date > endDate) matchDate = false;
+            let matchBank = true;
+            if(bankFilter) {
+                if(bankFilter === 'เงินสด') { if(!d.paymentMethod.includes('เงินสด')) matchBank = false; }
+                else if(bankFilter === 'รอชำระ') { if(!d.paymentMethod.includes('รอชำระ')) matchBank = false; }
+                else { if(!d.paymentMethod.includes(`โอน(${bankFilter})`)) matchBank = false; }
+            }
+            return matchText && matchDate && matchBank;
+        });
+        
+        const now = new Date();
+        const localNow = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
+        const todayStr = localNow.toISOString().slice(0, 10);
+        const currentMonthPrefix = todayStr.substring(0, 7); // เช่น "2026-03"
+        
+        // หาขอบเขตวันที่ของสัปดาห์นี้ (จันทร์ - อาทิตย์)
+        const dayOfWeek = localNow.getUTCDay(); // 0=Sun, 1=Mon...
+        const diffToMon = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const monday = new Date(localNow);
+        monday.setUTCDate(localNow.getUTCDate() - diffToMon);
+        const startOfWeekStr = monday.toISOString().slice(0, 10);
+        const sunday = new Date(monday);
+        sunday.setUTCDate(monday.getUTCDate() + 6);
+        const endOfWeekStr = sunday.toISOString().slice(0, 10);
+
+        let sumMonth=0, sumWeek=0, sumToday=0;
+        this.data.reportData.forEach(d => {
+            if(d.note === 'ชำระหนี้ค้าง') return;
+            
+            // ยอดเดือนนี้: เช็คว่าขึ้นต้นด้วย YYYY-MM ตรงกับเดือนปัจจุบัน
+            if(d.date.startsWith(currentMonthPrefix)) sumMonth += d.totalAmount;
+            
+            // ยอดสัปดาห์นี้: เช็คว่าวันที่อยู่ในช่วง จันทร์ - อาทิตย์
+            if(d.date >= startOfWeekStr && d.date <= endOfWeekStr) sumWeek += d.totalAmount;
+            
+            // ยอดวันนี้
+            if(d.date === todayStr) sumToday += d.totalAmount;
+        });
+
+        const debtMap = {};
+        const custGroups = {};
+        this.data.reportData.forEach(x => { if(!custGroups[x.customerName]) custGroups[x.customerName] = []; custGroups[x.customerName].push(x); });
+        
+        Object.values(custGroups).forEach(group => {
+            group.sort((a,b) => (a.date + a.time).localeCompare(b.date + b.time));
+            
+            let generalPool = 0;
+            // สร้างแผนที่หนี้ (เก็บยอดหนี้เดิมของแต่ละบิล)
+            group.forEach(x => {
+                if(x.note !== 'ชำระหนี้ค้าง' && (x.paymentMethod.includes('รอชำระ') || x.paymentMethod === 'ชำระแล้ว (C)')) {
+                    debtMap[x.invoiceId] = x.totalAmount;
+                }
+            });
+
+            // ประมวลผลการรับชำระหนี้
+            group.forEach(x => {
+                if(x.note === 'ชำระหนี้ค้าง') {
+                    let allocatedAmount = 0;
+                    // ตรวจสอบว่ามีการระบุการตัดยอดเจาะจงบิลหรือไม่
+                    const match = x.items.match(/\[(.*?)\]/);
+                    if (match) {
+                        const allocs = match[1].split(',');
+                        allocs.forEach(alloc => {
+                            const [inv, amtStr] = alloc.split(':');
+                            const amt = parseFloat(amtStr);
+                            if (inv && !isNaN(amt) && inv !== 'OVERPAYMENT') {
+                                if (debtMap[inv] !== undefined) {
+                                    // ปัดเศษเพื่อความแม่นยำทางการเงิน
+                                    debtMap[inv] = Math.round((debtMap[inv] - amt) * 100) / 100;
+                                    allocatedAmount += amt;
+                                }
+                            }
+                        });
+                    }
+                    // ยอดที่เหลือจากการจัดสรร (หรือบิลเก่าๆ ที่ไม่ได้ระบุ) ให้นำไปรวมในกองกลาง
+                    generalPool += (x.totalAmount - allocatedAmount);
+                    generalPool = Math.round(generalPool * 100) / 100;
+                }
+            });
+
+            // นำเงินในกองกลางไปตัดยอดบิลเก่าสุด (FIFO)
+            group.forEach(x => {
+                if(x.note !== 'ชำระหนี้ค้าง' && (x.paymentMethod.includes('รอชำระ') || x.paymentMethod === 'ชำระแล้ว (C)')) {
+                    let remain = debtMap[x.invoiceId];
+                    if (remain > 0.01 && generalPool > 0.01) {
+                        const deduct = Math.min(remain, generalPool);
+                        remain = Math.round((remain - deduct) * 100) / 100;
+                        generalPool = Math.round((generalPool - deduct) * 100) / 100;
+                        debtMap[x.invoiceId] = remain;
+                    }
+                }
+            });
+        });
+
+        let sumFilteredTotal = 0;
+        filtered.forEach(d => { if(d.note !== 'ชำระหนี้ค้าง') { if(d.paymentMethod.includes('รอชำระ')) { const remain = debtMap[d.invoiceId]; sumFilteredTotal += (remain !== undefined ? remain : d.totalAmount); } else { sumFilteredTotal += d.totalAmount; } } });
+        
+        // เก็บค่าที่คำนวณได้ไว้สำหรับตอนกดเปิดดู
+        this.data.calculatedTotals = {
+            month: sumMonth,
+            week: sumWeek,
+            today: sumToday,
+            filter: sumFilteredTotal
+        };
+
+        const v = this.data.reportVisibility;
+        
+        document.getElementById('rpt-month').innerText = v.month ? sumMonth.toLocaleString('th-TH') : '******';
+        document.getElementById('rpt-week').innerText = v.week ? sumWeek.toLocaleString('th-TH') : '******';
+        document.getElementById('rpt-today').innerText = v.today ? sumToday.toLocaleString('th-TH') : '******';
+        document.getElementById('rpt-filter-total').innerText = v.filter ? sumFilteredTotal.toLocaleString('th-TH') : '******';
+        
+        const container = document.getElementById('rpt-container');
+        container.innerHTML = '';
+        const grouped = filtered.reduce((acc, curr) => {
+            // แก้ไขการแสดงวันที่ในรายงานให้อ่านจาก Local Time เสมอ
+            const [ry, rm, rd] = curr.date.split('-');
+            const date = new Date(ry, rm - 1, rd).toLocaleDateString('th-TH');
+            
+            if (!acc[date]) acc[date] = { date, total: 0, pending: 0, items: [] };
+            if (curr.note !== 'ชำระหนี้ค้าง') { 
+                acc[date].total += curr.totalAmount; 
+                if(curr.paymentMethod.includes('รอชำระ')) { 
+                    const remain = debtMap[curr.invoiceId]; 
+                    if (remain !== undefined && remain > 0.01) {
+                        acc[date].pending += remain; 
+                    }
+                } 
+            }
+            acc[date].items.push(curr);
+            return acc;
+        }, {});
+        Object.values(grouped).forEach(group => {
+            const card = document.createElement('div');
+            card.className = "bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden";
+            let rows = group.items.map(d => {
+                const isDebtPay = d.note === 'ชำระหนี้ค้าง';
+                let actions = isDebtPay ? `<div class="flex gap-2 justify-center"><button onclick="app.prepEdit('${d.invoiceId}', ${d.totalAmount})" class="text-blue-500 hover:text-blue-700 text-xs border border-blue-200 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100">แก้ไข</button><button onclick="app.deleteTx('${d.invoiceId}')" class="text-red-500 hover:text-red-700 text-xs border border-red-200 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100">ลบ</button></div>` : '';
+                let badgeClass = 'bg-gray-100 text-gray-600';
+                if(d.paymentMethod.includes('เงินสด')) badgeClass = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+                else if(d.paymentMethod.includes('โอน')) badgeClass = 'bg-blue-100 text-blue-700 border border-blue-200';
+                else if(d.paymentMethod.includes('รอชำระ')) badgeClass = 'bg-amber-100 text-amber-700 border border-amber-200';
+                if(d.note === 'ชำระหนี้ค้าง') badgeClass = 'bg-purple-100 text-purple-700 border border-purple-200';
+                
+                let displayStatus = d.note === 'ชำระหนี้ค้าง' ? 'รับชำระหนี้' : d.paymentMethod;
+                if(d.paymentMethod.includes('รอชำระ')) {
+                    const remain = debtMap[d.invoiceId];
+                    if(remain !== undefined && remain > 0.01) {
+                        // โชว์ตัวเลขค้างชำระในตารางเสมอ ไม่ต้องซ่อนตามการ์ด
+                        const displayRemain = remain.toLocaleString('th-TH');
+                        displayStatus = `<span class="block leading-tight mb-0.5">รอชำระ</span><span class="block text-red-600 font-bold">(${displayRemain})</span>`;
+                        badgeClass = 'bg-red-50 text-red-700 border border-red-200';
+                    }
+                    else if(remain !== undefined && remain <= 0.01) {
+                        // ปิดยอดแล้วให้ขึ้นสีเขียวติ๊กถูก
+                        displayStatus = `<span class="text-emerald-600 font-bold flex items-center gap-1 justify-center"><i class="fa-solid fa-check-circle"></i> ชำระครบแล้ว</span>`;
+                        badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+                    }
+                }
+                
+                // โชว์ยอดเงินของบิลเสมอ
+                const displayTxAmount = d.totalAmount.toLocaleString();
+                
+                return `<tr class="hover:bg-gray-50 border-b border-gray-100 last:border-0 ${isDebtPay ? 'bg-purple-50/50':''}">
+                    <td class="p-4 w-[20%] text-xs font-mono text-gray-400"><div class="font-bold text-gray-600">${d.time}</div>${d.invoiceId}</td>
+                    <td class="p-4 w-[25%] font-medium text-gray-700">${d.customerName}</td>
+                    <td class="p-4 w-[20%] text-right font-bold text-base ${isDebtPay ? 'text-purple-600':''}">${displayTxAmount}</td>
+                    <td class="p-4 w-[15%] text-center text-xs"><span class="px-3 py-1.5 rounded-xl ${badgeClass} inline-block font-medium shadow-sm">${displayStatus}</span></td>
+                    <td class="p-4 w-[20%] text-center">${actions}</td>
+                </tr>`;
+            }).join('');
+            
+            // โชว์ยอดเงินรวมรายวันเสมอ
+            const displayGroupTotal = group.total.toLocaleString();
+            const displayGroupPending = group.pending.toLocaleString();
+
+            card.innerHTML = `<div class="bg-gradient-to-r from-gray-50 to-white px-5 py-4 border-b border-gray-100 flex justify-between items-center"><span class="font-bold text-gray-700 flex items-center gap-2 text-lg"><i class="fa-regular fa-calendar-check text-emerald-500"></i> ${group.date}</span><div class="text-sm flex gap-4 bg-white px-3 py-1.5 rounded-lg border border-gray-100 shadow-sm"><span class="font-bold text-gray-500">รอชำระ: <span class="text-amber-600">${displayGroupPending}</span></span><div class="w-px h-4 bg-gray-200"></div><span class="font-bold text-emerald-600">ขายรวม: ${displayGroupTotal}</span></div></div><table class="w-full text-sm"><tbody>${rows}</tbody></table>`;
+            container.appendChild(card);
+        });
+    },
+    prepEdit(inv, amt) { document.getElementById('edit-inv-id').value = inv; document.getElementById('edit-amt').value = amt; ui.openModal('edit-modal'); },
+    async confirmEdit() {
+        const inv = document.getElementById('edit-inv-id').value;
+        const amt = document.getElementById('edit-amt').value;
+        if(!amt) return;
+        const res = await api.post({ action: 'edit_transaction', invoiceId: inv, amount: amt });
+        if(res.status==='success') { ui.closeModal('edit-modal'); Swal.fire({icon:'success', title:'แก้ไขแล้ว', timer:1500, showConfirmButton:false}); this.loadReport(); }
+    },
+    async deleteTx(inv) {
+        const conf = await Swal.fire({title:'ยืนยันลบ?', icon:'warning', showCancelButton:true, confirmButtonText:'ลบ', confirmButtonColor:'#ef4444'});
+        if(conf.isConfirmed) {
+            const res = await api.post({ action: 'delete_transaction', invoiceId: inv });
+            if(res.status==='success') { Swal.fire('ลบสำเร็จ', '', 'success'); this.loadReport(); }
+        }
+    },
+    async processCheckout() {
+        const name = document.getElementById('cust-name').value.trim();
+        const total = parseFloat(document.getElementById('sum-total').innerText.replace(/,/g,''));
+        if(!name || (this.data.cart.length===0 && total <= 0)) return Swal.fire('ข้อมูลไม่ครบ', '', 'warning');
+        let finalPayMethod = this.data.payMethod;
+        if (finalPayMethod === 'โอน (QR Code)') {
+            if (!this.data.selectedBank) return Swal.fire('กรุณาเลือกบัญชี', 'โปรดเลือกบัญชีธนาคารที่รับเงิน', 'warning');
+            finalPayMethod = `โอน(${this.data.selectedBank})`;
+        }
+        let oldDebt = null;
+        try { const r = await api.post({ action: 'get_debt', name: name }); if(r.status==='success') oldDebt = r.debt; } catch(e){}
+        const itemsStr = this.data.cart.map(x=>`${x.name} (${x.qty||0}x${x.price})`).join(', ');
+        const payload = {
+            action: 'save_transaction',
+            date: document.getElementById('inv-date').value,
+            time: new Date().toLocaleTimeString('th-TH'),
+            invoiceId: this.data.invNo,
+            customerName: name,
+            items: itemsStr,
+            totalAmount: total,
+            paymentMethod: finalPayMethod,
+            note: 'ขายสินค้า'
+        };
+        const res = await api.post(payload);
+        if(res.status==='success') {
+            // เก็บข้อมูลสำหรับ Line Share ก่อน reset
+            const sub = document.getElementById('sum-subtotal').innerText;
+            const dep = document.getElementById('sum-deposit').innerText;
+            const disc = document.getElementById('inp-discount').value || '0';
+            const cartSnapshot = [...this.data.cart];
+            lineShare.store({...payload, paymentMethod: finalPayMethod}, cartSnapshot, sub, dep, disc, total);
+
+            await this.printA5({...payload, paymentMethod: finalPayMethod}, oldDebt);
+
+            // แสดงปุ่ม Line Share หลัง checkout สำเร็จ
+            document.getElementById('line-share-btn').classList.remove('hidden');
+
+            Swal.fire({
+                icon:'success',
+                title: res.offline ? 'บันทึกออฟไลน์แล้ว' : 'บันทึกเรียบร้อย',
+                html: `<button onclick="lineShare.openModal(); Swal.close();" style="background:#06C755;color:white;border:none;padding:10px 24px;border-radius:12px;font-size:0.95rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;margin:8px auto 0">📱 แชร์ผ่าน Line</button>`,
+                showConfirmButton: false,
+                timer: 3000
+            });
+
+            // Reset form แต่คง line share btn ไว้
+            const lineBtn = document.getElementById('line-share-btn');
+            this.resetForm();
+            lineBtn.classList.remove('hidden'); // คืนหลัง resetForm ซ่อนไป
+        }
+    },
+    async uploadPdf(invId, base64) {
+        api.post({ action: 'upload_pdf', fileName: `Receipt_${invId}.pdf`, fileData: base64, mimeType: 'application/pdf' }, true);
+    },
+    async printA5(data, oldDebt) {
+        document.getElementById('r-name').innerText = data.customerName;
+        document.getElementById('r-inv').innerText = data.invoiceId;
+        
+        // แก้ไขวันที่บนใบเสร็จ A5 ให้ตรงกับ Local Time
+        const [py, pm, pd] = data.date.split('-');
+        document.getElementById('r-date').innerText = new Date(py, pm - 1, pd).toLocaleDateString('th-TH');
+        
+        document.getElementById('r-time').innerText = data.time;
+        document.getElementById('r-pay').innerText = data.paymentMethod;
+        document.getElementById('r-body').innerHTML = this.data.cart.map(i => `<tr><td>${i.name}</td><td style="text-align:right">${i.price}</td><td style="text-align:center">${i.qty||0}</td><td style="text-align:right">${(i.price*(i.qty||0)).toLocaleString()}</td></tr>`).join('');
+        document.getElementById('r-sub').innerText = document.getElementById('sum-subtotal').innerText;
+        document.getElementById('r-dep').innerText = document.getElementById('sum-deposit').innerText;
+        document.getElementById('r-disc').innerText = document.getElementById('inp-discount').value || '0.00';
+        document.getElementById('r-total').innerText = data.totalAmount.toLocaleString();
+        
+        // สร้าง QR Code พร้อมเพย์ ถ้ารับชำระด้วยการโอน
+        const qrSection = document.getElementById('r-qr-section');
+        if (data.paymentMethod.includes('โอน')) {
+            qrSection.classList.remove('hidden');
+            const payload = promptPayHelper.generate(SHOP_PROMPTPAY_ID, data.totalAmount);
+            new QRious({
+                element: document.getElementById('promptpay-qr'),
+                value: payload,
+                size: 85, // ปรับขนาด QR Code ให้ใหญ่ขึ้นชดเชยกรอบที่เอาออก
+                level: 'M'
+            });
+        } else {
+            qrSection.classList.add('hidden');
+        }
+
+        const debtDiv = document.getElementById('r-debt-section');
+        if(data.paymentMethod === 'รอชำระ' || (oldDebt !== null && oldDebt > 0)) {
+            debtDiv.classList.remove('hidden');
+            if (oldDebt === null) { document.getElementById('r-debt-old').innerText = "(ออฟไลน์)"; document.getElementById('r-debt-new').innerText = "(รออัปเดต)"; }
+            else { document.getElementById('r-debt-old').innerText = oldDebt.toLocaleString(); let newDebt = oldDebt; if(data.paymentMethod === 'รอชำระ') newDebt += data.totalAmount; document.getElementById('r-debt-new').innerText = newDebt.toLocaleString(); }
+        } else { debtDiv.classList.add('hidden'); }
+        const el = document.getElementById('receipt-render-area');
+        const canvas = await html2canvas(el, {scale:2});
+        const img = canvas.toDataURL('image/jpeg');
+        const pdf = new jspdf.jsPDF({orientation:'p', unit:'mm', format:'a5'});
+        const w = pdf.internal.pageSize.getWidth();
+        pdf.addImage(img, 'JPEG', 0, 0, w, (canvas.height * w) / canvas.width);
+        pdf.save(`${data.invoiceId}.pdf`);
+        this.uploadPdf(data.invoiceId, pdf.output('datauristring').split(',')[1]);
+    }
+};
+
+const ui = {
+    openModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+        if(id==='product-modal') app.renderProdList();
+        if(id==='bank-modal') app.renderBankList();
+        if(id==='settings-modal') pinManager._updateSettingsStatus();
+    },
+    closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+};
+
+// ── Keyboard support for PIN screen ──
+document.addEventListener('keydown', e => {
+    const screen = document.getElementById('pin-screen');
+    if(screen.style.display === 'none') return;
+    if(e.key >= '0' && e.key <= '9') pinManager.press(e.key);
+    else if(e.key === 'Backspace') pinManager.del();
+});
+
+// ── Boot ──
+pinManager.init();
+app.init();
+</script>
 </body>
 </html>
